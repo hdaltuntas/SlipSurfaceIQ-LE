@@ -65,6 +65,16 @@ def test_facing_not_counted_when_surface_daylights_elsewhere():
     assert s.Qy_a.sum() == pytest.approx(-FacingType().weight_per_m * math.hypot(10, 5))
 
 
+def test_facing_capacity_counted_once_when_both_ends_faced():
+    """Facing spans the whole slip surface: capacity mobilises once, not at both ends."""
+    g, mats = acads()
+    loads = LoadSet(facings=[Facing(20, 40, FacingType())])
+    surf = PolylineSurface([[22, 1.0], [30, 3.0], [38, 9.0]])   # both ends on the face
+    _, s = analyze(g, surf, mats, n_slices=40, opts=SliceOptions(loads=loads))
+    assert len(s.support_forces) == 1
+    assert s.support_forces[0].T == pytest.approx(FacingType().capacity)
+
+
 def test_bolt_direction_15_degrees():
     g, _ = acads()
     A, B = bolt_at(g, 30.0, 15.0, 12.0)

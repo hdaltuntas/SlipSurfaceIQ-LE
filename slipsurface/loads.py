@@ -303,8 +303,9 @@ def slice_forces(loads: LoadSet, geom, surf, xl, xr, x_exit, x_entry, direction:
             ds = np.hypot(1.0, _ground_slope(geom, xs)) * dx
             for xk, dsk in zip(xs, ds):
                 add(i, xk, float(geom.ground_y(xk)), 0.0, -ft.weight_per_m * dsk)
-        for x, i in ((x_exit, 0), (x_entry, n - 1)):
-            if not (lo - 1e-6 <= x <= hi + 1e-6):
+        applied = False          # capacity mobilised once per facing: at the first
+        for x, i in ((x_exit, 0), (x_entry, n - 1)):   # end the slip surface daylights through
+            if applied or not (lo - 1e-6 <= x <= hi + 1e-6):
                 continue
             y = float(geom.ground_y(x))
             if abs(float(surf.y(x)) - y) > 1e-3:      # end is not on the ground (e.g. crack)
@@ -321,6 +322,7 @@ def slice_forces(loads: LoadSet, geom, surf, xl, xr, x_exit, x_entry, direction:
             add(i, x, y, T * u[0], T * u[1], passive)
             info.append(SupportForce(-1, x, y, T, T * u[0], T * u[1], passive, 0.0, 0.0,
                                      "kaplama (τ·t + As·fy)", ft.name))
+            applied = True
     return out, info
 
 

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import io
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -55,6 +56,7 @@ from slipsurface.lem import method_name
 FONT_DIR = Path(__file__).parent / "fonts"
 F_REG, F_BOLD, F_SEMI, F_IT = "SS3", "SS3-Bold", "SS3-SemiBold", "SS3-Italic"
 _fonts_ok = False
+log = logging.getLogger(__name__)
 
 
 def _register_fonts() -> None:
@@ -69,6 +71,8 @@ def _register_fonts() -> None:
         pdfmetrics.registerFontFamily(F_REG, normal=F_REG, bold=F_BOLD, italic=F_IT,
                                       boldItalic=F_BOLD)
     except Exception:                      # fonts missing: fall back (no Turkish glyphs)
+        log.warning("PDF fontları yüklenemedi; Helvetica'ya düşülüyor "
+                    "(Türkçe karakterler kaybolabilir).", exc_info=True)
         F_REG, F_BOLD, F_SEMI, F_IT = "Helvetica", "Helvetica-Bold", "Helvetica-Bold", \
             "Helvetica-Oblique"
     _fonts_ok = True
@@ -1046,6 +1050,7 @@ def _pattern_xs(p, pt, geom) -> list:
     try:
         return p.pattern_bolts(pt, geom)
     except Exception:
+        log.warning("Bulon paterni rapora çizilemedi: %s", pt, exc_info=True)
         return []
 
 

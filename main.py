@@ -97,6 +97,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.example and args.example not in EXAMPLES:
         print(f"[HATA] Örnek bulunamadı: {args.example!r}. Seçenekler: {', '.join(EXAMPLES)}")
         return 1
+    if args.example and args.project:
+        print("[HATA] --example ve bir proje dosyası aynı anda verilemez.")
+        return 1
     return run(project_path=project_path, example=args.example, smoke=args.smoke)
 
 

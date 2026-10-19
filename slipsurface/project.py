@@ -1,4 +1,4 @@
-"""Project model (file format v2): Slide2-style boundaries + all settings.
+"""Project model (file format v2/v3): Slide2-style boundaries + all settings.
 
 File (.slp.json):
 {
@@ -244,6 +244,9 @@ class Project:
         if len(set(names)) != len(names):
             raise ValueError("Malzeme adları benzersiz olmalı.")
         for m in self.materials:
+            if m.model not in ("MC", "HB"):
+                raise ValueError(f"{m.name}: bilinmeyen malzeme modeli '{m.model}' "
+                                 f"(MC veya HB olmalı).")
             if not m.name.strip():
                 raise ValueError("Malzeme adı boş olamaz.")
             if m.gamma <= 0 or m.gamma_sat <= 0:

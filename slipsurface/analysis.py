@@ -36,7 +36,8 @@ class AnalysisResults:
 def extend_to_ground(geom: SlopeGeometry, pts) -> np.ndarray:
     """Extend a user polyline along its end segments until each end is above
     the ground (hand-drawn ends often stop a hair below the surface)."""
-    pts = np.asarray(sorted(map(tuple, pts)), dtype=float)
+    pts = np.asarray(pts, dtype=float)
+    pts = pts[np.argsort(pts[:, 0], kind="stable")]   # by x only: same-x points keep order
     span = geom.x_max - geom.x_min
     out = [p for p in pts]
     for end, nxt, limit in ((0, 1, geom.x_min), (-1, -2, geom.x_max)):

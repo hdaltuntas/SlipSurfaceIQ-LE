@@ -19,7 +19,8 @@ def _install_excepthook() -> None:
     silent crash; the application keeps running."""
     def hook(exc_type, exc, tb):
         text = "".join(traceback.format_exception(exc_type, exc, tb))
-        sys.__stderr__.write(text)
+        if sys.__stderr__ is not None:              # None under pythonw.exe
+            sys.__stderr__.write(text)
         app = QApplication.instance()
         if app is not None and not app.closingDown():
             box = QMessageBox(QMessageBox.Critical, "Beklenmeyen hata",
@@ -64,6 +65,10 @@ def run(argv: list[str] | None = None, project_path: str | None = None,
 
     from slipsurface.project import EXAMPLES
     from slipsurface.ui.modeler import ModelerWindow
+
+    if example is not None and example not in EXAMPLES:
+        print(f"[HATA] Örnek bulunamadı: {example!r}. Seçenekler: {', '.join(EXAMPLES)}")
+        return 1
 
     # backwards compatible: `python -m slipsurface file.slp.json`
     if project_path is None and len(argv) > 1 and argv[1].endswith(".json"):
