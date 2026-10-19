@@ -1,0 +1,137 @@
+{
+  "format": "slipsurface-le",
+  "version": 1,
+  "name": "Katmanlı şev + YASS (örnek)",
+  "materials": [
+    {
+      "name": "Dolgu",
+      "model": "MC",
+      "gamma": 19,
+      "gamma_sat": 20,
+      "c": 8,
+      "phi": 32,
+      "sigma_ci": 25000.0,
+      "gsi": 50.0,
+      "mi": 10.0,
+      "d": 0.0,
+      "color": "#d9c49a"
+    },
+    {
+      "name": "Yumuşak kil",
+      "model": "MC",
+      "gamma": 17,
+      "gamma_sat": 18,
+      "c": 15,
+      "phi": 18,
+      "sigma_ci": 25000.0,
+      "gsi": 50.0,
+      "mi": 10.0,
+      "d": 0.0,
+      "color": "#9fb7d6"
+    },
+    {
+      "name": "Ayrışmış kaya",
+      "model": "HB",
+      "gamma": 23,
+      "gamma_sat": 24,
+      "c": 10.0,
+      "phi": 30.0,
+      "sigma_ci": 8000,
+      "gsi": 35,
+      "mi": 8,
+      "d": 0.3,
+      "color": "#d6a5a5"
+    }
+  ],
+  "geometry": {
+    "surface": [
+      [
+        0,
+        0
+      ],
+      [
+        20,
+        0
+      ],
+      [
+        40,
+        12
+      ],
+      [
+        50,
+        12
+      ],
+      [
+        70,
+        14
+      ]
+    ],
+    "bottom": -12,
+    "layers": [
+      {
+        "material": "Dolgu",
+        "top": null
+      },
+      {
+        "material": "Yumuşak kil",
+        "top": [
+          [
+            0,
+            -1
+          ],
+          [
+            70,
+            5
+          ]
+        ]
+      },
+      {
+        "material": "Ayrışmış kaya",
+        "top": [
+          [
+            0,
+            -5
+          ],
+          [
+            70,
+            -2
+          ]
+        ]
+      }
+    ]
+  },
+  "water": {
+    "enabled": true,
+    "points": [
+      [
+        0,
+        -0.5
+      ],
+      [
+        20,
+        -0.5
+      ],
+      [
+        45,
+        6
+      ],
+      [
+        70,
+        8
+      ]
+    ],
+    "gamma_w": 9.81
+  },
+  "analysis": {
+    "method": "bishop",
+    "surface_type": "circular",
+    "n_slices": 30,
+    "popsize": 20,
+    "maxiter": 80,
+    "seed": 0,
+    "exit_range": null,
+    "entry_range": null,
+    "n_ctrl": 4,
+    "show_top": true
+  }
+}

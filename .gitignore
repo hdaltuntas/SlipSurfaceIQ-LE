@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+build/
+dist/
+*.egg-info/
+.idea/workspace.xml
+.idea/pythonConsole.xml
+
+# IDE / editor caches
+.vs/
+.test-tmp*/
+/.ui-*.png
+acads_1a.png

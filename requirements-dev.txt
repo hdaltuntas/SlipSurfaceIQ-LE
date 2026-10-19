@@ -1,0 +1,4 @@
+-r requirements.txt
+pytest>=8.0
+matplotlib>=3.8   # only for examples/acads_1a.py
+pypdf>=4.0

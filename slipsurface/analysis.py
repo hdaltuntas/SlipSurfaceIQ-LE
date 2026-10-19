@@ -1,0 +1,236 @@
+"""Run a project: critical surface per selected method (or a user surface)."""
+
+from __future__ import annotations
+
+import datetime as _dt
+import time
+from dataclasses import dataclass, field
+from typing import Callable
+
+import numpy as np
+
+from slipsurface.geometry import PolylineSurface, SlopeGeometry
+from slipsurface.lem import METHODS, analyze, method_name
+from slipsurface.optimizer import SearchCancelled, SearchResult, SearchSettings, search
+from slipsurface.project import EFFORT, Project
+
+
+@dataclass
+class AnalysisResults:
+    project: Project
+    geometry: SlopeGeometry
+    results: dict[str, SearchResult] = field(default_factory=dict)   # method key -> result
+    errors: dict[str, str] = field(default_factory=dict)
+    elapsed: float = 0.0
+    finished: str = ""
+
+    @property
+    def methods(self) -> list[str]:
+        return list(self.results)
+
+    def global_minimum(self) -> tuple[str, SearchResult] | None:
+        ok = [(k, r) for k, r in self.results.items() if np.isfinite(r.fos)]
+        return min(ok, key=lambda kr: kr[1].fos) if ok else None
+
+
+def extend_to_ground(geom: SlopeGeometry, pts) -> np.ndarray:
+    """Extend a user polyline along its end segments until each end is above
+    the ground (hand-drawn ends often stop a hair below the surface)."""
+    pts = np.asarray(sorted(map(tuple, pts)), dtype=float)
+    span = geom.x_max - geom.x_min
+    out = [p for p in pts]
+    for end, nxt, limit in ((0, 1, geom.x_min), (-1, -2, geom.x_max)):
+        p0, p1 = pts[end], pts[nxt]
+        if p0[1] > geom.ground_y(p0[0]) + 1e-9:
+            continue
+        d = p0 - p1
+        if abs(d[0]) < 1e-12:
+            continue
+        d = d / abs(d[0])                        # unit step in x, outward
+        for step in np.linspace(0, span, 400)[1:]:
+            q = p0 + d * step
+            if (end == 0 and q[0] < limit) or (end == -1 and q[0] > limit):
+                break
+            if q[1] > geom.ground_y(q[0]):
+                if end == 0:
+                    out.insert(0, q)
+                else:
+                    out.append(q)
+                break
+    return np.asarray(out)
+
+
+def search_settings(p: Project, method: str) -> SearchSettings:
+    s = p.surfaces
+    pop, it = EFFORT.get(s.effort, EFFORT["normal"])
+    return SearchSettings(
+        method=method,
+        surface_type=(("spline" if s.noncircular_shape == "spline" else "polyline")
+                      if s.surface_type == "noncircular" else "circular"),
+        n_slices=p.methods.n_slices, popsize=pop, maxiter=it, seed=s.seed,
+        n_ctrl=s.n_ctrl, convex_only=s.convex_only,
+        check_admissibility=p.advanced.check_admissibility,
+        left_range=tuple(s.left_range) if s.left_range else None,
+        right_range=tuple(s.right_range) if s.right_range else None,
+        slice_opts=p.slice_options(), solver_kw=p.solver_kw())
+
+
+def run_analysis(p: Project,
+                 progress: Callable[[int, int, str, int, float], bool | None] | None = None
+                 ) -> AnalysisResults:
+    """`progress(i, n, method, generation, best)` returning True cancels."""
+    t0 = time.perf_counter()
+    geom = p.build_geometry()
+    mats = p.build_materials()
+    methods = [m for m in p.methods.methods if m in METHODS]
+    if not methods:
+        raise ValueError("Proje Ayarları → Yöntemler: en az bir yöntem seçin.")
+    out = AnalysisResults(p.copy(), geom)
+    n = len(methods)
+
+    if p.surfaces.surface_type == "user":
+        pts = p.surfaces.user_surface
+        if not pts or len(pts) < 2:
+            raise ValueError("Kullanıcı tanımlı yüzey çizilmemiş (Yüzeyler → Kullanıcı Yüzeyi).")
+        surf = PolylineSurface(extend_to_ground(geom, pts))
+        for i, m in enumerate(methods):
+            if progress and progress(i, n, m, 0, np.nan):
+                raise SearchCancelled()
+            if m == "bishop":
+                out.errors[m] = "Bishop yalnızca dairesel yüzeyler için geçerlidir."
+                continue
+            res, s = analyze(geom, surf, mats, method=m, opts=p.slice_options(), **p.solver_kw())
+            if s is None or not res.ok:
+                out.errors[m] = res.message or "çözüm yok"
+                continue
+            if p.advanced.check_admissibility and not res.admissible:
+                out.errors[m] = res.issue or "Kabul edilebilir olmayan çözüm."
+                continue
+            out.results[m] = SearchResult(surf, res.fos, res, s, 1, [], "kullanıcı yüzeyi", m)
+    else:
+        for i, m in enumerate(methods):
+            if p.surfaces.surface_type == "noncircular" and m == "bishop":
+                out.errors[m] = ("Bishop yalnızca dairesel yüzeyler için geçerlidir; "
+                                 "dairesel olmayan aramada atlandı.")
+                continue
+
+            def prog(gen, best, i=i, m=m):
+                return progress(i, n, m, gen, best) if progress else None
+
+            try:
+                out.results[m] = search(geom, mats, search_settings(p, m), prog)
+            except SearchCancelled:
+                raise
+            except (RuntimeError, ValueError) as exc:
+                out.errors[m] = str(exc)
+
+    out.elapsed = time.perf_counter() - t0
+    out.finished = _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return out
+
+
+def report_text(r: AnalysisResults) -> str:
+    """Plain-text analysis report (Info Viewer)."""
+    p = r.project
+    L = [f"SlipSurface LE — Analiz Raporu", "=" * 60,
+         f"Proje        : {p.summary.title}", f"Analiz       : {p.summary.analysis}",
+         f"Hazırlayan   : {p.summary.author}", f"Kurum        : {p.summary.company}",
+         f"Oluşturulma  : {p.summary.date_created}", f"Analiz zamanı: {r.finished} "
+         f"({r.elapsed:.1f} s)", ""]
+    for c in p.summary.comments:
+        if c:
+            L.append(f"Not: {c}")
+    g = p.general
+    L += ["Proje ayarları", "-" * 60,
+          f"Birimler           : Metrik (kN, kPa, m)",
+          f"Göçme yönü         : {'Sağdan sola' if g.failure_direction == 'right_to_left' else 'Soldan sağa'}",
+          f"Dilim sayısı       : {p.methods.n_slices}",
+          f"Tolerans / maks. it: {p.methods.tolerance} / {p.methods.max_iter}",
+          f"Arayüz fonksiyonu  : {p.methods.interslice} (GLE)",
+          f"Yeraltı suyu       : {p.groundwater.method}, γw = {p.groundwater.gamma_w}",
+          f"Sismik             : kh = {p.seismic.kh}, kv = {p.seismic.kv}",
+          f"Yüzey tipi         : {p.surfaces.surface_type}", ""]
+    L += ["Malzemeler", "-" * 60]
+    for m in p.materials:
+        if m.model == "MC":
+            L.append(f"{m.name:18s} Mohr-Coulomb  γ={m.gamma:g}  γsat={m.gamma_sat if m.use_sat else m.gamma:g}"
+                     f"  c={m.c:g} kPa  φ={m.phi:g}°")
+        else:
+            L.append(f"{m.name:18s} Hoek-Brown    γ={m.gamma:g}  σci={m.sigma_ci:g} kPa  "
+                     f"GSI={m.gsi:g}  mi={m.mi:g}  D={m.d:g}")
+    if p.tension_crack:
+        xs = [q[0] for q in p.tension_crack]
+        L += ["", "Gerilme çatlağı", "-" * 60,
+              f"Çatlak çizgisi x = {min(xs):.2f} – {max(xs):.2f}, "
+              f"çatlak suyu: %{100 * p.groundwater.crack_water:.0f} dolu"]
+    if p.loads:
+        L += ["", "Dış yükler", "-" * 60]
+        for i, ld in enumerate(p.loads, 1):
+            if ld["kind"] == "distributed":
+                (x1, _), (x2, _) = ld["points"]
+                yon = "düşey" if ld.get("orientation", "vertical") == "vertical" else "yüzeye dik"
+                L.append(f"{i:2d}. Yayılı yük  x = {x1:.2f} – {x2:.2f}  q = {ld['q'][0]:g} – "
+                         f"{ld['q'][1]:g} kPa ({yon})")
+            else:
+                x, y = ld["point"]
+                L.append(f"{i:2d}. Tekil yük   ({x:.2f}, {y:.2f})  P = {ld['magnitude']:g} kN/m, "
+                         f"açı {ld.get('angle', 270):g}°")
+    if p.supports or p.support_patterns:
+        from slipsurface.loads import SUPPORT_KINDS
+        L += ["", "Destek tipleri", "-" * 60]
+        for t in p.support_types:
+            L.append(f"{t.name:16s} {SUPPORT_KINDS[t.kind]:30s} aralık {t.spacing:g} m  "
+                     f"çekme {t.tensile:g} kN  "
+                     f"{'pasif' if t.application == 'passive' else 'aktif'}")
+        L += ["", "Destekler", "-" * 60]
+        for i, sp in enumerate(p.supports, 1):
+            L.append(f"{i:2d}. {sp['type']:16s} A=({sp['a'][0]:.2f}, {sp['a'][1]:.2f})  "
+                     f"B=({sp['b'][0]:.2f}, {sp['b'][1]:.2f})")
+    L += ["", "Sonuçlar (yöntem başına kritik yüzey)", "-" * 60,
+          f"{'Yöntem':26s} {'FS':>7s}  {'λ':>7s}  {'çıkış x':>8s}  {'giriş x':>8s}  yüzey"]
+    for k, res in r.results.items():
+        s = res.surface
+        lam = f"{res.lem.lam:7.3f}" if res.lem.lam == res.lem.lam else "      –"
+        geo = (f"merkez ({s.xc:.2f}, {s.yc:.2f}), R={s.r:.2f}" if hasattr(s, "r")
+               else type(s).__name__)
+        L.append(f"{method_name(k):26s} {res.fos:7.3f}  {lam}  {res.slices.x_exit:8.2f}  "
+                 f"{res.slices.x_entry:8.2f}  {geo}")
+    for k, e in r.errors.items():
+        L.append(f"{method_name(k):26s}   –      ({e})")
+    if p.tension_crack:
+        L += ["", "Kritik yüzeylerde gerilme çatlağı", "-" * 60]
+        for k, res in r.results.items():
+            ck = res.slices.crack
+            if ck is None:
+                L.append(f"{method_name(k):26s} kritik yüzey çatlak çizgisini kesmiyor")
+            else:
+                L.append(f"{method_name(k):26s} x = {ck['x']:.2f}  derinlik = {ck['depth']:.2f} m  "
+                         f"su = {ck['hw']:.2f} m  itki V = {ck['Pw']:.2f} kN/m")
+    if p.facings:
+        L += ["", "Kaplamalar (püskürtme beton + hasır çelik)", "-" * 60]
+        for t in p.facing_types:
+            L.append(f"{t.name:18s} t = {t.thickness:g} m  γ = {t.gamma:g}  τ = {t.tau:g} kPa  "
+                     f"hasır {t.mesh} (As = {t.mesh_as:g} mm²/m, fy = {t.mesh_fy:g} MPa)  "
+                     f"kapasite = {t.capacity:.1f} kN/m")
+        for f in p.facings:
+            L.append(f"  {f['type']}: x = {min(f['x1'], f['x2']):.2f} – {max(f['x1'], f['x2']):.2f}")
+    if p.support_patterns:
+        L += ["", "Bulon paternleri", "-" * 60]
+        for i, pt in enumerate(p.support_patterns, 1):
+            L.append(f"{i:2d}. {pt['type']}: x = {pt['p1'][0]:.2f} – {pt['p2'][0]:.2f}, aralık "
+                     f"{pt['spacing']:g} m, ilk {pt.get('offset', 0):g} m, eğim {pt.get('angle', 15):g}°, "
+                     f"boy {pt['length']:g} m")
+    if p.supports or p.support_patterns or p.facings:
+        L += ["", "Kritik yüzeylerde mobilize destek kuvvetleri [kN/m]", "-" * 60]
+        for k, res in r.results.items():
+            sf = res.slices.support_forces
+            if not sf:
+                L.append(f"{method_name(k):26s} kritik yüzeyi kesen destek / kaplama yok")
+            for f in sf:
+                L.append(f"{method_name(k):26s} {f.label}: T = {f.T:8.2f}  "
+                         f"(L_iç = {f.L_in:.2f} m, L_dış = {f.L_out:.2f} m, {f.governing}, "
+                         f"{'pasif' if f.passive else 'aktif'})")
+    gm = r.global_minimum()
+    if gm:
+        L += ["", f"Global minimum: {method_name(gm[0])} FS = {gm[1].fos:.3f}"]
+    return "\n".join(L)
