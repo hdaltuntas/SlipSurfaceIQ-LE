@@ -27,7 +27,6 @@ from PySide6.QtWidgets import (
     QProgressDialog,
     QSplitter,
     QToolBar,
-    QVBoxLayout,
     QWidget,
 )
 
@@ -689,7 +688,7 @@ class ModelerWindow(QMainWindow):
             return None
         s = g.surface
         xs = []
-        for (xa, ya), (xb, yb) in zip(s[:-1], s[1:]):
+        for (xa, ya), (xb, yb) in zip(s[:-1], s[1:], strict=False):
             if xb - xa > 1e-9 and math.degrees(math.atan2(abs(yb - ya), xb - xa)) >= min_angle:
                 xs += [xa, xb]
         return (min(xs), max(xs)) if xs else None

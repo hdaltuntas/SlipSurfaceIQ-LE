@@ -252,7 +252,7 @@ def slice_forces(loads: LoadSet, geom, surf, xl, xr, x_exit, x_entry, direction:
                 fx, fy = q * dy, -q * dx
             else:
                 fx, fy = np.zeros(m), -q * dx
-            for xk, yk, fxk, fyk in zip(xs, ys, fx, fy):
+            for xk, yk, fxk, fyk in zip(xs, ys, fx, fy, strict=False):
                 add(i, xk, yk, fxk, fyk)
 
     # line loads
@@ -301,7 +301,7 @@ def slice_forces(loads: LoadSet, geom, surf, xl, xr, x_exit, x_entry, direction:
             xs = a + (np.arange(m) + 0.5) * (b - a) / m
             dx = (b - a) / m
             ds = np.hypot(1.0, _ground_slope(geom, xs)) * dx
-            for xk, dsk in zip(xs, ds):
+            for xk, dsk in zip(xs, ds, strict=False):
                 add(i, xk, float(geom.ground_y(xk)), 0.0, -ft.weight_per_m * dsk)
         applied = False          # capacity mobilised once per facing: at the first
         for x, i in ((x_exit, 0), (x_entry, n - 1)):   # end the slip surface daylights through

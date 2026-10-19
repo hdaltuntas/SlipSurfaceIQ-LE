@@ -11,9 +11,10 @@ from slipsurface.geometry.slope import Region, SlopeGeometry, layered_geometry, 
 from slipsurface.geometry.surfaces import (
     CircularSurface,
     PolylineSurface,
+    SlipSurface,
     SplineSurface,
     slip_extent,
 )
 
-__all__ = ["CircularSurface", "PolylineSurface", "Region", "SplineSurface", "SlopeGeometry", "layered_geometry", "simple_slope",
-           "slip_extent"]
+__all__ = ["CircularSurface", "PolylineSurface", "Region", "SlipSurface", "SplineSurface",
+           "SlopeGeometry", "layered_geometry", "simple_slope", "slip_extent"]

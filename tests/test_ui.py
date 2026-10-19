@@ -7,7 +7,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import numpy as np  # noqa: E402
 import pytest  # noqa: E402
-from PySide6.QtCore import QPoint, QPointF, Qt  # noqa: E402
+from PySide6.QtCore import QPoint, Qt  # noqa: E402
 from PySide6.QtTest import QTest  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 

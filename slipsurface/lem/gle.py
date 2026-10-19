@@ -38,11 +38,15 @@ sliding direction has negative A. Reported lambda uses the usual sign.
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 from scipy.optimize import brentq, root
 
+from slipsurface.geometry import CircularSurface
 from slipsurface.lem.bishop import (
     LEMResult,
+    M_ALPHA_MIN,
     _initial_sigma_n,
     _strength,
     bishop_simplified,
@@ -97,7 +101,8 @@ class _Frame:
         self.order = o
         surf = s.surface
         if hasattr(surf, "r"):
-            self.xO, self.yO = sign * surf.xc, surf.yc
+            circ = cast(CircularSurface, surf)
+            self.xO, self.yO = sign * circ.xc, circ.yc
         else:
             self.xO = 0.5 * (self.xb[0] + self.xb[-1])
             self.yO = float(np.max(s.y_top)) + 0.5 * (self.xb[-1] - self.xb[0])
@@ -180,8 +185,8 @@ def _root_1d(fn, F_guess, span=(0.2, 5.0), n=17, resid_tol=1e-6):
 E_MAX_RATIO = 50.0   # |E| larger than this times the total weight -> singular solution
 
 
-def _singular(E, fr) -> bool:
-    return not np.all(np.isfinite(E)) or float(np.max(np.abs(E))) > E_MAX_RATIO * fr.scale_f
+def _singular(E, fr, e_max_ratio: float = E_MAX_RATIO) -> bool:
+    return not np.all(np.isfinite(E)) or float(np.max(np.abs(E))) > e_max_ratio * fr.scale_f
 
 
 def _start_estimate(fr, c, tp, fint, F_guess):
@@ -271,16 +276,20 @@ def _strengths_frame(s, fr, sigma_n_frame=None):
 
 # ------------------------------------------------------------------ GLE
 def solve_gle(s: SliceSet, interslice: str = "constant", tol: float = 1e-10,
-              max_outer: int = 50, f_start: float = 0.5, f_end: float = 0.5) -> LEMResult:
+              max_outer: int = 50, f_start: float = 0.5, f_end: float = 0.5,
+              m_alpha_min: float = M_ALPHA_MIN,
+              e_max_ratio: float = E_MAX_RATIO) -> LEMResult:
     name = "Spencer" if interslice == "constant" else "GLE/M-P"
     try:
         with np.errstate(all="ignore"):
-            return _solve_gle(s, interslice, tol, max_outer, f_start, f_end, name)
+            return _solve_gle(s, interslice, tol, max_outer, f_start, f_end, name,
+                              m_alpha_min, e_max_ratio)
     except (ValueError, FloatingPointError, ZeroDivisionError, np.linalg.LinAlgError) as exc:
         return LEMResult(np.nan, name, False, 0, message=f"GLE failed: {exc}")
 
 
-def _solve_gle(s, interslice, tol, max_outer, f_start, f_end, name) -> LEMResult:
+def _solve_gle(s, interslice, tol, max_outer, f_start, f_end, name,
+               m_alpha_min, e_max_ratio) -> LEMResult:
     fr = _Frame(s)
     fint = interslice_function(interslice, fr.xb, f_start, f_end)
     nonlinear = any(m.nonlinear for m in s.materials)
@@ -310,13 +319,13 @@ def _solve_gle(s, interslice, tol, max_outer, f_start, f_end, name) -> LEMResult
 
     E, Np, ma = _state(F, lam * fint, fr, c, tp)
     lam_rep = -lam            # usual sign convention (Slide2 / GeoStudio)
-    if _singular(E, fr):
+    if _singular(E, fr, e_max_ratio):
         return LEMResult(np.nan, name, False, it, message="singular interslice forces")
     if np.any(ma <= 1e-9):
         return LEMResult(np.nan, name, False, it, float(ma.min()),
                          "m_alpha <= 0 (steep negative base angle)", lam=lam_rep)
     res = LEMResult(F, name, True, it, float(ma.min()), lam=lam_rep)
-    return check_admissibility(res, ma, c * fr.l + Np * tp, fr.W)
+    return check_admissibility(res, ma, c * fr.l + Np * tp, fr.W, m_alpha_min)
 
 
 def spencer(s: SliceSet, **kw) -> LEMResult:
@@ -329,7 +338,9 @@ def morgenstern_price(s: SliceSet, **kw) -> LEMResult:
 
 
 # --------------------------------------------------------- force methods
-def _force_method(s: SliceSet, name: str, coeffs, max_outer: int = 50, tol: float = 1e-6) -> LEMResult:
+def _force_method(s: SliceSet, name: str, coeffs, max_outer: int = 50, tol: float = 1e-6,
+                  m_alpha_min: float = M_ALPHA_MIN,
+                  e_max_ratio: float = E_MAX_RATIO) -> LEMResult:
     """F from horizontal force equilibrium E_n = 0 with prescribed X/E ratios.
 
     `coeffs(fr)` returns A (n+1) in the solving frame.
@@ -348,7 +359,7 @@ def _force_method(s: SliceSet, name: str, coeffs, max_outer: int = 50, tol: floa
             it = 0
             for it in range(1, max_outer + 1):
                 cc, tt = c, tp
-                fn = lambda F: _state(F, A, fr, cc, tt)[0][-1] / fr.scale_f  # noqa: E731
+                fn = lambda F, cc=cc, tt=tt: _state(F, A, fr, cc, tt)[0][-1] / fr.scale_f  # noqa: E731
                 F = _root_1d(fn, F0, resid_tol=tol)
                 if not np.isfinite(F):
                     F = _root_1d(fn, F0, span=(0.05, 20.0), n=40, resid_tol=tol)
@@ -365,13 +376,13 @@ def _force_method(s: SliceSet, name: str, coeffs, max_outer: int = 50, tol: floa
             else:
                 return LEMResult(float(F), name, False, it, message="did not converge")
             E, Np, ma = _state(F, A, fr, c, tp)
-            if _singular(E, fr):
+            if _singular(E, fr, e_max_ratio):
                 return LEMResult(np.nan, name, False, it, message="singular interslice forces")
             if np.any(ma <= 1e-9):
                 return LEMResult(np.nan, name, False, it, float(ma.min()),
                                  "m_alpha <= 0 (steep negative base angle)")
             res = LEMResult(float(F), name, True, it, float(ma.min()))
-            return check_admissibility(res, ma, c * fr.l + Np * tp, fr.W)
+            return check_admissibility(res, ma, c * fr.l + Np * tp, fr.W, m_alpha_min)
     except (ValueError, FloatingPointError, ZeroDivisionError) as exc:
         return LEMResult(np.nan, name, False, 0, message=f"{name} failed: {exc}")
 

@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import datetime as _dt
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import cast
 
 import numpy as np
 
-from slipsurface.geometry import PolylineSurface, SlopeGeometry
+from slipsurface.geometry import CircularSurface, PolylineSurface, SlopeGeometry
 from slipsurface.lem import METHODS, analyze, method_name
 from slipsurface.optimizer import SearchCancelled, SearchResult, SearchSettings, search
 from slipsurface.project import EFFORT, Project
@@ -71,8 +72,10 @@ def search_settings(p: Project, method: str) -> SearchSettings:
         n_slices=p.methods.n_slices, popsize=pop, maxiter=it, seed=s.seed,
         n_ctrl=s.n_ctrl, convex_only=s.convex_only,
         check_admissibility=p.advanced.check_admissibility,
-        left_range=tuple(s.left_range) if s.left_range else None,
-        right_range=tuple(s.right_range) if s.right_range else None,
+        left_range=(float(s.left_range[0]), float(s.left_range[1]))
+        if s.left_range else None,
+        right_range=(float(s.right_range[0]), float(s.right_range[1]))
+        if s.right_range else None,
         slice_opts=p.slice_options(), solver_kw=p.solver_kw())
 
 
@@ -133,7 +136,7 @@ def run_analysis(p: Project,
 def report_text(r: AnalysisResults) -> str:
     """Plain-text analysis report (Info Viewer)."""
     p = r.project
-    L = [f"SlipSurface LE — Analiz Raporu", "=" * 60,
+    L = ["SlipSurface LE — Analiz Raporu", "=" * 60,
          f"Proje        : {p.summary.title}", f"Analiz       : {p.summary.analysis}",
          f"Hazırlayan   : {p.summary.author}", f"Kurum        : {p.summary.company}",
          f"Oluşturulma  : {p.summary.date_created}", f"Analiz zamanı: {r.finished} "
@@ -143,7 +146,7 @@ def report_text(r: AnalysisResults) -> str:
             L.append(f"Not: {c}")
     g = p.general
     L += ["Proje ayarları", "-" * 60,
-          f"Birimler           : Metrik (kN, kPa, m)",
+          "Birimler           : Metrik (kN, kPa, m)",
           f"Göçme yönü         : {'Sağdan sola' if g.failure_direction == 'right_to_left' else 'Soldan sağa'}",
           f"Dilim sayısı       : {p.methods.n_slices}",
           f"Tolerans / maks. it: {p.methods.tolerance} / {p.methods.max_iter}",
@@ -192,8 +195,9 @@ def report_text(r: AnalysisResults) -> str:
     for k, res in r.results.items():
         s = res.surface
         lam = f"{res.lem.lam:7.3f}" if res.lem.lam == res.lem.lam else "      –"
-        geo = (f"merkez ({s.xc:.2f}, {s.yc:.2f}), R={s.r:.2f}" if hasattr(s, "r")
-               else type(s).__name__)
+        geo = (f"merkez ({cast(CircularSurface, s).xc:.2f}, "
+               f"{cast(CircularSurface, s).yc:.2f}), R={cast(CircularSurface, s).r:.2f}"
+               if hasattr(s, "r") else type(s).__name__)
         L.append(f"{method_name(k):26s} {res.fos:7.3f}  {lam}  {res.slices.x_exit:8.2f}  "
                  f"{res.slices.x_entry:8.2f}  {geo}")
     for k, e in r.errors.items():
@@ -209,10 +213,10 @@ def report_text(r: AnalysisResults) -> str:
                          f"su = {ck['hw']:.2f} m  itki V = {ck['Pw']:.2f} kN/m")
     if p.facings:
         L += ["", "Kaplamalar (püskürtme beton + hasır çelik)", "-" * 60]
-        for t in p.facing_types:
-            L.append(f"{t.name:18s} t = {t.thickness:g} m  γ = {t.gamma:g}  τ = {t.tau:g} kPa  "
-                     f"hasır {t.mesh} (As = {t.mesh_as:g} mm²/m, fy = {t.mesh_fy:g} MPa)  "
-                     f"kapasite = {t.capacity:.1f} kN/m")
+        for ft in p.facing_types:
+            L.append(f"{ft.name:18s} t = {ft.thickness:g} m  γ = {ft.gamma:g}  "
+                     f"τ = {ft.tau:g} kPa  hasır {ft.mesh} (As = {ft.mesh_as:g} mm²/m, "
+                     f"fy = {ft.mesh_fy:g} MPa)  kapasite = {ft.capacity:.1f} kN/m")
         for f in p.facings:
             L.append(f"  {f['type']}: x = {min(f['x1'], f['x2']):.2f} – {max(f['x1'], f['x2']):.2f}")
     if p.support_patterns:

@@ -31,6 +31,7 @@ import os
 import tempfile
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -62,7 +63,7 @@ def _today() -> str:
     return _dt.datetime.now().strftime("%Y-%m-%d, %H:%M:%S")
 
 
-def _from_dict(cls, d: dict):
+def _from_dict(cls, d: dict | None):
     known = {f.name for f in fields(cls)}
     return cls(**{k: v for k, v in (d or {}).items() if k in known})
 
@@ -97,7 +98,8 @@ class MaterialSpec:
 
     def to_material(self) -> Material:
         gs = self.gamma_sat if self.use_sat else self.gamma
-        common = dict(gamma=self.gamma, gamma_sat=gs, use_water=self.use_water, hu=self.hu)
+        common: dict[str, Any] = dict(gamma=self.gamma, gamma_sat=gs,
+                                      use_water=self.use_water, hu=self.hu)
         if self.model == "MC":
             return MohrCoulomb(self.name, c=self.c, phi=self.phi, **common)
         if self.model == "HB":
@@ -143,6 +145,8 @@ class SeismicSettings:
 class AdvancedSettings:
     check_admissibility: bool = True
     min_depth: float = 0.0
+    m_alpha_min: float = 0.2        # admissibility threshold (Whitman & Bailey)
+    e_max_ratio: float = 50.0       # reject interslice forces > ratio * total weight
 
 
 @dataclass
@@ -214,7 +218,7 @@ class Project:
     def name(self) -> str:
         return self.summary.title
 
-    def copy(self) -> "Project":
+    def copy(self) -> Project:
         return copy.deepcopy(self)
 
     def analysis_inputs(self) -> dict:
@@ -262,11 +266,16 @@ class Project:
         tc = self.tension_crack
         if tc:
             xs = sorted(q[0] for q in tc)
-            if len(tc) < 2 or any(b <= a for a, b in zip(xs, xs[1:])):
+            if len(tc) < 2 or any(b <= a for a, b in zip(xs, xs[1:], strict=False)):
                 raise ValueError("Gerilme çatlağı çizgisi en az 2 nokta ve farklı x değerleri "
                                  "içermeli.")
         if not 0 <= self.groundwater.crack_water <= 1:
             raise ValueError("Çatlak suyu oranı 0 ile 1 arasında olmalı.")
+        adv = self.advanced
+        if not 0 < adv.m_alpha_min <= 1:
+            raise ValueError("mα eşiği 0 ile 1 arasında olmalı.")
+        if adv.e_max_ratio < 1:
+            raise ValueError("E maksimum oranı en az 1 olmalı.")
         snames = [t.name for t in self.support_types]
         if len(set(snames)) != len(snames):
             raise ValueError("Destek tipi adları benzersiz olmalı.")
@@ -284,9 +293,9 @@ class Project:
         fnames = [t.name for t in self.facing_types]
         if len(set(fnames)) != len(fnames):
             raise ValueError("Kaplama tipi adları benzersiz olmalı.")
-        for t in self.facing_types:
-            if t.thickness <= 0 or t.gamma < 0 or t.tau < 0 or t.mesh_as < 0:
-                raise ValueError(f"{t.name}: kalınlık > 0, diğer değerler ≥ 0 olmalı.")
+        for ft in self.facing_types:
+            if ft.thickness <= 0 or ft.gamma < 0 or ft.tau < 0 or ft.mesh_as < 0:
+                raise ValueError(f"{ft.name}: kalınlık > 0, diğer değerler ≥ 0 olmalı.")
         for f in self.facings:
             if f["type"] not in fnames:
                 raise ValueError(f"Kaplama tipi '{f['type']}' tanımlı değil.")
@@ -376,13 +385,15 @@ class Project:
         tc = self.tension_crack
         if not tc or len(tc) < 2:
             return None
-        return TensionCrack(sorted(map(tuple, tc)), self.groundwater.crack_water,
-                            self.groundwater.gamma_w)
+        return TensionCrack(np.array(sorted(map(tuple, tc)), dtype=float),
+                            self.groundwater.crack_water, self.groundwater.gamma_w)
 
     def solver_kw(self) -> dict:
         m = self.methods
         return {"tol": m.tolerance * 1e-2, "max_iter": m.max_iter, "interslice": m.interslice,
-                "f_start": m.f_start, "f_end": m.f_end}
+                "f_start": m.f_start, "f_end": m.f_end,
+                "m_alpha_min": self.advanced.m_alpha_min,
+                "e_max_ratio": self.advanced.e_max_ratio}
 
     # ------------------------------------------------------------- JSON
     def to_dict(self) -> dict:
@@ -418,7 +429,7 @@ class Project:
         }
 
     @classmethod
-    def from_dict(cls, d: dict) -> "Project":
+    def from_dict(cls, d: dict) -> Project:
         if d.get("format") != FORMAT:
             raise ValueError("Bu dosya bir SlipSurface LE projesi değil.")
         ver = int(d.get("version", 0))
@@ -477,7 +488,7 @@ class Project:
                 temporary.unlink(missing_ok=True)
 
     @classmethod
-    def load(cls, path: str | Path) -> "Project":
+    def load(cls, path: str | Path) -> Project:
         return cls.from_dict(json.loads(Path(path).read_text(encoding="utf-8")))
 
 

@@ -23,10 +23,8 @@ from slipsurface.ui.cad.model import (
     FIXED_POINTS,
     LABELS,
     MIN_POINTS,
-    add_entity,
     delete_entity,
     get_points,
-    point_segment_distance,
     set_points,
 )
 

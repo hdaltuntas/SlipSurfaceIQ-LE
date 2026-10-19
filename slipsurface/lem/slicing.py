@@ -14,6 +14,10 @@ Pore pressure at the base (per base material, Slide2-style):
   ru          : u = ru * sigma_v  (sigma_v = W / b, total vertical stress)
   none        : u = 0
 
+Ponded water: where the water table lies above the ground surface (ponded /
+submerged ground), the weight of the water column over the slice top is added
+to the slice weight. Base pore pressure already uses the full piezometric head.
+
 Seismic (pseudo-static): horizontal force Fh = kh W acting in the sliding
 direction at the column centroid; vertical coefficient kv (positive upward)
 gives the vertical load Wv = (1 - kv) W.
@@ -28,12 +32,16 @@ unless forced.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from typing import TYPE_CHECKING
 
 import numpy as np
 import shapely
 
-from slipsurface.geometry import SlopeGeometry, slip_extent
+from slipsurface.geometry import SlipSurface, SlopeGeometry, slip_extent
 from slipsurface.materials import Material
+
+if TYPE_CHECKING:
+    from slipsurface.loads import LoadSet, TensionCrack
 
 GAMMA_W = 9.81  # kN/m3
 
@@ -49,8 +57,8 @@ class SliceOptions:
     kv: float = 0.0
     direction: str = "auto"            # auto | right_to_left | left_to_right
     min_depth: float = 0.0             # reject masses thinner than this [m]
-    loads: object | None = None        # slipsurface.loads.LoadSet
-    crack: object | None = None        # slipsurface.loads.TensionCrack
+    loads: LoadSet | None = None     # slipsurface.loads.LoadSet
+    crack: TensionCrack | None = None  # slipsurface.loads.TensionCrack
 
 
 @dataclass
@@ -67,21 +75,22 @@ class SliceSet:
     u: np.ndarray         # pore pressure at base mid [kPa]
     mat_idx: np.ndarray   # index into `materials` for the base material
     materials: list[Material]
-    surface: object
+    surface: SlipSurface
     x_exit: float         # left end of the mass
     x_entry: float        # right end of the mass
     direction: int = -1   # -1: mass moves toward -x; +1: mirrored (moves to +x)
-    y_cg: np.ndarray | None = None   # column centroid elevation
+    # None defaults below are replaced by __post_init__ (zero arrays / centroid)
+    y_cg: np.ndarray = None  # type: ignore[assignment]  # column centroid elevation
     kh: float = 0.0
     kv: float = 0.0
     # external forces per slice, world coordinates (see slipsurface.loads)
-    Qx_a: np.ndarray | None = None
-    Qy_a: np.ndarray | None = None
-    M_a: np.ndarray | None = None
-    Qx_p: np.ndarray | None = None
-    Qy_p: np.ndarray | None = None
-    M_p: np.ndarray | None = None
-    support_forces: list = None
+    Qx_a: np.ndarray = None  # type: ignore[assignment]
+    Qy_a: np.ndarray = None  # type: ignore[assignment]
+    M_a: np.ndarray = None  # type: ignore[assignment]
+    Qx_p: np.ndarray = None  # type: ignore[assignment]
+    Qy_p: np.ndarray = None  # type: ignore[assignment]
+    M_p: np.ndarray = None  # type: ignore[assignment]
+    support_forces: list = None  # type: ignore[assignment]
     crack: dict | None = None          # tension crack at the uphill end (see loads.TensionCrack)
 
     def __post_init__(self) -> None:
@@ -131,7 +140,7 @@ class SlicingError(ValueError):
 
 def make_slices(
     geom: SlopeGeometry,
-    surf,
+    surf: SlipSurface,
     materials: dict[str, Material],
     n_slices: int | None = None,
     n_sub: int | None = None,
@@ -167,9 +176,9 @@ def make_slices(
         extra.append(geom.water_table[:, 0])
     if o.loads is not None:
         extra.append(np.asarray(o.loads.extra_boundaries(), float))
-    extra = np.concatenate(extra)
-    extra = extra[(extra > x_exit + 1e-6) & (extra < x_entry - 1e-6)]
-    xs = np.unique(np.concatenate([xs, extra]))
+    extra_x = np.concatenate(extra)
+    extra_x = extra_x[(extra_x > x_exit + 1e-6) & (extra_x < x_entry - 1e-6)]
+    xs = np.unique(np.concatenate([xs, extra_x]))
     keep = np.concatenate([[True], np.diff(xs) > 1e-4 * (x_entry - x_exit)])
     xs = xs[keep]                                            # drop slivers
     xs[-1] = x_entry
@@ -178,7 +187,7 @@ def make_slices(
     xm = 0.5 * (xl + xr)
     b = xr - xl
     y_base = surf.y(xm)
-    y_top = geom.ground_y(xm)
+    y_top = np.asarray(geom.ground_y(xm))
     if hasattr(surf, "sin_alpha"):                       # circle: exact tangent
         alpha = np.arcsin(np.clip(surf.sin_alpha(xm), -1.0, 1.0))
     else:                                                # general: base chord
@@ -202,7 +211,7 @@ def make_slices(
 
     def which_material(px, py):
         idx = np.full(px.shape, -1, dtype=int)
-        for poly, mi in zip(region_polys, region_mat):
+        for poly, mi in zip(region_polys, region_mat, strict=False):
             hit = (idx < 0) & shapely.contains_xy(poly, px, py)
             idx[hit] = mi
         return idx
@@ -220,7 +229,8 @@ def make_slices(
     col_idx = which_material(px.ravel(), py.ravel()).reshape(py.shape)
     col_idx = np.where(col_idx < 0, mat_idx[:, None], col_idx)  # numeric edge cases
 
-    wt = geom.water_y(xm) if o.pore == "water_table" else None
+    water_y = geom.water_y(xm) if o.pore == "water_table" else None
+    wt = np.asarray(water_y) if water_y is not None else None
     if wt is None:
         g = gam[col_idx]
     else:
@@ -229,6 +239,12 @@ def make_slices(
     W = b * (h / o.n_sub) * g.sum(axis=1)
     gs = g.sum(axis=1)
     y_cg = np.where(gs > 0, (g * py).sum(axis=1) / np.where(gs > 0, gs, 1.0), 0.5 * (y_top + y_base))
+
+    # Ponded water (Slide2): where the water table rises above the ground
+    # surface, the water column resting on the slice top adds weight. It is
+    # included in W, so the pseudo-static seismic forces apply to it too.
+    if wt is not None and np.any(np.asarray(wt) - y_top > 0.0):
+        W = W + o.gamma_w * np.maximum(np.asarray(wt) - y_top, 0.0) * b
 
     # ------------------------------------------------ pore pressure
     if o.pore == "water_table" and wt is not None:
@@ -265,6 +281,7 @@ def make_slices(
 
     crack = None
     if crack_cut is not None:
+        assert o.crack is not None                 # crack_cut only set when o.crack is
         xc, right = crack_cut[2], crack_cut[3]
         y_bot, y_gr = float(surf.y(xc)), float(geom.ground_y(xc))
         z = max(y_gr - y_bot, 0.0)

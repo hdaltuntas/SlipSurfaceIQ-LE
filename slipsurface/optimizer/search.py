@@ -33,7 +33,7 @@ surface whose actual exit/entry falls outside them is penalised.
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 from scipy.optimize import differential_evolution, minimize
@@ -43,7 +43,6 @@ from slipsurface.geometry import (
     PolylineSurface,
     SlopeGeometry,
     SplineSurface,
-    slip_extent,
 )
 from slipsurface.lem import METHODS, LEMResult, SliceOptions, SliceSet, analyze
 from slipsurface.materials import Material

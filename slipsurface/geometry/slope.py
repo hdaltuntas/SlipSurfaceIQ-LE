@@ -165,7 +165,7 @@ def layered_geometry(
 
     belows = [domain]
     boundaries = []
-    for i, (mat, top) in enumerate(layers[1:], start=2):
+    for i, (_mat, top) in enumerate(layers[1:], start=2):
         if top is None or len(top) < 2:
             raise ValueError(f"Katman {i}: üst sınır en az 2 nokta içermeli.")
         top = np.asarray(top, dtype=float)

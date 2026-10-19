@@ -13,12 +13,21 @@ The slipping mass is the x-interval where y(x) lies below the ground.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol
 
 import numpy as np
 from scipy.interpolate import BSpline
 from scipy.optimize import brentq
 
 from slipsurface.geometry.slope import SlopeGeometry
+
+
+class SlipSurface(Protocol):
+    """Anything that can act as a slip surface (see the module docstring)."""
+
+    def y(self, x) -> np.ndarray: ...
+    def x_range(self) -> tuple[float, float]: ...
+    def points(self, x0: float, x1: float, n: int = 120) -> np.ndarray: ...
 
 
 @dataclass(frozen=True)
@@ -139,7 +148,7 @@ def slip_extent(geom: SlopeGeometry, surf,
         return None
 
     # contiguous runs of `inside`
-    edges = np.flatnonzero(np.diff(inside.astype(int)))
+    edges = np.flatnonzero(np.diff(inside.astype(int))).tolist()
     starts = [0] if inside[0] else []
     starts += [i + 1 for i in edges if not inside[i]]
     ends = [i for i in edges if inside[i]]
@@ -147,7 +156,7 @@ def slip_extent(geom: SlopeGeometry, surf,
         ends.append(len(xs) - 1)
 
     best, best_area = None, 0.0
-    for i0, i1 in zip(starts, ends):
+    for i0, i1 in zip(starts, ends, strict=False):
         area = np.trapezoid(f[i0:i1 + 1], xs[i0:i1 + 1]) if i1 > i0 else 0.0
         if area > best_area:
             best, best_area = (i0, i1), area

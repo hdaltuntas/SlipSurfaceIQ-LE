@@ -17,9 +17,11 @@ sigma_n' every iteration.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 import numpy as np
 
+from slipsurface.geometry import CircularSurface
 from slipsurface.lem.slicing import SliceSet
 
 M_ALPHA_MIN = 0.2   # Slide2 / Whitman & Bailey (1967) threshold
@@ -43,17 +45,18 @@ class LEMResult:
 
 
 def check_admissibility(res: LEMResult, ma: np.ndarray, base_strength: np.ndarray,
-                        W: np.ndarray) -> LEMResult:
+                        W: np.ndarray, m_alpha_min: float = M_ALPHA_MIN) -> LEMResult:
     """Flag numerically/physically unreliable solutions.
 
-    * m_alpha < 0.2 on any slice (Whitman & Bailey 1967; Slide2 default check)
+    * m_alpha < m_alpha_min on any slice (default 0.2, Whitman & Bailey 1967;
+      Slide2 default check)
     * negative mobilisable base shear, c l + N' tan(phi) < 0, i.e. the base is
       in tension beyond what cohesion can carry — typical of spurious low-FoS
       roots on surfaces with steep negative base angles.
     """
     issues = []
-    if np.min(ma) < M_ALPHA_MIN:
-        issues.append(f"mα,min = {np.min(ma):.2f} < {M_ALPHA_MIN}")
+    if np.min(ma) < m_alpha_min:
+        issues.append(f"mα,min = {np.min(ma):.2f} < {m_alpha_min:g}")
     tol = -1e-3 * float(np.mean(W))
     if np.min(base_strength) < tol:
         issues.append("negatif taban kayma direnci (tabanda çekme)")
@@ -91,7 +94,8 @@ def _driving_moment_over_R(s: SliceSet, F: float = 1.0) -> float:
     weight term is sum Wv sin(a).
     """
     sign = -1.0 if s.direction == +1 else 1.0
-    xc, yc, R = sign * s.surface.xc, s.surface.yc, s.surface.r
+    circ = cast(CircularSurface, s.surface)        # only called for circles
+    xc, yc, R = sign * circ.xc, circ.yc, circ.r
     qx, qy, m0 = frame_ext(s, F)
     m_ext = np.sum(m0 - xc * qy + yc * qx)
     return float(np.sum(s.Wv * np.sin(s.alpha)) + np.sum(s.Fh * (yc - s.y_cg)) / R - m_ext / R)
@@ -103,7 +107,7 @@ def ordinary(s: SliceSet, tol: float = 1e-9, max_iter: int = 50) -> LEMResult:
     sin_a, cos_a = np.sin(s.alpha), np.cos(s.alpha)
     F = 1.0
     it = 0
-    for it in range(1, (max_iter if s.has_passive else 1) + 1):
+    for it in range(1, (max_iter if s.has_passive else 1) + 1):  # noqa: B007 (used after loop)
         qx, qy, _m = frame_ext(s, F)
         Hx = -s.Fh + qx                       # horizontal external force (frame, +x)
         V = s.Wv - qy                         # net downward external force
@@ -126,7 +130,8 @@ def ordinary(s: SliceSet, tol: float = 1e-9, max_iter: int = 50) -> LEMResult:
 
 
 def bishop_simplified(s: SliceSet, tol: float = 1e-6, max_iter: int = 100,
-                      f0: float | None = None) -> LEMResult:
+                      f0: float | None = None,
+                      m_alpha_min: float = M_ALPHA_MIN) -> LEMResult:
     if not s.is_circular:
         return LEMResult(np.nan, "Bishop", False, 0,
                          message="Simplified Bishop is defined for circular surfaces only")
@@ -161,7 +166,7 @@ def bishop_simplified(s: SliceSet, tol: float = 1e-6, max_iter: int = 100,
             m_a = cos_a + sin_a * tp / f_new
             n_eff = (eff_w - c * s.b * tan_a / f_new) / m_a
             res = LEMResult(float(f_new), "Bishop", True, it, float(m_a.min()))
-            return check_admissibility(res, m_a, c * s.l + n_eff * tp, s.W)
+            return check_admissibility(res, m_a, c * s.l + n_eff * tp, s.W, m_alpha_min)
         f = f_new
 
     return LEMResult(float(f), "Bishop", False, max_iter, message="did not converge")

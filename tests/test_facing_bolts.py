@@ -2,7 +2,6 @@
 
 import math
 
-import numpy as np
 import pytest
 
 from slipsurface.geometry import PolylineSurface, simple_slope

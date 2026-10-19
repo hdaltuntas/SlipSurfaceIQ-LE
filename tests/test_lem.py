@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from slipsurface.geometry import CircularSurface, simple_slope, slip_extent
-from slipsurface.lem import analyze_circle, bishop_simplified, make_slices, ordinary
+from slipsurface.lem import SliceOptions, analyze_circle, bishop_simplified, make_slices, ordinary
 from slipsurface.materials import HoekBrown, MohrCoulomb
 
 
@@ -47,13 +47,24 @@ def test_slice_weights_sum_to_mass_area():
 
 
 # --------------------------------------------------------------- Bishop
+def test_missing_water_table_matches_dry_slices():
+    g, mats = acads_1a()
+    mats["Zemin 1"].gamma_sat = 25
+    surf = CircularSurface(20, 28, 28)
+    default = make_slices(g, surf, mats)
+    dry = make_slices(g, surf, mats, opts=SliceOptions(pore="none"))
+    np.testing.assert_allclose(default.W, dry.W)
+    np.testing.assert_array_equal(default.u, np.zeros_like(default.u))
+    assert bishop_simplified(default).fos == pytest.approx(bishop_simplified(dry).fos)
+
+
 def _bishop_reference(g, surf, c, phi, gamma, n=2000):
     """Independent loop-based Bishop with analytic slice areas."""
     xl, xr = slip_extent(g, surf)
     xs = np.linspace(xl, xr, n + 1)
     tp = math.tan(math.radians(phi))
     W, a, b = [], [], []
-    for x0, x1 in zip(xs[:-1], xs[1:]):
+    for x0, x1 in zip(xs[:-1], xs[1:], strict=False):
         sub = np.linspace(x0, x1, 9)
         area = np.trapezoid(g.ground_y(sub) - surf.y(sub), sub)
         W.append(gamma * area)

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 
-import numpy as np
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
@@ -32,7 +31,7 @@ from PySide6.QtWidgets import (
 
 from slipsurface.materials import HoekBrown
 from slipsurface.project import PALETTE, MaterialSpec
-from slipsurface.ui.icons import color_icon, icon
+from slipsurface.ui.icons import color_icon
 
 TITLE_CSS = "color:#2a7ad0;font-size:16px;"
 
@@ -233,7 +232,7 @@ class MaterialsDialog(QDialog):
         self.formula.setText(FORMULA[m.model])
         self.table.blockSignals(True)
         self.table.setRowCount(len(rows))
-        for r, (attr, label, lo, hi, dec) in enumerate(rows):
+        for r, (attr, label, lo, hi, _dec) in enumerate(rows):
             it = QTableWidgetItem(label)
             it.setFlags(Qt.ItemIsEnabled)
             it.setBackground(QColor("white"))

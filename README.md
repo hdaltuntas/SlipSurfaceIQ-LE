@@ -39,7 +39,20 @@ python main.py --check                            # bağımlılık kontrolü
 İsteğe bağlı paket kurulumu: `pip install -e .` → `slipsurface` komutu ve `python -m slipsurface`.
 
 ### Testler
-`pytest` — 160 test (Qt otomatik olarak başsız modda çalışır, pencere açılmaz).
+Qt testleri otomatik olarak başsız modda çalışır; pencere açılmaz.
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m pytest -p no:cacheprovider --durations=15
+python -m ruff check .
+python -m mypy
+```
+
+Güncel test sayısı için `python -m pytest --collect-only` kullanın. Tam paket,
+dairesel olmayan yüzey araması ve PDF/arayüz testleri nedeniyle birkaç dakika
+veya daha uzun sürebilir. `--durations=15` en yavaş testleri listeler.
+GitHub Actions, Windows ve Linux üzerinde testleri; ayrıca Ruff ve hesap
+motorunun mypy kontrollerini çalıştırır.
 
 ## Arayüz
 

@@ -24,7 +24,6 @@ from PySide6.QtGui import (
     QFontMetrics,
     QLinearGradient,
     QPainter,
-    QPainterPath,
     QPen,
     QPolygonF,
 )
@@ -57,10 +56,10 @@ def fs_color(t: float) -> QColor:
     stops = [(0.0, (220, 30, 30)), (0.25, (240, 140, 20)), (0.5, (230, 220, 30)),
              (0.75, (60, 180, 75)), (1.0, (40, 100, 220))]
     t = min(max(t, 0.0), 1.0)
-    for (t0, c0), (t1, c1) in zip(stops, stops[1:]):
+    for (t0, c0), (t1, c1) in zip(stops, stops[1:], strict=False):
         if t <= t1:
             f = (t - t0) / (t1 - t0)
-            return QColor(*[int(a + f * (b - a)) for a, b in zip(c0, c1)])
+            return QColor(*[int(a + f * (b - a)) for a, b in zip(c0, c1, strict=False)])
     return QColor(*stops[-1][1])
 
 
@@ -244,7 +243,7 @@ class CadCanvas(QWidget):
                 for k, q in enumerate(e.pts):
                     verts.append((e.key, k, q))
                 for k, a, b in e.segments():
-                    mids.append(((a + b) / 2))
+                    mids.append((a + b) / 2)
                     segs.append((e.key, k, a, b))
             inter = []
             for i in range(len(segs)):
@@ -1009,7 +1008,6 @@ class CadCanvas(QWidget):
         res = self.results
         if res is None or not (res.results or res.errors):
             return
-        from slipsurface.lem import method_name
         gm = res.global_minimum()
         rows = [(k, method_name(k), f"{r.fos:.3f}") for k, r in res.results.items()]
         rows += [(k, method_name(k), "–") for k in res.errors]

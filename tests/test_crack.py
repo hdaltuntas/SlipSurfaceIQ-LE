@@ -30,7 +30,7 @@ def hoek_bray(z, water):
     xc = 20 + (10 - z) / math.tan(TH)
     # block: toe (20,0) - crest (40,10) - (xc,10) - crack bottom (xc, 10-z)
     pts = [(20, 0), (40, 10), (xc, 10), (xc, 10 - z)]
-    area = 0.5 * abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(pts, pts[1:] + pts[:1])))
+    area = 0.5 * abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(pts, pts[1:] + pts[:1], strict=False)))
     W = 20 * area
     A = math.hypot(xc - 20, 10 - z)
     hw = water * z

@@ -7,10 +7,10 @@ Each icon is painted on a 64x64 logical canvas and returned as a QIcon with
 from __future__ import annotations
 
 import math
-from functools import lru_cache
+from functools import cache
 
 from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QBrush, QColor, QFont, QIcon, QPainter, QPainterPath, QPen, QPixmap, QPolygonF
+from PySide6.QtGui import QColor, QFont, QIcon, QPainter, QPainterPath, QPen, QPixmap, QPolygonF
 
 INK = QColor("#2d3a4a")
 BLUE = QColor("#2f6fd6")
@@ -435,7 +435,7 @@ def _draw(name: str, p: QPainter) -> None:
         p.drawRect(QRectF(8, 8, 48, 48))
 
 
-@lru_cache(maxsize=None)
+@cache
 def icon(name: str) -> QIcon:
     ic = QIcon()
     for size in (16, 24, 32, 48):

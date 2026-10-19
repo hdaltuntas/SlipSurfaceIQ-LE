@@ -8,7 +8,7 @@ any kind of edit (geometry, materials, settings).
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtGui import QUndoCommand, QUndoStack
@@ -18,7 +18,7 @@ from slipsurface.project import Project
 
 
 class _Snapshot(QUndoCommand):
-    def __init__(self, doc: "Document", text: str, before: dict, after: dict) -> None:
+    def __init__(self, doc: Document, text: str, before: dict, after: dict) -> None:
         super().__init__(text)
         self.doc, self.before, self.after = doc, before, after
         self._first = True
@@ -39,6 +39,7 @@ class Document(QObject):
     def __init__(self, project: Project | None = None) -> None:
         super().__init__()
         self.undo_stack = QUndoStack(self)
+        self.undo_stack.setUndoLimit(100)   # snapshots are whole projects; keep memory bounded
         self.project = project or Project()
         self.path = None
         self.geometry: SlopeGeometry | None = None

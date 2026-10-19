@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QColor, QPainter, QPen, QPixmap, QPolygonF
@@ -317,17 +316,22 @@ class ProjectSettingsDialog(QDialog):
         a = self.p.advanced
         box = QGroupBox("Çözüm kontrolleri")
         v = QVBoxLayout(box)
-        self.check_adm = QCheckBox("mα < 0.2 ve negatif taban kayma direnci olan yüzeyleri reddet")
+        self.check_adm = QCheckBox("mα < eşik ve negatif taban kayma direnci olan yüzeyleri reddet")
         self.check_adm.setChecked(a.check_admissibility)
         v.addWidget(self.check_adm)
         f = QFormLayout()
+        self.m_alpha_min = _dspin(0.05, 1.0, 2, 0.05, a.m_alpha_min)
+        self.e_max_ratio = _dspin(1, 1000, 0, 5, a.e_max_ratio)
         self.min_depth = _dspin(0, 1000, 3, 0.5, a.min_depth, " m")
+        f.addRow("mα eşik değeri (varsayılan 0.2):", self.m_alpha_min)
+        f.addRow("Maksimum arayüz kuvveti oranı (E/W):", self.e_max_ratio)
         f.addRow("Minimum kayma derinliği:", self.min_depth)
         v.addLayout(f)
         lay.addWidget(box)
-        note = QLabel("mα kontrolü (Whitman & Bailey 1967) kapatılırsa, topukta dik negatif "
-                      "taban açılı yüzeylerde sayısal olarak güvenilmez, düşük FS değerleri "
-                      "bulunabilir.")
+        note = QLabel("mα kontrolü (Whitman & Bailey 1967) kapatılırsa veya eşiği düşürülürse, "
+                      "topukta dik negatif taban açılı yüzeylerde sayısal olarak güvenilmez, "
+                      "düşük FS değerleri bulunabilir. Arayüz kuvveti oranı, tekil (singular) "
+                      "çözümleri elemek için toplam ağırlığa göre bir üst sınır belirler.")
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
         lay.addWidget(note)
@@ -355,6 +359,8 @@ class ProjectSettingsDialog(QDialog):
         p.seismic.kv = self.kv.value()
         p.advanced.check_admissibility = self.check_adm.isChecked()
         p.advanced.min_depth = self.min_depth.value()
+        p.advanced.m_alpha_min = self.m_alpha_min.value()
+        p.advanced.e_max_ratio = self.e_max_ratio.value()
         return p
 
     def _accept(self) -> None:

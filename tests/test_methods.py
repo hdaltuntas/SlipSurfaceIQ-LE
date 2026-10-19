@@ -111,3 +111,32 @@ def test_min_depth_filter():
     g, mats = acads()
     res, s = analyze(g, CircularSurface(20, 28, 28), mats, opts=SliceOptions(min_depth=50))
     assert s is None and "minimum depth" in res.message
+
+
+def test_admissibility_threshold_is_configurable():
+    """check_admissibility flags m_alpha below the given threshold."""
+    from slipsurface.lem.bishop import LEMResult, check_admissibility
+
+    ma = np.array([0.15, 0.9, 1.1])
+    bs = np.full(3, 10.0)
+    W = np.full(3, 100.0)
+    strict = check_admissibility(LEMResult(1.0, "X", True, 1), ma, bs, W, m_alpha_min=0.2)
+    loose = check_admissibility(LEMResult(1.0, "X", True, 1), ma, bs, W, m_alpha_min=0.1)
+    assert not strict.admissible and "mα" in strict.issue
+    assert loose.admissible
+
+
+@pytest.mark.parametrize("method", list(METHODS))
+def test_advanced_thresholds_accepted_by_all_methods(method):
+    """solver_kw()'s m_alpha_min / e_max_ratio flow into every solver."""
+    from slipsurface.project import acads_1a_project
+
+    p = acads_1a_project()
+    p.advanced.m_alpha_min = 0.1
+    p.advanced.e_max_ratio = 80.0
+    kw = p.solver_kw()
+    assert kw["m_alpha_min"] == 0.1 and kw["e_max_ratio"] == 80.0
+    g, mats = acads()
+    surf = CircularSurface(20, 28, 28)
+    res, _ = analyze(g, surf, mats, method=method, **kw)
+    assert res.converged, res.message

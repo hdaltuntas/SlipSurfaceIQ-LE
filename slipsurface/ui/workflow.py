@@ -53,7 +53,7 @@ class WorkflowBar(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
         p.setFont(self._font)
-        for i, (s, r) in enumerate(zip(self.steps, self._rects)):
+        for i, (s, r) in enumerate(zip(self.steps, self._rects, strict=False)):
             path = QPainterPath()
             path.moveTo(r.left(), r.top())
             path.lineTo(r.right() - ARROW, r.top())

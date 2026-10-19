@@ -40,7 +40,7 @@ print(f"Centre ({surf.xc:.1f}, {surf.yc:.1f}), R = {surf.r:.1f}, slices = {s.n}"
 fig, ax = plt.subplots(figsize=(10, 5), layout="constrained")
 poly = np.asarray(geom.regions[0].polygon.exterior.coords)
 ax.fill(poly[:, 0], poly[:, 1], color="#d9c49a", ec="#5a4a2a")
-for x0, x1 in zip(s.xl, s.xr):
+for x0, _x1 in zip(s.xl, s.xr, strict=False):
     ax.plot([x0, x0], [surf.y(x0), geom.ground_y(x0)], color="#7a5c2e", lw=0.6)
 ax.plot(*s.base_points().T, color="#c0392b", lw=2)
 ax.plot(surf.xc, surf.yc, "+", color="#c0392b", ms=10)

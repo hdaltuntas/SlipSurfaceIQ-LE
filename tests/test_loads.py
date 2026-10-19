@@ -181,3 +181,47 @@ def test_normal_distributed_load_on_face():
     n = np.array([0.5, -1.0]) / math.hypot(0.5, 1.0)    # into the soil (face dy/dx = 0.5)
     assert s.Qx_a.sum() == pytest.approx(10 * L * n[0], rel=1e-6)
     assert s.Qy_a.sum() == pytest.approx(10 * L * n[1], rel=1e-6)
+
+
+@pytest.mark.parametrize("method", ["spencer", "gle", "janbu_simplified", "corps1",
+                                    "corps2", "lowe_karafiath"])
+def test_ponded_water_weight_and_pore_pressure(method):
+    """Water table above the crest (fully submerged slope): the ponded-water
+    column over each slice adds weight, and the base pore pressure uses the
+    full piezometric head. Closed form (total force equilibrium of the block,
+    interslice resultants telescope on a plane):
+        F = (c L + (V cos a - U) tan phi) / (V sin a)
+    with V = soil + ponded-water weight and U = sum u l."""
+    g, mats = acads()
+    g.water_table = np.array([[0.0, 12.0], [70.0, 12.0]])
+    res, s = analyze(g, plane(), mats, n_slices=40, method=method,
+                     opts=SliceOptions(pore="water_table"))
+    assert res.ok, res.message
+    assert s.W.sum() > 0
+    t = math.tan(TH)
+    xe = 20 + 10 / t
+    L = math.hypot(xe - 20, 10)
+    W_soil = 20 * 0.5 * (xe - 40) * 10
+    # ponded water: ground is flat 0 (x<20), face (x-20)/2 (20..40), crest 10
+    W_water = 9.81 * ((12 * 20 - 0.25 * 400) + 2 * (xe - 40))
+    V = W_soil + W_water
+    # pore force along the base: gw * integral (12 - y_base) dx / cos a
+    U = 9.81 * (12 * (xe - 20) - t * (xe - 20) ** 2 / 2) / math.cos(TH)
+    exact = (3 * L + (V * math.cos(TH) - U) * TP) / (V * math.sin(TH))
+    assert res.fos == pytest.approx(exact, rel=1e-6)
+
+
+def test_ponded_water_ordinary_loose():
+    """Ordinary clamps negative N' to zero on thin submerged toe slices, so it
+    only approximates the closed form (see test above)."""
+    g, mats = acads()
+    g.water_table = np.array([[0.0, 12.0], [70.0, 12.0]])
+    res, _ = analyze(g, plane(), mats, n_slices=40, method="ordinary",
+                     opts=SliceOptions(pore="water_table"))
+    t = math.tan(TH)
+    xe = 20 + 10 / t
+    L = math.hypot(xe - 20, 10)
+    V = 20 * 0.5 * (xe - 40) * 10 + 9.81 * ((12 * 20 - 0.25 * 400) + 2 * (xe - 40))
+    U = 9.81 * (12 * (xe - 20) - t * (xe - 20) ** 2 / 2) / math.cos(TH)
+    exact = (3 * L + (V * math.cos(TH) - U) * TP) / (V * math.sin(TH))
+    assert res.ok and res.fos == pytest.approx(exact, rel=0.02)

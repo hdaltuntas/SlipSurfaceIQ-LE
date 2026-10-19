@@ -2,3 +2,5 @@
 pytest>=8.0
 matplotlib>=3.8   # only for examples/acads_1a.py
 pypdf>=4.0
+ruff>=0.8
+mypy>=1.13

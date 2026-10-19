@@ -25,7 +25,7 @@ from xml.sax.saxutils import escape
 import numpy as np
 from reportlab.graphics.shapes import Drawing, Line, Rect, String
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
@@ -38,7 +38,6 @@ from reportlab.platypus import (
     CondPageBreak,
     Frame,
     Image,
-    KeepTogether,
     NextPageTemplate,
     PageBreak,
     PageTemplate,
@@ -372,10 +371,10 @@ class _Builder:
         align = align or ["l"] * len(header)
         hs = {"l": self.st["head"], "r": self.st["head_c"], "c": self.st["head_c"]}
         cs = {"l": self.st["cell"], "r": self.st["cell_r"], "c": self.st["cell_c"]}
-        data = [[_p(h, hs[a]) for h, a in zip(header, align)]]
+        data = [[_p(h, hs[a]) for h, a in zip(header, align, strict=False)]]
         for i, row in enumerate(rows):
             cells = []
-            for j, (v, a) in enumerate(zip(row, align)):
+            for j, (v, a) in enumerate(zip(row, align, strict=False)):
                 txt = v if isinstance(v, str) else str(v)
                 if bold_rows and i in bold_rows:
                     txt = f"<b>{txt}</b>"

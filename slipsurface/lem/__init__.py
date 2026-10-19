@@ -51,7 +51,9 @@ def analyze(geom, surf, materials, n_slices: int | None = None, method: str = "b
         return LEMResult(float("nan"), method, False, 0, message=str(exc)), None
     fn = SOLVERS[method]
     if method in ("bishop", "ordinary"):
-        kw = {k: v for k, v in solver_kw.items() if k in ("tol", "max_iter")}
+        kw = {k: v for k, v in solver_kw.items()
+              if k in ("tol", "max_iter", "m_alpha_min") and not (method == "ordinary"
+                                                                 and k == "m_alpha_min")}
     else:
         kw = {k: v for k, v in solver_kw.items() if k in ("tol", "max_outer")}
         if "max_iter" in solver_kw:
@@ -59,6 +61,8 @@ def analyze(geom, surf, materials, n_slices: int | None = None, method: str = "b
         if method == "gle":
             kw.update({k: v for k, v in solver_kw.items()
                        if k in ("interslice", "f_start", "f_end")})
+        kw.update({k: v for k, v in solver_kw.items()
+                   if k in ("m_alpha_min", "e_max_ratio")})
     return fn(s, **kw), s
 
 

@@ -110,7 +110,7 @@ def _check_x_increasing(kind: str, pts) -> list[list[float]]:
         if len(pts) >= 2 and pts[0][0] > pts[-1][0]:
             pts = pts[::-1]
         xs = [q[0] for q in pts]
-        if any(b <= a for a, b in zip(xs, xs[1:])):
+        if any(b <= a for a, b in zip(xs, xs[1:], strict=False)):
             raise ValueError(f"{LABELS[kind]} noktaları soldan sağa (x artan) sıralı olmalı.")
     return pts
 
