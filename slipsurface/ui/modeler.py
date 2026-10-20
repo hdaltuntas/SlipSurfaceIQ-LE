@@ -502,6 +502,12 @@ class ModelerWindow(QMainWindow):
         if (self.last_results is not None and
                 p.analysis_inputs() != self.last_results.project.analysis_inputs()):
             self._invalidate_results()
+        if self.last_results is not None and self.last_results.project.summary != p.summary:
+            self.last_results.project.summary = copy.deepcopy(p.summary)
+            self._prune_interpret_windows()
+            for window in self.interpret_windows:
+                if window.results is self.last_results:
+                    window.update_summary(p.summary)
         self.canvas.set_scene(p, g)
         self.viewer.refresh(p, self.doc.path)
         self.display_opts.set_values(p.display)
@@ -1034,6 +1040,8 @@ class ModelerWindow(QMainWindow):
             self.status.showMessage(tr("Model değişti; yeniden hesaplayın (F5)."), 8000)
             return
         self._invalidate_results()
+        # Summary edits may have been made while the worker was solving.
+        results.project.summary = copy.deepcopy(self.doc.project.summary)
         self.last_results = results
         self._update_actions()
         gm = results.global_minimum()

@@ -236,6 +236,9 @@ asks for a new computation; display-only changes (colours, labels, notes) do not
   of the total weight are treated as singular. Both checks can be tuned in *Project Settings
   → Advanced*.
 - **Failure direction:** right-to-left or left-to-right (*Project Settings → General*).
+- **Geometry:** the ground must be a continuous, single-valued profile y(x).
+  Vertical slope faces and overhangs are rejected with an explanatory message;
+  vertical sides at the outer model limits remain supported.
 
 ---
 
