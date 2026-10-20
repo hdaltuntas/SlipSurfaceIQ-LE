@@ -21,7 +21,11 @@ class Catalog:
         for key, value in entries.items():
             if "{}" in key:
                 parts = [re.escape(p) for p in key.split("{}")]
-                patterns.append((re.compile("(.*?)".join(parts), re.S), value))
+                # numbered labels ("Destek {}", "Kaplama {}") only take a number,
+                # so they never swallow longer captions that share the first word
+                numbered = key.endswith(" {}") and key.count("{}") == 1 and ":" not in key
+                group = r"(\d+)" if numbered else "(.*?)"
+                patterns.append((re.compile(group.join(parts), re.S), value))
         patterns.sort(key=lambda kv: -len(kv[0].pattern))      # most specific first
         self.patterns = patterns
         # templates spanning lines are tried on the whole text before the

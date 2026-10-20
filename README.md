@@ -1,289 +1,529 @@
-# SlipSurfaceIQ LE (Python) — 2026.0.0
+# SlipSurfaceIQ LE
 
-2D Limit Denge (LEM) şev stabilite programı: Slide2 düzeninde native masaüstü
-**Modeler** + ayrı **Yorumla** penceresi, doğrulanmış hesap motoru.
+**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.0.0**
 
-## 2026.0.0 — geri bildirim güncellemesi
+SlipSurfaceIQ LE is an open-source program for checking the stability of soil and rock
+slopes, cuts and embankments with the limit equilibrium method (LEM). You draw the slope
+cross-section, assign materials, add groundwater, loads and supports, and the program
+searches for the critical slip surface and its factor of safety (FS) with the classic
+methods of slices — Bishop, Janbu, Spencer, Morgenstern-Price/GLE and others.
 
-- **Ekran çözünürlüğü**: Modeler ve Yorumla pencereleri ilk açılışta ekranın kullanılabilir
-  alanını algılayıp o boyutta (ekranı kaplayan pencere) açılır; diyaloglar ekran
-  çözünürlüğüne göre ölçeklenir ve ekrandan taşmaz. **F11** tam ekranı açar/kapatır.
-- **Sonuç ekranı** (Slide2 düzeni): dairesel aramada denenen tüm dairelerin merkezlerinden
-  **kayma merkezi FS kontur haritası** (her hücrede o merkezdeki en düşük FS), sağ üstte
-  kademeli **FS lejantı** (0 … ≈6.4·FSmin+), kritik merkezde `FS = …` etiketi, merkeze
-  kesikli çizgiler ve kesikli kritik yüzey. Görüntü Seçenekleri'nden konturlar, dilimler,
-  kesikli çizgi ve tüm yüzeyler ayrı ayrı açılıp kapatılabilir.
-- **Notlar / şekiller**: sonuç ekranında (ve Modeler'da) yazı, çizgi, ok, dikdörtgen ve
-  elipsler şekline göre seçilir (çizgi/ok üzerine, dikdörtgen/elips içine tıklama),
-  model çizgilerinin önünde öncelikli seçilir; seçili notta tutamaçlar ve kesikli çerçeve
-  görünür; sağ tık menüsünde **Özellikler… / Notu sil** vardır.
-- **Hesaplama penceresi**: yöntem (i/n), aşama (dairesel ön arama, diferansiyel evrim,
-  Nelder-Mead, poligon köşe optimizasyonu, ara köşe ekleme), nesil, değerlendirilen /
-  geçerli / reddedilen yüzey sayısı, en düşük ve son FS, dilim sayısı, geçen ve tahmini
-  kalan süre ile zaman damgalı işlem günlüğü gösterilir.
-- **İngilizce arayüz**: durum çubuğu mesajları, çizim ipuçları, uyarılar, belge ağacı,
-  sağ tık menüleri, dilim verisi, Bilgi Görüntüleyici metin raporu ve **PDF raporu** dahil
-  seçilen dilde gösterilir. Kullanıcının girdiği proje, malzeme ve destek adları çevrilmez.
-- **Yeni malzeme modelleri** (Malzeme Özellikleri → Göçme kriteri):
+The workflow follows the layout geotechnical engineers know from commercial tools such as
+Slide2: a **Modeler** window for building the model and a separate **Interpret** window for
+the results, which shows a slip-centre FS contour map, the critical surface, slice data and
+a professional PDF report.
 
-  | Kod | Model | Dayanım |
-  |---|---|---|
-  | `SH` | SHANSEP | `su = max(su,min; S·σ′v·OCR^m)` — σ′v dilim tabanında W/b − u (toplam gerilme) |
-  | `HS` | Hardening Soil | Göçme yüzeyi Mohr-Coulomb (c′, φ′); E50, Eoed, Eur, m, pref, Rf, ψ bilgi amaçlı saklanır |
-  | `SS` | SANISAND | `sin φ = 3Mb/(6+Mb)`, `Mb = M·exp(−nb·ψ)`, `ψ = e − (ec0 − λc(p′/pat)^ξ)`, p′ ≈ σ′n |
-  | `PC` | Power Curve (Slide2) | `τ = a(σ′n + d)^b + c` |
-  | `BB` | Barton-Bandis | `τ = σ′n tan(φr + JRCn log10(JCSn/σ′n))`, ölçek düzeltmesi (L0, Ln), φ ≤ 70° |
-  | `CN` | CNI Rock Mass | `τ = a·σc·((σn − T0)/σc)^n` (Cylwik vd. 2023, Slide2 değişkenleri), anlık φ ≤ 70° |
-  | `HBD` | Hoek-Brown (mb, s, a) | mb, s, a doğrudan girilir (GSI'dan türetilmez) |
+The interface and reports are available in **English and Turkish** and the language can be
+switched at any time without losing work. The program runs on Windows, Linux and macOS.
 
-  Doğrusal olmayan modellerde çözücü σ′n iterasyonuyla anlık c, φ kullanır.
-- **Yeni destek modelleri**: **Mikro kazık** (kazık kesme dayanımı / aralık; kayma
-  yüzeyine teğet veya kazığa dik) ve **Geosentetik** (şerit kaplama oranı, ankraj: yok /
-  şev yüzünde / gömülü uçta / her iki uçta; sıyrılma `2·C·∫(adezyon + σv·tan δ)ds`,
-  σv = γ·derinlik). Enjeksiyonlu ankraj (grouted tieback) ve geotekstil önceden vardı.
+> **Engineering disclaimer.** SlipSurfaceIQ LE is provided without any warranty. Results
+> depend entirely on the input geometry, strength parameters, groundwater and loads.
+> Always review and verify them with engineering judgement and, where it matters,
+> with independent calculations or software.
 
-## 2026.0.0 — ilk sürüm
+---
 
-- Sürüm düzeni: `yıl.ana.alt` (2026.0.0).
-- **Görünüm → Dil / Language** ile Türkçe/İngilizce arayüz seçimi anında uygulanır.
-  Açık proje, geri alma geçmişi ve sonuçlar korunur. Tema tercihi de aynı menüdedir;
-  her iki tercih sonraki açılışlarda hatırlanır.
-- Genel araçlarda QtAwesome üzerinden açık kaynak Material Design Icons,
-  uygulama yazılarında Source Sans 3 kullanılır. Teknolojiler ve lisans bağlantıları
-  **Yardım → Hakkında** bölümündedir. Özel geoteknik simgeler uygulamanın vektör çizimleridir.
-- **Dosya → Örnekler** altında dokuz örnek bulunur: mevcut altı örneğe drenajsız kil,
-  doğrusal olmayan kuvvet yasası ve psödo-statik sismik analiz eklenmiştir.
-- Malzemeler: Mohr-Coulomb, Hoek-Brown, **Undrained/Tresca** (`UD`) ve
-  **Power-law envelope** (`PL`). UD toplam gerilme yaklaşımında `τ = su` kullanır.
-  PL için `τ = a·pa·(1 + max(σ′n, 0)/pa)^b`; `a ≥ 0`, `0 < b ≤ 1`, `pa > 0 kPa`.
-  Yeni modeller, proje kaydı, hesap motoru, malzeme etiketleri ve raporlara dahildir.
+## Contents
+
+- [Highlights](#highlights)
+- [Installation and start-up](#installation-and-start-up)
+- [A typical workflow](#a-typical-workflow)
+- [The Modeler window](#the-modeler-window)
+- [The Interpret window](#the-interpret-window)
+- [Calculation engine](#calculation-engine)
+- [Material models](#material-models)
+- [Groundwater, seismic loads and tension cracks](#groundwater-seismic-loads-and-tension-cracks)
+- [External loads](#external-loads)
+- [Supports and facings](#supports-and-facings)
+- [Critical surface search](#critical-surface-search)
+- [PDF report](#pdf-report)
+- [Project files, DXF and Python scripting](#project-files-dxf-and-python-scripting)
+- [Bundled examples](#bundled-examples)
+- [Verification](#verification)
+- [Keyboard and mouse reference](#keyboard-and-mouse-reference)
+- [Development](#development)
+- [Project layout](#project-layout)
+- [Roadmap](#roadmap)
+- [License](#license)
+
+---
+
+## Highlights
+
+- **Nine limit equilibrium methods** — Bishop simplified, Ordinary/Fellenius, Janbu
+  simplified and corrected, Corps of Engineers #1 and #2, Lowe-Karafiath, Spencer and
+  GLE/Morgenstern-Price (four interslice functions).
+- **Circular, non-circular and user-defined slip surfaces** with an automatic global search
+  (differential evolution + Nelder-Mead), slope limits and a minimum depth.
+- **Eleven strength models** — Mohr-Coulomb, generalized Hoek-Brown, Hoek-Brown (mb, s, a),
+  Undrained (Tresca), SHANSEP, Hardening Soil, SANISAND, power-law envelope, Power Curve,
+  Barton-Bandis, CNI rock mass.
+- **Groundwater** by water table (with per-material Hu) or Ru coefficient, ponded water,
+  **pseudo-static seismic** loading and **tension cracks** with crack water.
+- **Supports** — end-anchored anchors, grouted tiebacks, soil nails, geotextiles,
+  geosynthetics and micro-piles, single or as automatically placed **bolt patterns**;
+  **shotcrete + wire-mesh facing**.
+- **CAD-style drawing** with rulers, adaptive grid, SNAP / GRID / ORTHO / OSNAP, typed
+  coordinates (`x,y`, `@dx,dy`, `@length<angle`) and unlimited undo/redo.
+- **Results**: slip-centre FS contour map with a banded legend, critical surface, lowest
+  25 surfaces, FS legend for all methods, slice query, text report and notes/shapes on the
+  drawing.
+- **Detailed computing dialog** showing method, search stage, generation, surfaces
+  evaluated / valid / rejected, best FS, elapsed and remaining time and a log.
+- **Professional PDF report** with cover, contents, summary, tables, figures and appendices.
+- **DXF import/export** of the geometry and a built-in **Python scripting** console.
+- **English / Turkish** interface and reports, light / dark theme, windows sized to the
+  detected screen.
+
+---
+
+## Installation and start-up
+
+**Requirements:** Python 3.10 or newer (3.11 – 3.14 recommended). The required packages are
+PySide6 (Qt), NumPy, SciPy, Shapely, ReportLab, ezdxf and QtAwesome.
+
+### Quickest way
+
+| System | Command |
+|---|---|
+| Windows | double-click **`run_windows.bat`** |
+| Linux / macOS | `./run_linux_mac.sh` |
+
+The launchers create a virtual environment in `.venv` on the first run, install the
+requirements, reinstall them automatically whenever `requirements.txt` changes, print the
+running version and start the program.
+
+On Linux the Qt runtime libraries must be present (they normally are on a desktop
+system). On minimal installations install them with your package manager, e.g.
+
+```bash
+sudo apt install libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3     # Debian / Ubuntu
+sudo dnf install libglvnd-egl libglvnd-opengl libxkbcommon fontconfig dbus-libs  # Fedora
+sudo pacman -S libglvnd libxkbcommon fontconfig dbus                            # Arch Linux
+sudo zypper install libglvnd libxkbcommon0 fontconfig libdbus-1-3              # openSUSE
+```
+
+### Manual set-up
+
+```bash
+python -m venv .venv
+# Windows: .venv\Scripts\activate      Linux/macOS: source .venv/bin/activate
+pip install -r requirements.txt          # development and tests: requirements-dev.txt
+python main.py
+```
+
+`main.py` finds the project folder from wherever it is started, so no installation is
+needed. It can also be opened in any IDE (VS Code, PyCharm, Spyder …) and run directly; in
+Spyder choose *Run → Configuration → Execute in an external system terminal*.
+
+Optionally install the package with `pip install -e .`, which adds the `slipsurface`
+command and `python -m slipsurface`.
+
+### Command line
+
+```bash
+python main.py                                    # empty project, window sized to the screen
+python main.py examples/ankrajli_yarma.slp.json   # open a project file
+python main.py --example "ACADS EX1(a)"           # open a bundled example
+python main.py --list-examples                    # list the bundled examples
+python main.py --check                            # check Python and the required packages
+```
+
+---
+
+## A typical workflow
+
+The workflow bar at the top of the Modeler follows the steps of a slope model; each step
+shows its own toolbar.
+
+1. **Geometry** — draw the external boundary (closed polygon) by clicking or typing
+   coordinates, then material boundaries, the water table and, if needed, a tension crack
+   line. Regions are created automatically from the boundaries.
+2. **Properties** — define materials (*Properties → Define Material Properties*) and click
+   inside the regions to assign them. Define shotcrete facing types and assign them to the
+   slope face.
+3. **Loading** — add distributed and line loads; set seismic coefficients in *Project
+   Settings → Seismic*.
+4. **Support** — define support types and draw single supports, click on the slope face to
+   place bolts at a fixed inclination, or create bolt patterns.
+5. **Surfaces** — choose circular, non-circular or a drawn user surface, the search effort
+   and optional slope limits (entry/exit ranges).
+6. **Compute (F5)** — the computing dialog shows the progress; when finished, the results
+   open in the **Interpret** window.
+7. **Interpret** — review the critical surfaces of all methods, query slices, add notes and
+   create the **PDF report** (Ctrl+P).
+
+Every edit can be undone (Ctrl+Z / Ctrl+Y). Changing the model invalidates the results and
+asks for a new computation; display-only changes (colours, labels, notes) do not.
+
+---
+
+## The Modeler window
+
+- **Menus:** File, Edit, View, Analysis, Boundaries, Loading, Support, Surfaces, Properties,
+  Tools, Help.
+- **Workflow bar:** Geometry › Support › Loading › Properties › Surfaces.
+- **Left panel:** *Document Viewer* (materials, boundaries, supports, facings, loads, notes,
+  methods — click an item to select it in the drawing) and *Display Options* (colours, line
+  width, grid, ruler, material fill, legend, slope limits, material labels).
+- **Dialogs:** Project Settings (General, Methods, Groundwater, Seismic, Advanced), Project
+  Summary, Define Material Properties, Surface Options, Define Support Properties, Define
+  Facing Types, coordinate table, grid settings.
+- **Material labels** on the regions: none, name, or name + strength parameters and unit
+  weights.
+- **Notes:** text, line, arrow, rectangle and ellipse annotations, also on the results.
+- **View → Language** switches between English and Turkish instantly (open project, undo
+  history and results are kept); the theme (light / dark) is in the same menu. Both are
+  remembered.
+- On first start the Modeler and Interpret windows open at the size of the detected screen;
+  dialogs scale with the screen resolution. **F11** toggles full screen.
+
+### CAD drawing area
+
+- Rulers, adaptive grid, crosshair cursor, material and FS legends.
+- Wheel = zoom at the cursor, middle button = pan, middle double-click / F2 = zoom all,
+  zoom window and pan tools.
+- **SNAP** (F9, to the grid), **GRID** (F7), **ORTHO** (F8), **OSNAP** (F3: endpoint,
+  midpoint, intersection, nearest).
+- Coordinate box in the status bar: `x,y` · `@dx,dy` · `@length<angle` · `c` close ·
+  `u` undo point · empty Enter finish.
+- Editing: drag vertices, add/delete vertices, double-click for the coordinate table or the
+  properties of loads, supports, facings and notes, Delete, right-click context menu.
+
+---
+
+## The Interpret window
+
+- **Method selector** (e.g. "Spencer FS: 0.984") and **Global Minimum** button.
+- **Slip-centre FS contour map** (circular searches): every admissible circle evaluated by
+  the search contributes its centre; each grid cell shows the lowest FS of the circles
+  centred there, smoothed into continuous bands with contour lines and a banded **FS
+  legend** (0 … ≈6.4·FSmin). The critical centre carries an `FS = …` label, with dashed
+  lines to the exit and entry points and the critical surface as a dashed line.
+- Optional: slices and sliding-mass fill, the lowest 25 surfaces coloured by FS, spline
+  control points — all switchable in *Display Options*.
+- **FS legend** (bottom right) with the factor of safety of every method; the current
+  method is highlighted and the global minimum shown in green.
+- **Slice Data** query (click a slice), **Information Viewer** (complete text report — save
+  or copy), image export.
+- **Notes and shapes** on the results with their own undo/redo; they are picked by shape
+  (on a line or arrow, inside a rectangle or ellipse), show grips and a selection frame,
+  can be moved by dragging, edited by double-click and deleted from the context menu. They
+  are saved in the project file and appear in the report.
+
+---
+
+## Calculation engine
+
+| Method | Equilibrium | Surfaces |
+|---|---|---|
+| Bishop simplified | moment | circular |
+| Ordinary / Fellenius | moment (circle) / force | circular and non-circular |
+| Janbu simplified / corrected (f0) | force | circular and non-circular |
+| Corps of Engineers #1, #2 | force | circular and non-circular |
+| Lowe-Karafiath | force | circular and non-circular |
+| Spencer | force + moment | circular and non-circular |
+| GLE / Morgenstern-Price (half-sine, constant, clipped sine, trapezoidal) | force + moment | circular and non-circular |
+
+- **Slicing:** a chosen number of equal-width slices plus extra boundaries at every ground,
+  water table, load and polyline-surface vertex, so the top of each slice is straight.
+  Slice weights are integrated through all material regions (γ above, γsat below the water
+  table).
+- **Non-linear strength:** for curved envelopes the solvers iterate on the effective normal
+  stress on each slice base and use the instantaneous (tangent) c and φ.
+- **Admissibility:** solutions with mα < 0.2 (Whitman & Bailey) or a negative mobilised base
+  shear (tension at the base) are rejected; interslice forces above a configurable multiple
+  of the total weight are treated as singular. Both checks can be tuned in *Project Settings
+  → Advanced*.
+- **Failure direction:** right-to-left or left-to-right (*Project Settings → General*).
+
+---
+
+## Material models
+
+Choose the model in *Define Material Properties → Strength*. Every material has a unit
+weight, an optional saturated unit weight, a colour and water parameters (whether the water
+table acts on it and the piezometric factor Hu).
+
+| Model | Strength | Notes |
+|---|---|---|
+| **Mohr-Coulomb** | τ = c′ + σ′n tan φ′ | |
+| **Undrained (Tresca)** | τ = su | total stress, pore pressure not used |
+| **SHANSEP** | su = max(su,min ; S · σ′v · OCR^m) | Ladd & Foott; σ′v is the effective vertical stress at the slice base (W/b − u), total-stress analysis |
+| **Hardening Soil** | τ = c′ + σ′n tan φ′ | Mohr-Coulomb failure surface of the HS model; E50,ref, Eoed,ref, Eur,ref, m, pref, Rf and ψ are stored for reference — LEM uses only the failure envelope |
+| **SANISAND** | τ = σ′n tan φ(ψ), sin φ = 3Mb / (6 + Mb), Mb = M exp(−nb ψ) | state parameter ψ = e − ec, critical state line ec = ec0 − λc (p′/pat)^ξ (Dafalias & Manzari 2004); in LEM p′ ≈ σ′n |
+| **Power-law envelope** | τ = a · pa · (1 + σ′n/pa)^b | concave envelope for granular materials |
+| **Power Curve** | τ = a (σ′n + d)^b + c | as in Slide2 |
+| **Barton-Bandis** | τ = σ′n tan(φr + JRCn log10(JCSn / σ′n)) | joints; scale correction JRCn = JRC0 (Ln/L0)^(−0.02 JRC0), JCSn = JCS0 (Ln/L0)^(−0.03 JRC0); total friction angle ≤ 70° |
+| **CNI rock mass** | τ = a · σc · ((σn − T0) / σc)^n | Cylwik, Killian & Cicchini (2023), in the variables of Slide2; instantaneous φ ≤ 70° |
+| **Generalized Hoek-Brown** | σ1 = σ3 + σci (mb σ3/σci + s)^a | mb, s, a from GSI, mi and D (Hoek et al. 2002) |
+| **Hoek-Brown (mb, s, a)** | same envelope | mb, s and a entered directly |
+
+The Hoek-Brown envelopes are converted to τ–σn curves (Balmer) and used with instantaneous
+c and φ.
+
+---
+
+## Groundwater, seismic loads and tension cracks
+
+- **Water table:** u = Hu · γw · (water table − base elevation); Hu and whether the water
+  acts are set per material. Ponded water above the ground is added to the slice weight.
+- **Ru coefficient:** u = Ru · σv (total vertical stress at the base).
+- **Pseudo-static seismic loading:** horizontal force kh·W in the failure direction at the
+  slice centroid; kv positive upward gives a vertical load (1 − kv)·W.
+- **Tension crack:** a crack line is drawn (or created from a depth, with the Rankine
+  z_c = 2c / (γ√Ka) as a suggestion). A slip surface crossing the line on the crest side is
+  cut there and a vertical crack face rises to the ground. The crack can be dry, full or
+  partially filled; the water thrust V = ½ γw hw² acts in the failure direction at hw/3.
+
+---
+
+## External loads
+
+- **Distributed loads** on the ground surface between two points, uniform or linearly
+  varying, acting vertically or normal to the surface.
+- **Line loads** at a surface point with any direction angle.
+
+All loads are included as forces and moments in every method.
+
+---
+
+## Supports and facings
+
+| Support type | Force T (per support, then divided by the out-of-plane spacing) |
+|---|---|
+| End anchored | tensile capacity |
+| Grouted tieback | min(tensile, bond strength × min(bond length, L_out)) |
+| Soil nail | min(tensile, bond × L_out, plate + bond × L_in) |
+| Geotextile | min(tensile strength, pullout × min(L_in, L_out)) |
+| Geosynthetic | min(C · tensile, P_in, P_out), P = 2 · C · ∫(adhesion + σv tan δ) ds, σv = γ · depth; anchorage none / slope face / embedded end / both ends |
+| Micro-pile | pile shear strength |
+
+L_in and L_out are the support lengths inside and outside the sliding mass, C the strip
+coverage. Each support type has:
+
+- **Application:** *active* (the force reduces the driving force) or *passive* (the force is
+  mobilised like shear strength, T/F).
+- **Direction:** parallel to the support, tangent to the slip surface, or perpendicular to
+  the support (micro-piles).
+
+**Single bolts** are placed by clicking on the slope face with a given inclination (default
+15° below horizontal) and length. **Bolt patterns** fill a stretch of the slope face with
+equally spaced bolts and are edited as one object; each bolt acts as a separate support.
+
+**Shotcrete + wire-mesh facing:** thickness, unit weight, shear strength τ, mesh (Q106 …
+Q589 or a custom As) and fy. Its weight γ·t is applied as a surface load; where the slip
+surface exits or enters through the faced surface, T = τ·t + As·fy acts tangent to the slip
+surface against sliding (passive by default).
+
+---
+
+## Critical surface search
+
+- **Circular:** each candidate is defined by its two ground intersections and the central
+  angle, so every candidate is a valid circle.
+- **Non-circular, polyline** (default, as in Slide2): straight segments through interior
+  vertices. After the global search all vertices of the best surface are optimised freely,
+  then a vertex is inserted in the middle of every segment and the surface is optimised
+  again.
+- **Non-circular, B-spline:** smooth surface; optionally convex only.
+- **User-defined:** a surface drawn by hand is analysed directly.
+- **Optimiser:** differential evolution (global) + Nelder-Mead (local); non-circular
+  searches are seeded with the critical circle of a quick circular pre-search. Search
+  effort: fast / normal / fine.
+- **Slope limits:** left and right ranges for the exit and entry points, drawn on the
+  ground; optional minimum sliding-mass depth.
+- The **computing dialog** reports the method (i/n), the current stage, generation,
+  surfaces evaluated / valid / rejected, lowest and last FS, slices, elapsed and estimated
+  remaining time, with a time-stamped log. The computation runs in the background and can be
+  cancelled at any time.
+
+---
+
+## PDF report
+
+*File → PDF Report* (Ctrl+P) in either window creates a report in the current interface
+language:
+
+- cover with project data and a **critical FS card** assessed against a target FS
+  (Adequate / Marginal / Inadequate);
+- contents, summary, model figure and geometry description;
+- material tables, analysis and search settings, loads, supports and facings;
+- results table and FS comparison chart, critical surface figures for the global minimum
+  and for each method;
+- mobilised support forces, tension crack results;
+- appendices with slice data and coordinates;
+- page headers and footers, "Page n / N", PDF bookmarks.
+
+The sections can be switched on or off; author, checker and company are remembered.
+
+---
+
+## Project files, DXF and Python scripting
+
+### Project files
+
+Projects are saved as `.slp.json` (format version 3). Files from earlier versions (1 and 2)
+are converted automatically when opened. A project stores the geometry, materials,
+groundwater, loads, supports, facings, search settings, display options and the notes of
+both windows.
 
 ### DXF
 
-**Dosya → DXF İçe Aktar / Dışa Aktar** üzerinden 2B geometri aktarılır.
-İçe aktarma mevcut modeli değiştirir; **Ctrl+Z** ile tamamı geri alınabilir.
+*File → Import DXF / Export DXF* exchanges the 2D geometry. Importing replaces the current
+model and can be undone with Ctrl+Z.
 
-| Katman | İçerik |
+| Layer | Content |
 |---|---|
-| `SS_EXTERNAL` | Tek kapalı dış sınır; alternatif olarak `0` katmanında tek kapalı polyline |
-| `SS_MATERIAL` | Malzeme sınırları |
-| `SS_WATER` | Tek su tablası polyline |
-| `SS_CRACK` | Tek gerilme çatlağı polyline |
-| `SS_SURFACE` | Tek kullanıcı kayma yüzeyi |
-| `SS_SUPPORT` | Tekil desteklerin çizgileri (yalnızca dışa aktarma) |
+| `SS_EXTERNAL` | one closed external boundary (alternatively a single closed polyline on layer `0`) |
+| `SS_MATERIAL` | material boundaries |
+| `SS_WATER` | one water table polyline |
+| `SS_CRACK` | one tension crack polyline |
+| `SS_SURFACE` | one user slip surface |
+| `SS_SUPPORT` | support lines (export only) |
 
-LINE, LWPOLYLINE, POLYLINE, ARC ve SPLINE okunur; eğriler 1 cm toleransla
-doğru parçalarına dönüştürülür. DXF birimleri metreye çevrilir; birimsiz çizimler
-uyarıyla metre kabul edilir. Z=0 dışındaki geometri reddedilir. Atlanan nesneler
-listelenir. DXF yalnızca geometri alışverişidir; malzeme dayanımları, yükler,
-destek kapasiteleri ve analiz sonuçları için `.slp.json` kullanın.
+LINE, LWPOLYLINE, POLYLINE, ARC and SPLINE are read; curves are converted to straight
+segments with a 1 cm tolerance. Drawing units are converted to metres (unitless drawings are
+taken as metres with a warning); geometry outside z = 0 is rejected and skipped entities are
+listed. DXF carries geometry only — use `.slp.json` for materials, loads, supports and
+results.
 
 ### Python scripting
 
-**Araçlar → Python scripting**: `.py` dosyası açın veya editörde kod yazın,
-**Run / Apply** ile uygulayın. Kod `project` nesnesinin bir kopyasında çalışır;
-doğrulama başarılıysa değişiklikler tek bir geri alınabilir işlem olur.
-Hata halinde açık proje değişmez. Scriptler yerel Python yetkileriyle çalışır;
-yalnızca güvendiğiniz kodları çalıştırın.
+*Tools → Python scripting* opens an editor where a script can modify the `project` object
+(`external`, `material_boundaries`, `assignments`, `water_table`, `tension_crack`,
+`materials`, `support_types`, `supports`, `support_patterns`, `facing_types`, `facings`,
+`loads`, `seismic`, `methods`, `surfaces`, `annotations`, …). `MaterialSpec`,
+`SupportType`, `FacingType`, `Project` and `empty_project` are available. The script runs on
+a copy of the project; if validation succeeds, all changes become a single undoable step,
+otherwise the open project is left unchanged. Scripts run with your local Python
+permissions — run trusted code only.
 
-`project` üzerinde `external`, `material_boundaries`, `assignments`, `water_table`,
-`tension_crack`, `materials`, `support_types`, `supports`, `support_patterns`,
-`facing_types`, `facings`, `loads`, `seismic`, `methods`, `surfaces`, `annotations`
-ve diğer proje alanları kullanılabilir. `MaterialSpec`, `SupportType`, `FacingType`,
-`Project`, `empty_project` editörde hazırdır.
+A complete example that builds a model with geometry, loads, supports, facings and materials
+is [`examples/scripted_slope.py`](examples/scripted_slope.py).
 
-Tüm geometri, yük, destek, kaplama ve malzeme tanımlarını gösteren çalışır örnek:
-[`examples/scripted_slope.py`](examples/scripted_slope.py).
+---
 
-İngilizce seçeneği arayüzü, uyarıları ve PDF/metin raporlarını kapsar. Kullanıcının
-proje ve malzeme adları çevrilmez.
+## Bundled examples
 
-## Çalıştırma
+Available under *File → Examples*; `python main.py --list-examples` prints the names to use
+with `--example`:
 
-Gereksinim: Python 3.10+ (önerilen 3.11–3.13).
+| Example | Shows |
+|---|---|
+| Simple slope (10 m, 2H:1V) | homogeneous slope |
+| ACADS EX1(a) | ACADS verification problem (homogeneous slope) |
+| Layered slope + water table | several materials and a water table |
+| Anchored cut + surcharge | grouted tiebacks and a distributed load |
+| Slope with tension crack | water-filled tension crack |
+| Soil nail + shotcrete | soil-nail pattern and shotcrete facing |
+| Undrained clay | total-stress (su) analysis |
+| Power-law envelope | non-linear strength |
+| Seismic kh = 0.15 | pseudo-static seismic loading |
 
-### En hızlı yol
-- **Windows:** `run_windows.bat` dosyasına çift tıklayın (ilk seferde `.venv` kurar).
-- **Linux/macOS:** `./run_linux_mac.sh`
+The project files are also in the [`examples`](examples) folder.
 
-### IDE ile (`main.py`)
-1. Klasörü IDE'de açın.
-2. Sanal ortam oluşturup bağımlılıkları kurun:
-   ```bash
-   python -m venv .venv
-   # Windows: .venv\Scripts\activate    Linux/macOS: source .venv/bin/activate
-   pip install -r requirements.txt          # geliştirme/test için: requirements-dev.txt
-   ```
-3. **`main.py`**'yi açıp Run/Debug'a basın.
+---
 
-Spyder'da Run → Configuration → *Execute in an external system terminal* önerilir.
+## Verification
 
-### Komut satırı
-```bash
-python main.py                                    # ekran boyutunda, boş proje
-python main.py examples/ankrajli_yarma.slp.json   # proje dosyası
-python main.py --example "Katmanlı şev + YASS"    # paketteki örnek
-python main.py --list-examples
-python main.py --check                            # bağımlılık kontrolü
-```
-`main.py` hangi klasörden çalıştırılırsa çalıştırılsın proje klasörünü bulur; kurulum gerekmez.
-İsteğe bağlı paket kurulumu: `pip install -e .` → `slipsurface` komutu ve `python -m slipsurface`.
+The test suite checks the engine against reference solutions, among them:
 
-### Testler
-Qt testleri otomatik olarak başsız modda çalışır; pencere açılmaz.
+- **ACADS EX1(a):** Bishop 0.985, Spencer 0.984, GLE 0.984 (Slide2: 0.987 / 0.986 / 0.986).
+- **Planar block:** every force-equilibrium method reproduces the closed-form rigid-block
+  solution to 10⁻⁶, with seismic loads, external loads and active and passive anchors
+  (a quadratic in F).
+- **Hoek & Bray planar sliding with a vertical tension crack** (dry, half full, full): seven
+  methods to 10⁻⁶.
+- Bishop–GLE moment consistency with loads, passive anchors and crack water; support
+  capacity formulas; mirror symmetry; an independent Bishop reference; the infinite slope
+  limit; weight = area × γ.
+- Tangent consistency of every non-linear strength model, the Barton-Bandis and CNI
+  formulas, SHANSEP with the effective vertical stress, and the effect of micro-piles and
+  geosynthetics on the FS.
+
+---
+
+## Keyboard and mouse reference
+
+| Key / action | Function |
+|---|---|
+| F5 / F6 | compute / open Interpret |
+| F2, middle double-click | zoom all |
+| Wheel / middle drag | zoom at cursor / pan |
+| F3 / F7 / F8 / F9 | OSNAP / GRID / ORTHO / SNAP |
+| F10 | Information Viewer (Interpret) |
+| F11 | full screen on / off |
+| Ctrl+Z / Ctrl+Y | undo / redo |
+| Ctrl+P | PDF report |
+| Enter, `c`, Backspace, Esc | finish, close, undo last point, cancel (drawing) |
+| Double-click | coordinate table or properties of the picked object |
+| Delete | delete the selection |
+
+---
+
+## Development
 
 ```bash
 python -m pip install -r requirements-dev.txt
-python -m pytest -p no:cacheprovider --durations=15
+python -m pytest -p no:cacheprovider --durations=15    # Qt tests run headless
 python -m ruff check .
-python -m mypy
+python -m mypy                                         # computation core
 ```
 
-Güncel test sayısı için `python -m pytest --collect-only` kullanın. Tam paket,
-dairesel olmayan yüzey araması ve PDF/arayüz testleri nedeniyle birkaç dakika
-veya daha uzun sürebilir. `--durations=15` en yavaş testleri listeler.
-GitHub Actions, Windows ve Linux üzerinde testleri; ayrıca Ruff ve hesap
-motorunun mypy kontrollerini çalıştırır.
+The full suite takes a few minutes because of the non-circular searches and the PDF and GUI
+tests. GitHub Actions runs the lint and type checks and the tests on Windows and Ubuntu
+(Python 3.10, 3.13, 3.14) and in Arch Linux, Fedora and openSUSE Tumbleweed containers.
 
-## Arayüz
+---
 
-**Modeler**
-- Menüler: Dosya, Düzen, Görünüm, Analiz, Sınırlar, Yükleme, Destek, Yüzeyler, Özellikler, Araçlar, Yardım
-- İş akışı şeridi: Geometri › Destek › Yükleme › Özellikler › Yüzeyler (adıma göre araç çubuğu değişir)
-- Sol panel: Belge Görüntüleyici (malzemeler, sınırlar, yöntemler) + Görüntü Seçenekleri
-- Diyaloglar: Proje Ayarları (Genel, Yöntemler, Yeraltı Suyu, Sismik, Gelişmiş),
-  Proje Özeti, Malzeme Özelliklerini Tanımla (MC / Hoek-Brown, su parametreleri),
-  Yüzey Seçenekleri (dairesel / dairesel olmayan / kullanıcı tanımlı, kayma sınırları),
-  Koordinat tablosu, Izgara ayarları
-- Hesapla (F5) → sonuçlar otomatik olarak **Yorumla** penceresinde açılır
-- **Malzeme etiketleri** (Görünüm → Malzeme Etiketleri veya Görüntü Seçenekleri):
-  bölgelerin üzerinde yok / ad / ad + parametreler (c, φ, γ; Hoek-Brown için σci, GSI, mi, D)
-- **Tekil bulon/ankraj** (Destek adımı): eğim (varsayılan **15°**) ve boy girilir,
-  şev yüzüne tıklanır → başlık zeminde, doğrultu şevin içine otomatik
-- **Bulon paterni** (grup): şev yüzünde iki nokta → aralık, ilk bulon mesafesi, eğim, boy;
-  bulonlar yüzey boyunca eşit aralıkla otomatik üretilir, patern tek nesne olarak düzenlenir
-- **Kaplama: püskürtme beton + hasır çelik** (Özellikler adımı): kalınlık, γ, τ,
-  hasır (Q106…Q589 veya özel As), fy; şev yüzüne iki noktayla veya
-  "Kaplamayı Şev Yüzüne Ata" ile topuk–kret arasına tek tıkla atanır
-- **Notlar**: yazı, çizgi, ok, dikdörtgen, elips (sürükle = taşı, çift tık = özellikler)
-
-**CAD çizim alanı**
-- Cetveller, uyarlamalı ızgara, artı imleç, lejant
-- Tekerlek = imleçte zoom, orta tuş = kaydır, orta çift tık / F2 = tümünü göster,
-  pencereyle zoom, kaydır aracı
-- **SNAP** (F9, ızgaraya), **GRID** (F7), **ORTHO** (F8), **OSNAP** (F3: uç, orta, kesişim, en yakın)
-- Koordinat komut kutusu: `x,y` · `@dx,dy` · `@uzunluk<açı` · `c` kapat · `u` geri al · boş Enter bitir
-- Çizim: dış sınır (kapalı), malzeme sınırları, YASS, kullanıcı tanımlı yüzey
-- Düzenleme: köşe sürükle, köşe ekle/sil, çift tık = koordinat tablosu, Delete, sağ tık menüsü
-- Bölgeye tıklayarak malzeme ata; bölgeler sınırlardan otomatik oluşturulur
-- Geri al / yinele (Ctrl+Z / Ctrl+Y) — tüm düzenlemeler için
-
-**Yorumla**
-- Yöntem seçici ("Bishop simplified FS: 1.197"), Global Minimum
-- Kritik yüzey, dilimler, merkeze çizgiler, FS kutusu, FS renk skalalı en düşük 25 yüzey
-- Dilim verisi sorgusu, Bilgi Görüntüleyici (metin raporu, kaydet/kopyala), resim dışa aktarma
-- **FS lejantı** (sağ alt): hesaplanan tüm yöntemlerin güvenlik sayıları, seçili yöntem
-  vurgulu, global minimum yeşil
-- Sonuç ekranına **yazı ve şekil** ekleme (kendi geri al/yinele'si; dosyaya kaydedilir)
-- **PDF Rapor** (Ctrl+P; Yorumla → Dosya veya Modeler → Analiz): kapak (kritik FS kartı,
-  hedef FS'ye göre Yeterli / Sınırda / Yetersiz), içindekiler, özet, model şekli,
-  malzeme tabloları, analiz ayarları, yük / destek / kaplama tabloları, sonuç tablosu,
-  FS karşılaştırma grafiği, kritik yüzey şekilleri (eksenli, yüksek çözünürlüklü),
-  mobilize destek kuvvetleri, Ek: dilim verileri ve koordinatlar; sayfa üst/alt bilgisi,
-  "Sayfa n / N", PDF yer imleri. Hazırlayan / kontrol eden / firma bilgileri hatırlanır.
-
-## Hesap motoru
-
-| Yöntem | Denge | Yüzey |
-|---|---|---|
-| Bishop simplified | moment | dairesel |
-| Ordinary/Fellenius | moment (daire) / kuvvet | her ikisi |
-| Janbu simplified / corrected (f0) | kuvvet | her ikisi |
-| Corps of Engineers #1, #2 | kuvvet | her ikisi |
-| Lowe-Karafiath | kuvvet | her ikisi |
-| Spencer | kuvvet + moment | her ikisi |
-| GLE / Morgenstern-Price (yarım sinüs, sabit, kırpılmış sinüs, trapez) | kuvvet + moment | her ikisi |
-
-- Malzeme: Mohr-Coulomb, genelleştirilmiş Hoek-Brown, Hoek-Brown (mb, s, a), Undrained,
-  SHANSEP, Hardening Soil, SANISAND, Power-law, Power Curve, Barton-Bandis, CNI
-  (doğrusal olmayanlarda anlık c, φ — σn′ iterasyonu)
-- Boşluk suyu: YASS (malzeme bazında Hu ve aç/kapa), Ru katsayısı; γsat
-- Psödo-statik sismik: kh (göçme yönünde), kv (yukarı pozitif)
-- Gerilme çatlağı: çatlak çizgisi (çizilerek veya derinlikten, Rankine z_c önerisiyle);
-  kayma yüzeyi çizgiyi kret tarafında kestiği yerde kesilir, düşey çatlak yüzü oluşur;
-  çatlak suyu kuru / dolu / % → V = ½ γw hw², göçme yönünde, hw/3 yükseklikte
-- Dış yükler: yayılı (üniform / doğrusal değişen; düşey veya yüzeye dik), tekil (açılı)
-- Destekler: uç ankrajlı, enjeksiyonlu ankraj (tieback), zemin çivisi, geotekstil,
-  geosentetik, mikro kazık;
-  kuvvet = kapasite / sıyrılma (L_iç, L_dış), aralık; **aktif** (doğrudan) veya **pasif** (T/F);
-  doğrultu desteğe paralel veya kayma yüzeyine teğet. Tüm yöntemlere dahil
-  (Bishop/Fellenius moment, GLE/Spencer kuvvet + moment, kuvvet yöntemleri)
-- Kaplama (püskürtme beton + hasır çelik): ağırlığı γ·t yüzey yükü olarak eklenir;
-  kayma yüzeyi kaplamalı yüzeyden çıkıyor/giriyorsa T = τ·t + As·fy kayma yüzeyine teğet,
-  kaymaya karşı (varsayılan pasif, T/F) uygulanır
-- Bulon paterni: her bulon ayrı destek olarak tüm yöntemlere dahil edilir
-- Göçme yönü: sağdan sola / soldan sağa (zorunlu)
-- Kritik yüzey araması: diferansiyel evrim + Nelder-Mead; dairesel ön arama ile
-  tohumlanmış popülasyon; kayma sınırları; minimum derinlik
-- Dairesel olmayan yüzey: **poligonal** (Slide2 gibi doğru parçaları; varsayılan) veya
-  yumuşak B-spline. Poligonal aramada en iyi yüzeyin tüm köşeleri serbestçe optimize
-  edilir, ardından her segmente ara köşe eklenip tekrar iyileştirilir
-- Kabul edilebilirlik: mα < 0.2 ve negatif taban kayma direnci olan çözümler reddedilir
-
-### Doğrulama (testlerde)
-- ACADS EX1(a): Bishop 0.985, Spencer 0.984, GLE 0.984 (Slide2: 0.987 / 0.986 / 0.986)
-- Düzlemsel blok: tüm kuvvet dengesi yöntemleri rijit blok kapalı çözümünü sismik
-  yükle, dış yüklerle, aktif ve pasif ankrajla (F'de ikinci derece denklem) 10⁻⁶ hassasiyetle verir
-- Hoek & Bray düzlemsel kayma + düşey gerilme çatlağı (kuru / yarı dolu / dolu): 7 yöntem, 10⁻⁶
-- Bishop–GLE moment tutarlılığı (yükler, pasif ankraj ve çatlak suyu dahil), destek kapasite formülleri
-- Ayna simetrisi, bağımsız Bishop referansı, sonsuz şev limiti, ağırlık = alan × γ
-
-## Klasör yapısı
+## Project layout
 
 ```
-main.py           IDE / komut satırı giriş noktası
-pyproject.toml    paket tanımı (pip install -e .)
-requirements*.txt bağımlılıklar
-run_windows.bat, run_linux_mac.sh   tek tık kurulum + çalıştırma
+main.py              start-up script (IDE / command line)
+pyproject.toml       package definition (pip install -e .)
+requirements*.txt    runtime and development requirements
+run_windows.bat, run_linux_mac.sh    one-click set-up and start
 slipsurface/
-  geometry/   slope.py, surfaces.py (daire, polyline, B-spline), builder.py (sınırlardan bölgeler)
-  materials/  Mohr-Coulomb, Hoek-Brown
-  lem/        slicing.py, bishop.py, gle.py (Spencer, GLE, Janbu, Corps, Lowe-Karafiath)
-  optimizer/  search.py (DE + Nelder-Mead, daire / B-spline)
-  loads.py    dış yükler, destek kuvvetleri, kaplama, bulon yerleşimi
-  project.py  proje modeli, JSON (v3; v1/v2 dosyalar otomatik açılır)
-  analysis.py çok yöntemli çalıştırıcı, metin raporu
-  report/     pdf.py (ReportLab PDF raporu), fonts/ (Source Sans 3, SIL OFL)
-  ui/         modeler.py, interpret.py, docks.py, workflow.py, statusbar.py, icons.py,
-              document.py (geri al), worker.py, cad/ (canvas, rulers, tools), dialogs/
-examples/     *.slp.json
-tests/
+  geometry/          slope geometry, slip surfaces (circle, polyline, B-spline), regions from boundaries
+  materials/         strength models and the model catalogue
+  lem/               slicing, Bishop / Fellenius, Spencer, GLE, Janbu, Corps, Lowe-Karafiath
+  optimizer/         critical surface search (differential evolution + Nelder-Mead)
+  loads.py           external loads, support forces, facings, bolt placement
+  project.py         project model and JSON file format
+  analysis.py        multi-method runner and text report
+  exchange.py        DXF import / export
+  scripting.py       Python scripting
+  textcat.py         translation catalogue with templates
+  report/            PDF report (ReportLab) and fonts (Source Sans 3, SIL OFL)
+  ui/                Modeler, Interpret, CAD canvas and tools, dialogs, translations
+examples/            example projects and the scripting example
+tests/               test suite
 ```
 
-## Durum
+---
 
-- [x] Adım 1–5: iskelet, pencere, geometri, Bishop, buton → kritik daire
-- [x] Adım 6: proje modeli ve kaydet/aç
-- [x] Adım 7: Spencer, GLE/M-P (+ Janbu, Corps, Lowe-Karafiath)
-- [x] Adım 8: arama seçenekleri, B-spline (dairesel olmayan) yüzeyler, kayma sınırları
-- [x] Slide2 tarzı arayüz: CAD alanı, iş akışı, diyaloglar, ayrı Yorumla penceresi
-- [x] Yükleme (yayılı, tekil, sismik) ve Destek (ankraj, tieback, çivi, geotekstil)
-- [x] Gerilme çatlağı (kuru / dolu / kısmi su)
-- [x] v0.5: FS lejantı, sonuç ekranında not/şekil, malzeme etiketleri, püskürtme beton +
-      hasır çelik kaplama, 15° tekil bulon/ankraj, bulon paterni
-- [x] v0.6: PDF rapor, poligonal dairesel olmayan yüzey, sonuç ekranında kontrol noktaları gizli
-- [ ] Sonraki: olasılıksal analiz (Monte Carlo), Sarma, geri analiz
+## Roadmap
 
-## Lisans
+- Probabilistic analysis (Monte Carlo)
+- Sarma method
+- Back analysis
+
+---
+
+## License
 
 Copyright © 2026 Hasan Deniz Altuntaş.
 
-SlipSurfaceIQ LE, [GNU Affero Genel Kamu Lisansı sürüm 3](LICENSE) (AGPL-3.0) veya (tercihinize göre)
-daha sonraki bir sürümü altında dağıtılan özgür yazılımdır. Program **hiçbir garanti
-olmaksızın** sunulur; sonuçların mühendislik yargısıyla değerlendirilmesi ve
-doğrulanması kullanıcının sorumluluğundadır. Programı değiştirip bir ağ üzerinden
-(ör. sunucu / web hizmeti olarak) kullanıcılara sunarsanız, AGPL gereği değiştirilmiş
-kaynak kodunu da bu kullanıcılara sağlamanız gerekir. Kullanılan üçüncü taraf bileşenlerin
-lisansları **Yardım → Hakkında** bölümünde listelenir (Qt/PySide6: LGPL-3.0,
-NumPy/SciPy/Shapely: BSD, ReportLab: BSD, ezdxf ve QtAwesome: MIT, Material Design
-Icons: Apache-2.0, Source Sans 3: SIL OFL 1.1).
+SlipSurfaceIQ LE is free software: you can redistribute it and/or modify it under the terms
+of the [GNU Affero General Public License](LICENSE) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later version. If you
+modify the program and make it available to users over a network (for example as a server
+or web service), the AGPL requires you to offer them the corresponding source code.
+
+The program is distributed in the hope that it will be useful, but **without any warranty**;
+without even the implied warranty of merchantability or fitness for a particular purpose.
+
+Third-party components and their licenses are listed under *Help → About*: Qt / PySide6
+(LGPL-3.0), NumPy, SciPy and Shapely (BSD), ReportLab (BSD), ezdxf and QtAwesome (MIT),
+Material Design Icons (Apache-2.0), Source Sans 3 (SIL Open Font License 1.1).
