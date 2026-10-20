@@ -301,7 +301,8 @@ def report_text(r: AnalysisResults, tr: Callable[[str], str] = lambda s: s) -> s
                 L.append(f"{method_name(k):26s} kritik yüzeyi kesen destek / kaplama yok")
             for f in sf:
                 L.append(
-                    f"{method_name(k):26s} {f.label}: T = {f.T:8.2f}  "
+                    f"{method_name(k):26s} {f.label}: T_cap = {f.T:8.2f}  "
+                    f"T_mob = {f.mobilized(res.fos):8.2f}  "
                     f"(L_iç = {f.L_in:.2f} m, L_dış = {f.L_out:.2f} m, {tr(f.governing)}, "
                     f"{tr('pasif' if f.passive else 'aktif')})"
                 )

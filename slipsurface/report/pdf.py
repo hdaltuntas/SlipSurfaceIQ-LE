@@ -1402,6 +1402,7 @@ class _Builder:
                             f"{f.x:.2f}",
                             f"{f.y:.2f}",
                             f"{f.T:.1f}",
+                            f"{f.mobilized(res.fos):.1f}",
                             _f(f.L_in),
                             _f(f.L_out),
                             _e(f.governing),
@@ -1416,20 +1417,21 @@ class _Builder:
                         "Eleman",
                         "x [m]",
                         "y [m]",
-                        "T [kN/m]",
+                        "T<sub>cap</sub> [kN/m]",
+                        "T<sub>mob</sub> [kN/m]",
                         "L<sub>iç</sub> [m]",
                         "L<sub>dış</sub> [m]",
                         "Belirleyici",
                         "Uyg.",
                     ],
                     rows,
-                    [0.19, 0.15, 0.08, 0.08, 0.09, 0.08, 0.08, 0.17, 0.08],
+                    [0.16, 0.12, 0.07, 0.07, 0.10, 0.10, 0.07, 0.07, 0.16, 0.08],
                     "Kritik yüzeyleri kesen destek ve kaplama elemanlarının kuvvetleri",
-                    ["l", "l", "r", "r", "r", "r", "r", "l", "c"],
+                    ["l", "l", "r", "r", "r", "r", "r", "r", "l", "c"],
                 )
                 self.para(
-                    "T: düzlem dışı aralığa bölünmüş kapasite (kN/m). Pasif uygulamada "
-                    "kuvvet dengede T/F olarak mobilize olur.",
+                    "Tcap: birim genişlik için kapasite (kN/m). Tmob: dengede mobilize kuvvet; "
+                    "pasif elemanda Tcap/F, aktif elemanda Tcap.",
                     "small",
                 )
         if self.p.tension_crack:

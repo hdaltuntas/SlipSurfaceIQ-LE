@@ -7,6 +7,8 @@ from pathlib import Path
 from PySide6.QtGui import QColor, QFont, QFontDatabase, QPalette
 from PySide6.QtWidgets import QApplication
 
+from slipsurface import __version__
+
 
 def settings():
     return QSettings("SlipSurface", "SlipSurface LE")
@@ -101,8 +103,8 @@ def apply_theme(dark=None):
         widget.update()
 
 
-TECHNOLOGIES = """
-<h3>SlipSurfaceIQ LE 2026.0.0</h3>
+TECHNOLOGIES = f"""
+<h3>SlipSurfaceIQ LE {__version__}</h3>
 <p>2D Limit Equilibrium / Limit Denge</p>
 <p>© 2026 Hasan Deniz Altuntaş — GNU AGPL v3 or later. No warranty.</p>
 <table cellpadding="5">

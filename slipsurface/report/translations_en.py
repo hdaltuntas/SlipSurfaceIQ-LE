@@ -3,6 +3,7 @@
 from slipsurface.textcat import Catalog
 
 PDF_EN = {
+    "Tcap: birim genişlik için kapasite (kN/m). Tmob: dengede mobilize kuvvet; pasif elemanda Tcap/F, aktif elemanda Tcap.": "Tcap: capacity per unit width (kN/m). Tmob: mobilised force at equilibrium; Tcap/F for passive elements, Tcap for active elements.",
     # page decoration
     "Şev Stabilite Analiz Raporu": "Slope Stability Analysis Report",
     "SLIPSURFACEIQ LE  ·  2B LİMİT DENGE ANALİZİ": "SLIPSURFACEIQ LE  ·  2D LIMIT EQUILIBRIUM ANALYSIS",

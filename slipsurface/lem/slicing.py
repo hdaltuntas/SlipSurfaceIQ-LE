@@ -157,6 +157,8 @@ def make_slices(
         o.n_sub = n_sub
     if gamma_w is not None:
         o.gamma_w = gamma_w
+    if o.pore not in ("water_table", "ru", "none"):
+        raise SlicingError(f"unknown pore-pressure method '{o.pore}'")
 
     ext = slip_extent(geom, surf)
     if ext is None:
