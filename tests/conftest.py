@@ -13,7 +13,8 @@ if str(ROOT) not in sys.path:
 # PySide6 can crash while the interpreter finalizes after all tests passed
 # ("Fatal Python error: none_dealloc", seen with Python 3.10 on Linux). Once
 # pytest has printed its summary, leave with its exit status and skip the
-# interpreter teardown.
+# interpreter teardown. Linux only: on Windows os._exit itself faults in the
+# Qt DLL teardown, and the normal shutdown works there.
 _exit_status = None
 
 
@@ -23,7 +24,8 @@ def pytest_sessionfinish(session, exitstatus):
 
 
 def pytest_unconfigure(config):
-    if _exit_status is not None and "PySide6.QtWidgets" in sys.modules:
+    if (_exit_status is not None and sys.platform.startswith("linux")
+            and "PySide6.QtWidgets" in sys.modules):
         sys.stdout.flush()
         sys.stderr.flush()
         os._exit(_exit_status)
