@@ -247,7 +247,10 @@ def make_slices(
     # surface, the water column resting on the slice top adds weight. It is
     # included in W, so the pseudo-static seismic forces apply to it too.
     if wt is not None and np.any(np.asarray(wt) - y_top > 0.0):
-        W = W + o.gamma_w * np.maximum(np.asarray(wt) - y_top, 0.0) * b
+        water_weight = o.gamma_w * np.maximum(wt - y_top, 0.0) * b
+        water_cg = 0.5 * (wt + y_top)
+        y_cg = (W * y_cg + water_weight * water_cg) / (W + water_weight)
+        W = W + water_weight
 
     # ------------------------------------------------ pore pressure
     if o.pore == "water_table" and wt is not None:

@@ -400,11 +400,12 @@ def janbu_correction_factor(s: SliceSet) -> float:
         return 1.0
     nvec = np.array([-(p1 - p0)[1], (p1 - p0)[0]]) / L
     d = float(np.max(np.abs((pts - p0) @ nvec)))
-    cs = np.array([getattr(m, "c", 1.0) for m in s.materials])[s.mat_idx]
-    ph = np.array([getattr(m, "phi", 1.0) for m in s.materials])[s.mat_idx]
+    # Classify the actual base strengths, including total-stress models
+    # (Undrained / SHANSEP) that do not expose MC's c and phi attributes.
+    cs, tp = _strength(s, _initial_sigma_n(s))
     if np.all(cs <= 0):
         b1 = 0.31
-    elif np.all(ph <= 0):
+    elif np.all(tp <= 0):
         b1 = 0.69
     else:
         b1 = 0.50

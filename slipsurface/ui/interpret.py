@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import copy
+
 from slipsurface.ui.preferences import fit_to_screen
 
 from slipsurface.ui.i18n import tr
@@ -342,6 +344,11 @@ class InterpretWindow(QMainWindow):
                     rows = slice_rows(r, i)
                     txt += "  ".join(f"{a}: {b}" for a, b in rows[:1] + rows[2:10]) + "\n"
         InfoViewer(tr(txt), self).exec()
+
+    def update_summary(self, summary) -> None:
+        """Refresh report metadata without changing results or local notes."""
+        self.doc.project.summary = copy.deepcopy(summary)
+        self._refresh()
 
     def pdf_report(self) -> None:
         from slipsurface.ui.dialogs.report import export_report

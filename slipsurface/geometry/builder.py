@@ -31,7 +31,20 @@ def upper_profile(poly: Polygon) -> np.ndarray:
         if cut.is_empty:
             continue
         pts.append((x, cut.bounds[3]))
-    return np.asarray(pts, dtype=float)
+    profile = np.asarray(pts, dtype=float)
+    # A graph y(x) cannot represent vertical steps or overhangs. Validate
+    # between every pair of vertex abscissae: the polygon edges are linear
+    # there, so a midpoint cut detects a falsely interpolated upper face.
+    scale = max(1.0, poly.bounds[2] - poly.bounds[0], poly.bounds[3] - poly.bounds[1])
+    for left, right in zip(profile[:-1], profile[1:], strict=False):
+        x = 0.5 * (left[0] + right[0])
+        cut = LineString([(x, ymin), (x, ymax)]).intersection(poly)
+        if (not isinstance(cut, LineString) or
+                not np.isclose(cut.bounds[3], 0.5 * (left[1] + right[1]),
+                               rtol=0.0, atol=1e-10 * scale)):
+            raise ValueError("Dik şev yüzü veya çıkmalı geometri desteklenmiyor. "
+                             "Zemin yüzeyi sürekli ve x artan bir profil olmalı.")
+    return profile
 
 
 def _extend_flat(line: np.ndarray, x0: float, x1: float) -> np.ndarray:
