@@ -645,8 +645,8 @@ def _mk(title, mats, ext, bounds=(), wt=None, assigns=(), methods=None, n_slices
 
 def default_project() -> Project:
     """10 m high 2H:1V homogeneous slope."""
-    return _mk("Basit şev H=10 m, 2H:1V",
-               [MaterialSpec("Zemin 1", "MC", 18, 20, False, 10, 30, color=PALETTE[0])],
+    return _mk("Simple slope H=10 m, 2H:1V",
+               [MaterialSpec("Soil 1", "MC", 18, 20, False, 10, 30, color=PALETTE[0])],
                [[0, -10], [55, -10], [55, 10], [35, 10], [15, 0], [0, 0]])
 
 
@@ -655,8 +655,8 @@ def empty_project() -> Project:
 
 
 def acads_1a_project() -> Project:
-    return _mk("ACADS EX1(a) — homojen şev",
-               [MaterialSpec("Zemin 1", "MC", 20, 20, False, 3, 19.6, color=PALETTE[0])],
+    return _mk("ACADS EX1(a) — homogeneous slope",
+               [MaterialSpec("Soil 1", "MC", 20, 20, False, 3, 19.6, color=PALETTE[0])],
                [[0, -5], [60, -5], [60, 10], [40, 10], [20, 0], [0, 0]],
                methods=["bishop", "spencer", "gle", "janbu_simplified"], n_slices=30)
 
@@ -664,22 +664,22 @@ def acads_1a_project() -> Project:
 def layered_example_project() -> Project:
     """Three materials, a weak clay band outcropping on the face, water table."""
     return _mk(
-        "Katmanlı şev + YASS (örnek)",
-        [MaterialSpec("Dolgu", "MC", 19, 20, True, 8, 32, color=PALETTE[0]),
-         MaterialSpec("Yumuşak kil", "MC", 17, 18, True, 15, 18, color=PALETTE[3]),
-         MaterialSpec("Ayrışmış kaya", "HB", 23, 24, True, sigma_ci=8_000, gsi=35, mi=8,
+        "Layered slope with water table",
+        [MaterialSpec("Fill", "MC", 19, 20, True, 8, 32, color=PALETTE[0]),
+         MaterialSpec("Soft clay", "MC", 17, 18, True, 15, 18, color=PALETTE[3]),
+         MaterialSpec("Weathered rock", "HB", 23, 24, True, sigma_ci=8_000, gsi=35, mi=8,
                       d=0.3, color=PALETTE[2])],
         [[0, -12], [70, -12], [70, 14], [50, 12], [40, 12], [20, 0], [0, 0]],
         bounds=[[[0, -1], [70, 5]], [[0, -5], [70, -2]]],
         wt=[[0, -0.5], [20, -0.5], [45, 6], [70, 8]],
-        assigns=[((60, 10), "Dolgu"), ((60, 2), "Yumuşak kil"), ((60, -6), "Ayrışmış kaya")],
+        assigns=[((60, 10), "Fill"), ((60, 2), "Soft clay"), ((60, -6), "Weathered rock")],
         n_slices=30)
 
 
 def anchored_example_project() -> Project:
     """Steep cut with a crest surcharge, stabilised by two rows of grouted tiebacks."""
-    p = _mk("Ankrajlı yarma + sürşarj (örnek)",
-            [MaterialSpec("Kumlu kil", "MC", 19, 20, True, 12, 26, color=PALETTE[0])],
+    p = _mk("Anchored cut with surcharge",
+            [MaterialSpec("Sandy clay", "MC", 19, 20, True, 12, 26, color=PALETTE[0])],
             [[0, -8], [50, -8], [50, 12], [26, 12], [18, 0], [0, 0]], n_slices=40,
             methods=["bishop", "spencer", "janbu_corrected"])
     p.support_types = [SupportType("Tieback 1", "grouted_tieback", spacing=2.0, tensile=400,
@@ -694,8 +694,8 @@ def anchored_example_project() -> Project:
 
 def cracked_example_project() -> Project:
     """Cohesive slope with a water-filled tension crack in the crest zone."""
-    p = _mk("Gerilme çatlaklı şev (çatlak dolu)",
-            [MaterialSpec("Katı kil", "MC", 19, 20, False, 18, 20, color=PALETTE[1])],
+    p = _mk("Slope with water-filled tension crack",
+            [MaterialSpec("Stiff clay", "MC", 19, 20, False, 18, 20, color=PALETTE[1])],
             [[0, -10], [60, -10], [60, 12], [32, 12], [14, 0], [0, 0]], n_slices=40,
             methods=["bishop", "spencer", "gle"])
     p.tension_crack = [[32.0, 9.0], [60.0, 9.0]]
@@ -706,27 +706,27 @@ def cracked_example_project() -> Project:
 def nailed_shotcrete_project() -> Project:
     """Steep cut stabilised with a soil-nail pattern (15°) and a shotcrete +
     wire mesh facing on the slope face."""
-    p = _mk("Zemin çivili + püskürtme betonlu yarma (örnek)",
-            [MaterialSpec("Siltli kum", "MC", 19, 20, False, 8, 30, color=PALETTE[0]),
-             MaterialSpec("Ayrışmış kaya", "MC", 22, 23, False, 40, 36, color=PALETTE[2])],
+    p = _mk("Soil-nailed cut with shotcrete facing",
+            [MaterialSpec("Silty sand", "MC", 19, 20, False, 8, 30, color=PALETTE[0]),
+             MaterialSpec("Weathered rock", "MC", 22, 23, False, 40, 36, color=PALETTE[2])],
             [[0, -8], [48, -8], [48, 12], [26, 12], [20, 0], [0, 0]], n_slices=40,
             methods=["bishop", "spencer", "janbu_corrected"])
     p.material_boundaries = [[[0, -3], [48, -3]]]
-    p.assignments = [{"point": [24, 5], "material": "Siltli kum"},
-                     {"point": [24, -6], "material": "Ayrışmış kaya"}]
-    p.support_types = [SupportType("Çivi Ø28", "soil_nail", spacing=1.5, tensile=240,
+    p.assignments = [{"point": [24, 5], "material": "Silty sand"},
+                     {"point": [24, -6], "material": "Weathered rock"}]
+    p.support_types = [SupportType("Nail Ø28", "soil_nail", spacing=1.5, tensile=240,
                                    plate=80, bond_strength=40, application="passive",
                                    color="#1f3d7a", length=9.0)]
     p.support_patterns = [{"p1": [20.0, 0.0], "p2": [26.0, 12.0], "spacing": 1.5,
-                           "offset": 0.75, "angle": 15.0, "length": 9.0, "type": "Çivi Ø28"}]
-    p.facing_types = [FacingType("Püskürtme beton 10 cm + Q188")]
-    p.facings = [{"x1": 20.0, "x2": 26.0, "type": "Püskürtme beton 10 cm + Q188",
+                           "offset": 0.75, "angle": 15.0, "length": 9.0, "type": "Nail Ø28"}]
+    p.facing_types = [FacingType("Shotcrete 10 cm + Q188")]
+    p.facings = [{"x1": 20.0, "x2": 26.0, "type": "Shotcrete 10 cm + Q188",
                   "points": [[20.0, 0.0], [26.0, 12.0]]}]
     p.loads = [{"kind": "distributed", "points": [[29, 12], [40, 12]], "q": [15, 15],
                 "orientation": "vertical"}]
     p.annotations = [{"kind": "text", "pts": [[30.0, 17.0]], "text":
-                      "Zemin çivisi paterni: 1.5 m aralık, 15°, L = 9 m\n"
-                      "Kaplama: 10 cm püskürtme beton + Q188", "color": "#1b2a3a",
+                      "Soil-nail pattern: 1.5 m spacing, 15°, L = 9 m\n"
+                      "Facing: 10 cm shotcrete + Q188", "color": "#1b2a3a",
                       "size": 9, "bold": False, "box": True},
                      {"kind": "arrow", "pts": [[29.5, 16.0], [24.5, 9.5]], "color": "#c0392b",
                       "width": 1.5}]
@@ -735,18 +735,18 @@ def nailed_shotcrete_project() -> Project:
 
 
 EXAMPLES = {
-    "Basit şev (10 m, 2H:1V)": default_project,
+    "Simple slope (10 m, 2H:1V)": default_project,
     "ACADS EX1(a)": acads_1a_project,
-    "Katmanlı şev + YASS": layered_example_project,
-    "Ankrajlı yarma + sürşarj": anchored_example_project,
-    "Gerilme çatlaklı şev": cracked_example_project,
-    "Zemin çivisi + püskürtme beton": nailed_shotcrete_project,
+    "Layered slope + water table": layered_example_project,
+    "Anchored cut + surcharge": anchored_example_project,
+    "Slope with tension crack": cracked_example_project,
+    "Soil nail + shotcrete": nailed_shotcrete_project,
 }
 
 
 def undrained_example_project():
     p = default_project()
-    p.summary.title = "Undrained clay / Drenajsız kil"
+    p.summary.title = "Undrained clay"
     p.materials = [MaterialSpec(name="Clay", model="UD", gamma=18, su=35, use_water=False)]
     p.groundwater.method = "none"
     return p
@@ -754,18 +754,34 @@ def undrained_example_project():
 
 def power_law_example_project():
     p = default_project()
-    p.summary.title = "Nonlinear power law / Doğrusal olmayan dayanım"
+    p.summary.title = "Non-linear power-law strength"
     p.materials = [MaterialSpec(name="Power law", model="PL", coefficient=0.3, exponent=0.7)]
     return p
 
 
 def seismic_example_project():
     p = default_project()
-    p.summary.title = "Pseudo-static / Psödo-statik kh=0.15"
+    p.summary.title = "Pseudo-static seismic, kh = 0.15"
     p.seismic.kh = 0.15
     return p
 
 
-EXAMPLES.update({"Drenajsız kil / Undrained clay": undrained_example_project,
+EXAMPLES.update({"Undrained clay": undrained_example_project,
                  "Power-law envelope": power_law_example_project,
-                 "Sismik / Seismic kh=0.15": seismic_example_project})
+                 "Seismic kh=0.15": seismic_example_project})
+
+# names used before 2026.0.0 (accepted by --example)
+EXAMPLE_ALIASES = {
+    "Basit şev (10 m, 2H:1V)": "Simple slope (10 m, 2H:1V)",
+    "Katmanlı şev + YASS": "Layered slope + water table",
+    "Ankrajlı yarma + sürşarj": "Anchored cut + surcharge",
+    "Gerilme çatlaklı şev": "Slope with tension crack",
+    "Zemin çivisi + püskürtme beton": "Soil nail + shotcrete",
+    "Drenajsız kil / Undrained clay": "Undrained clay",
+    "Sismik / Seismic kh=0.15": "Seismic kh=0.15",
+}
+
+
+def example_project(name: str) -> Project:
+    """Bundled example by name (current English name or a former Turkish one)."""
+    return EXAMPLES[EXAMPLE_ALIASES.get(name, name)]()

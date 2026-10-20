@@ -1,11 +1,10 @@
 """SlipSurfaceIQ LE — start the desktop application.
 
-Run from an IDE (PyCharm / VS Code / Spyder: open this file and press Run) or
-from a terminal:
+Run from an IDE (open this file and press Run) or from a terminal:
 
-    python main.py                                  # Full-screen modeler, empty project
-    python main.py examples/ankrajli_yarma.slp.json # open a project file
-    python main.py --example "Katmanlı şev + YASS"  # open a bundled example
+    python main.py                                  # modeler sized to the screen, empty project
+    python main.py examples/anchored_cut.slp.json   # open a project file
+    python main.py --example "ACADS EX1(a)"         # open a bundled example
     python main.py --list-examples
     python main.py --check                          # dependency check, no window
 
@@ -34,8 +33,8 @@ def check_environment(verbose: bool = True) -> bool:
     """Verify Python version and required packages; print a readable report."""
     ok = True
     if sys.version_info < MIN_PYTHON:
-        print(f"[HATA] Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+ gerekli "
-              f"(bulunan {sys.version.split()[0]}).")
+        print(f"[ERROR] Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+ required "
+              f"(found {sys.version.split()[0]}).")
         ok = False
     missing = []
     for mod, pip_name in REQUIRED.items():
@@ -47,24 +46,24 @@ def check_environment(verbose: bool = True) -> bool:
             missing.append(pip_name)
     if missing:
         ok = False
-        print("[HATA] Eksik paket(ler): " + ", ".join(missing))
-        print(f"       Kurulum:  {Path(sys.executable).name} -m pip install -r "
+        print("[ERROR] Missing package(s): " + ", ".join(missing))
+        print(f"        Install:  {Path(sys.executable).name} -m pip install -r "
               f"{ROOT / 'requirements.txt'}")
     if ok and verbose:
         print(f"  Python     {sys.version.split()[0]}  ({sys.executable})")
-        print("Ortam hazır.")
+        print("Environment ready.")
     return ok
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     p = argparse.ArgumentParser(prog="SlipSurfaceIQ LE",
-                                description="2D limit denge şev stabilite programı")
-    p.add_argument("project", nargs="?", help="açılacak proje dosyası (.slp.json)")
-    p.add_argument("--example", help="paketteki bir örneği aç (adı, --list-examples)")
-    p.add_argument("--list-examples", action="store_true", help="örnekleri listele")
-    p.add_argument("--check", action="store_true", help="bağımlılıkları kontrol et ve çık")
-    p.add_argument("--smoke", type=float, metavar="SN",
-                   help="pencereyi açıp SN saniye sonra kapat (otomatik test)")
+                                description="2D limit equilibrium slope stability analysis")
+    p.add_argument("project", nargs="?", help="project file to open (.slp.json)")
+    p.add_argument("--example", help="open a bundled example (name, see --list-examples)")
+    p.add_argument("--list-examples", action="store_true", help="list the bundled examples")
+    p.add_argument("--check", action="store_true", help="check the dependencies and exit")
+    p.add_argument("--smoke", type=float, metavar="SEC",
+                   help="open the window and close it after SEC seconds (automated test)")
     return p.parse_args(argv)
 
 
@@ -75,7 +74,9 @@ def main(argv: list[str] | None = None) -> int:
     if not check_environment(verbose=False):
         return 1
 
-    from slipsurface.project import EXAMPLES
+    from slipsurface.project import EXAMPLE_ALIASES, EXAMPLES
+    if args.example:
+        args.example = EXAMPLE_ALIASES.get(args.example, args.example)
     if args.list_examples:
         for name in EXAMPLES:
             print(name)
@@ -91,14 +92,14 @@ def main(argv: list[str] | None = None) -> int:
         if not path.is_absolute() and not path.exists():
             path = ROOT / path                     # relative to the project folder
         if not path.exists():
-            print(f"[HATA] Dosya bulunamadı: {args.project}")
+            print(f"[ERROR] File not found: {args.project}")
             return 1
         project_path = str(path)
     if args.example and args.example not in EXAMPLES:
-        print(f"[HATA] Örnek bulunamadı: {args.example!r}. Seçenekler: {', '.join(EXAMPLES)}")
+        print(f"[ERROR] Example not found: {args.example!r}. Options: {', '.join(EXAMPLES)}")
         return 1
     if args.example and args.project:
-        print("[HATA] --example ve bir proje dosyası aynı anda verilemez.")
+        print("[ERROR] --example and a project file cannot be given together.")
         return 1
     return run(project_path=project_path, example=args.example, smoke=args.smoke)
 

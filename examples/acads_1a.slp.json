@@ -2,7 +2,7 @@
   "format": "slipsurface-le",
   "version": 3,
   "summary": {
-    "title": "ACADS EX1(a) — homojen şev",
+    "title": "ACADS EX1(a) — homogeneous slope",
     "analysis": "",
     "author": "",
     "company": "",
@@ -17,7 +17,7 @@
   },
   "materials": [
     {
-      "name": "Zemin 1",
+      "name": "Soil 1",
       "model": "MC",
       "gamma": 20,
       "gamma_sat": 20,

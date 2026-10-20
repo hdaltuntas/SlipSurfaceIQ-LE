@@ -66,11 +66,13 @@ def run(argv: list[str] | None = None, project_path: str | None = None,
     app.setWindowIcon(icon("interpret"))
     _install_excepthook()
 
-    from slipsurface.project import EXAMPLES
+    from slipsurface.project import EXAMPLE_ALIASES, EXAMPLES
     from slipsurface.ui.modeler import ModelerWindow
 
+    if example is not None:
+        example = EXAMPLE_ALIASES.get(example, example)
     if example is not None and example not in EXAMPLES:
-        print(f"[HATA] Örnek bulunamadı: {example!r}. Seçenekler: {', '.join(EXAMPLES)}")
+        print(f"[ERROR] Example not found: {example!r}. Options: {', '.join(EXAMPLES)}")
         return 1
 
     # backwards compatible: `python -m slipsurface file.slp.json`

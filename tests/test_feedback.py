@@ -242,6 +242,13 @@ def test_note_picking_by_shape(app):
     c.grab()                                          # paints grips + frame
 
 
+def test_example_aliases():
+    from slipsurface.project import EXAMPLE_ALIASES, EXAMPLES, example_project
+    assert all(v in EXAMPLES for v in EXAMPLE_ALIASES.values())
+    assert example_project("Katmanlı şev + YASS").summary.title == \
+        "Layered slope with water table"
+
+
 def test_english_templates():
     from slipsurface.ui import i18n
     old = i18n.language()

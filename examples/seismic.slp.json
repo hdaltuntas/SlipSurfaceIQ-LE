@@ -2,7 +2,7 @@
   "format": "slipsurface-le",
   "version": 3,
   "summary": {
-    "title": "Pseudo-static / Psödo-statik kh=0.15",
+    "title": "Pseudo-static seismic, kh = 0.15",
     "analysis": "",
     "author": "",
     "company": "",
@@ -17,7 +17,7 @@
   },
   "materials": [
     {
-      "name": "Zemin 1",
+      "name": "Soil 1",
       "model": "MC",
       "gamma": 18,
       "gamma_sat": 20,

@@ -50,11 +50,11 @@ def test_assignment_points():
             if shapely.contains_xy(r.polygon, x, y):
                 return r.material
 
-    assert mat_at(60, 10) == "Dolgu"
-    assert mat_at(60, 2) == "Yumuşak kil"
-    assert mat_at(60, -6) == "Ayrışmış kaya"
-    assert mat_at(5, -0.65) == "Yumuşak kil"     # clay top at x=5 is y≈-0.571
-    assert mat_at(5, -0.50) == "Dolgu"           # unassigned sliver -> default (first) material
+    assert mat_at(60, 10) == "Fill"
+    assert mat_at(60, 2) == "Soft clay"
+    assert mat_at(60, -6) == "Weathered rock"
+    assert mat_at(5, -0.65) == "Soft clay"     # clay top at x=5 is y≈-0.571
+    assert mat_at(5, -0.50) == "Fill"           # unassigned sliver -> default (first) material
 
 
 def test_material_line_snapped_to_boundary():
@@ -96,10 +96,12 @@ def test_v1_file_is_converted():
     q = layered_example_project()
     g1, g2 = p.build_geometry(), q.build_geometry()
     assert g1.domain.area == pytest.approx(g2.domain.area)
-    for m in ("Dolgu", "Yumuşak kil", "Ayrışmış kaya"):
-        a1 = sum(r.polygon.area for r in g1.regions if r.material == m)
-        a2 = sum(r.polygon.area for r in g2.regions if r.material == m)
-        assert a1 == pytest.approx(a2, rel=1e-6), m
+    # the legacy v1 file keeps its original (Turkish) material names
+    for m1, m2 in (("Dolgu", "Fill"), ("Yumuşak kil", "Soft clay"),
+                   ("Ayrışmış kaya", "Weathered rock")):
+        a1 = sum(r.polygon.area for r in g1.regions if r.material == m1)
+        a2 = sum(r.polygon.area for r in g2.regions if r.material == m2)
+        assert a1 == pytest.approx(a2, rel=1e-6), m2
 
 
 def test_run_analysis_multiple_methods():

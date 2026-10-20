@@ -2,7 +2,7 @@
   "format": "slipsurface-le",
   "version": 3,
   "summary": {
-    "title": "Zemin çivili + püskürtme betonlu yarma (örnek)",
+    "title": "Soil-nailed cut with shotcrete facing",
     "analysis": "",
     "author": "",
     "company": "",
@@ -17,7 +17,7 @@
   },
   "materials": [
     {
-      "name": "Siltli kum",
+      "name": "Silty sand",
       "model": "MC",
       "gamma": 19,
       "gamma_sat": 20,
@@ -33,7 +33,7 @@
       "color": "#f0c800"
     },
     {
-      "name": "Ayrışmış kaya",
+      "name": "Weathered rock",
       "model": "MC",
       "gamma": 22,
       "gamma_sat": 23,
@@ -96,14 +96,14 @@
           24,
           5
         ],
-        "material": "Siltli kum"
+        "material": "Silty sand"
       },
       {
         "point": [
           24,
           -6
         ],
-        "material": "Ayrışmış kaya"
+        "material": "Weathered rock"
       }
     ]
   },
@@ -174,7 +174,7 @@
   ],
   "support_types": [
     {
-      "name": "Çivi Ø28",
+      "name": "Nail Ø28",
       "kind": "soil_nail",
       "spacing": 1.5,
       "tensile": 240,
@@ -203,12 +203,12 @@
       "offset": 0.75,
       "angle": 15.0,
       "length": 9.0,
-      "type": "Çivi Ø28"
+      "type": "Nail Ø28"
     }
   ],
   "facing_types": [
     {
-      "name": "Püskürtme beton 10 cm + Q188",
+      "name": "Shotcrete 10 cm + Q188",
       "thickness": 0.1,
       "gamma": 24.0,
       "tau": 400.0,
@@ -223,7 +223,7 @@
     {
       "x1": 20.0,
       "x2": 26.0,
-      "type": "Püskürtme beton 10 cm + Q188",
+      "type": "Shotcrete 10 cm + Q188",
       "points": [
         [
           20.0,
@@ -245,7 +245,7 @@
           17.0
         ]
       ],
-      "text": "Zemin çivisi paterni: 1.5 m aralık, 15°, L = 9 m\nKaplama: 10 cm püskürtme beton + Q188",
+      "text": "Soil-nail pattern: 1.5 m spacing, 15°, L = 9 m\nFacing: 10 cm shotcrete + Q188",
       "color": "#1b2a3a",
       "size": 9,
       "bold": false,

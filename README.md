@@ -123,7 +123,7 @@ command and `python -m slipsurface`.
 
 ```bash
 python main.py                                    # empty project, window sized to the screen
-python main.py examples/ankrajli_yarma.slp.json   # open a project file
+python main.py examples/anchored_cut.slp.json     # open a project file
 python main.py --example "ACADS EX1(a)"           # open a bundled example
 python main.py --list-examples                    # list the bundled examples
 python main.py --check                            # check Python and the required packages
@@ -406,22 +406,21 @@ is [`examples/scripted_slope.py`](examples/scripted_slope.py).
 
 ## Bundled examples
 
-Available under *File → Examples*; `python main.py --list-examples` prints the names to use
-with `--example`:
+Available under *File → Examples* and from the command line with `--example "<name>"`
+(`python main.py --list-examples` prints the names). The same models are in the
+[`examples`](examples) folder as project files.
 
-| Example | Shows |
-|---|---|
-| Simple slope (10 m, 2H:1V) | homogeneous slope |
-| ACADS EX1(a) | ACADS verification problem (homogeneous slope) |
-| Layered slope + water table | several materials and a water table |
-| Anchored cut + surcharge | grouted tiebacks and a distributed load |
-| Slope with tension crack | water-filled tension crack |
-| Soil nail + shotcrete | soil-nail pattern and shotcrete facing |
-| Undrained clay | total-stress (su) analysis |
-| Power-law envelope | non-linear strength |
-| Seismic kh = 0.15 | pseudo-static seismic loading |
-
-The project files are also in the [`examples`](examples) folder.
+| Example (`--example`) | File | Shows |
+|---|---|---|
+| Simple slope (10 m, 2H:1V) | `simple_slope.slp.json` | homogeneous slope |
+| ACADS EX1(a) | `acads_1a.slp.json` | ACADS verification problem (homogeneous slope) |
+| Layered slope + water table | `layered_water_table.slp.json` | fill, soft clay and weathered rock (Hoek-Brown) with a water table |
+| Anchored cut + surcharge | `anchored_cut.slp.json` | two rows of grouted tiebacks, distributed and line loads |
+| Slope with tension crack | `tension_crack.slp.json` | water-filled tension crack in stiff clay |
+| Soil nail + shotcrete | `soil_nail_shotcrete.slp.json` | soil-nail pattern, shotcrete facing, notes |
+| Undrained clay | `undrained_clay.slp.json` | total-stress (su) analysis |
+| Power-law envelope | `power_law.slp.json` | non-linear strength |
+| Seismic kh=0.15 | `seismic.slp.json` | pseudo-static seismic loading |
 
 ---
 

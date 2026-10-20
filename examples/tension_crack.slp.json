@@ -2,11 +2,11 @@
   "format": "slipsurface-le",
   "version": 3,
   "summary": {
-    "title": "Katmanlı şev + YASS (örnek)",
+    "title": "Slope with water-filled tension crack",
     "analysis": "",
     "author": "",
     "company": "",
-    "date_created": "2026-10-19, 15:09:21",
+    "date_created": "2026-10-19, 15:31:30",
     "comments": [
       "",
       "",
@@ -17,78 +17,42 @@
   },
   "materials": [
     {
-      "name": "Dolgu",
+      "name": "Stiff clay",
       "model": "MC",
       "gamma": 19,
       "gamma_sat": 20,
-      "use_sat": true,
-      "c": 8,
-      "phi": 32,
+      "use_sat": false,
+      "c": 18,
+      "phi": 20,
       "sigma_ci": 25000.0,
       "gsi": 50.0,
       "mi": 10.0,
       "d": 0.0,
       "use_water": true,
       "hu": 1.0,
-      "color": "#f0c800"
-    },
-    {
-      "name": "Yumuşak kil",
-      "model": "MC",
-      "gamma": 17,
-      "gamma_sat": 18,
-      "use_sat": true,
-      "c": 15,
-      "phi": 18,
-      "sigma_ci": 25000.0,
-      "gsi": 50.0,
-      "mi": 10.0,
-      "d": 0.0,
-      "use_water": true,
-      "hu": 1.0,
-      "color": "#8080d0"
-    },
-    {
-      "name": "Ayrışmış kaya",
-      "model": "HB",
-      "gamma": 23,
-      "gamma_sat": 24,
-      "use_sat": true,
-      "c": 5.0,
-      "phi": 30.0,
-      "sigma_ci": 8000,
-      "gsi": 35,
-      "mi": 8,
-      "d": 0.3,
-      "use_water": true,
-      "hu": 1.0,
-      "color": "#ff7f3f"
+      "color": "#3cb371"
     }
   ],
   "geometry": {
     "external": [
       [
         0.0,
-        -12.0
+        -10.0
       ],
       [
-        70.0,
-        -12.0
+        60.0,
+        -10.0
       ],
       [
-        70.0,
-        14.0
-      ],
-      [
-        50.0,
+        60.0,
         12.0
       ],
       [
-        40.0,
+        32.0,
         12.0
       ],
       [
-        20.0,
+        14.0,
         0.0
       ],
       [
@@ -96,69 +60,19 @@
         0.0
       ]
     ],
-    "material_boundaries": [
+    "material_boundaries": [],
+    "water_table": null,
+    "tension_crack": [
       [
-        [
-          0.0,
-          -1.0
-        ],
-        [
-          70.0,
-          5.0
-        ]
+        32.0,
+        9.0
       ],
       [
-        [
-          0.0,
-          -5.0
-        ],
-        [
-          70.0,
-          -2.0
-        ]
+        60.0,
+        9.0
       ]
     ],
-    "water_table": [
-      [
-        0,
-        -0.5
-      ],
-      [
-        20,
-        -0.5
-      ],
-      [
-        45,
-        6
-      ],
-      [
-        70,
-        8
-      ]
-    ],
-    "assignments": [
-      {
-        "point": [
-          60.0,
-          10.0
-        ],
-        "material": "Dolgu"
-      },
-      {
-        "point": [
-          60.0,
-          2.0
-        ],
-        "material": "Yumuşak kil"
-      },
-      {
-        "point": [
-          60.0,
-          -6.0
-        ],
-        "material": "Ayrışmış kaya"
-      }
-    ]
+    "assignments": []
   },
   "settings": {
     "general": {
@@ -169,10 +83,10 @@
     "methods": {
       "methods": [
         "bishop",
-        "janbu_simplified",
-        "spencer"
+        "spencer",
+        "gle"
       ],
-      "n_slices": 30,
+      "n_slices": 40,
       "tolerance": 0.005,
       "max_iter": 75,
       "interslice": "half-sine",
@@ -182,7 +96,8 @@
     "groundwater": {
       "method": "water_table",
       "gamma_w": 9.81,
-      "ru": 0.0
+      "ru": 0.0,
+      "crack_water": 1.0
     },
     "seismic": {
       "kh": 0.0,

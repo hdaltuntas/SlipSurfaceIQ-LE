@@ -2,7 +2,7 @@
   "format": "slipsurface-le",
   "version": 3,
   "summary": {
-    "title": "Ankrajlı yarma + sürşarj (örnek)",
+    "title": "Anchored cut with surcharge",
     "analysis": "",
     "author": "",
     "company": "",
@@ -17,7 +17,7 @@
   },
   "materials": [
     {
-      "name": "Kumlu kil",
+      "name": "Sandy clay",
       "model": "MC",
       "gamma": 19,
       "gamma_sat": 20,

@@ -2,11 +2,11 @@
   "format": "slipsurface-le",
   "version": 3,
   "summary": {
-    "title": "Gerilme çatlaklı şev (çatlak dolu)",
+    "title": "Layered slope with water table",
     "analysis": "",
     "author": "",
     "company": "",
-    "date_created": "2026-10-19, 15:31:30",
+    "date_created": "2026-10-19, 15:09:21",
     "comments": [
       "",
       "",
@@ -17,42 +17,78 @@
   },
   "materials": [
     {
-      "name": "Katı kil",
+      "name": "Fill",
       "model": "MC",
       "gamma": 19,
       "gamma_sat": 20,
-      "use_sat": false,
-      "c": 18,
-      "phi": 20,
+      "use_sat": true,
+      "c": 8,
+      "phi": 32,
       "sigma_ci": 25000.0,
       "gsi": 50.0,
       "mi": 10.0,
       "d": 0.0,
       "use_water": true,
       "hu": 1.0,
-      "color": "#3cb371"
+      "color": "#f0c800"
+    },
+    {
+      "name": "Soft clay",
+      "model": "MC",
+      "gamma": 17,
+      "gamma_sat": 18,
+      "use_sat": true,
+      "c": 15,
+      "phi": 18,
+      "sigma_ci": 25000.0,
+      "gsi": 50.0,
+      "mi": 10.0,
+      "d": 0.0,
+      "use_water": true,
+      "hu": 1.0,
+      "color": "#8080d0"
+    },
+    {
+      "name": "Weathered rock",
+      "model": "HB",
+      "gamma": 23,
+      "gamma_sat": 24,
+      "use_sat": true,
+      "c": 5.0,
+      "phi": 30.0,
+      "sigma_ci": 8000,
+      "gsi": 35,
+      "mi": 8,
+      "d": 0.3,
+      "use_water": true,
+      "hu": 1.0,
+      "color": "#ff7f3f"
     }
   ],
   "geometry": {
     "external": [
       [
         0.0,
-        -10.0
+        -12.0
       ],
       [
-        60.0,
-        -10.0
+        70.0,
+        -12.0
       ],
       [
-        60.0,
+        70.0,
+        14.0
+      ],
+      [
+        50.0,
         12.0
       ],
       [
-        32.0,
+        40.0,
         12.0
       ],
       [
-        14.0,
+        20.0,
         0.0
       ],
       [
@@ -60,19 +96,69 @@
         0.0
       ]
     ],
-    "material_boundaries": [],
-    "water_table": null,
-    "tension_crack": [
+    "material_boundaries": [
       [
-        32.0,
-        9.0
+        [
+          0.0,
+          -1.0
+        ],
+        [
+          70.0,
+          5.0
+        ]
       ],
       [
-        60.0,
-        9.0
+        [
+          0.0,
+          -5.0
+        ],
+        [
+          70.0,
+          -2.0
+        ]
       ]
     ],
-    "assignments": []
+    "water_table": [
+      [
+        0,
+        -0.5
+      ],
+      [
+        20,
+        -0.5
+      ],
+      [
+        45,
+        6
+      ],
+      [
+        70,
+        8
+      ]
+    ],
+    "assignments": [
+      {
+        "point": [
+          60.0,
+          10.0
+        ],
+        "material": "Fill"
+      },
+      {
+        "point": [
+          60.0,
+          2.0
+        ],
+        "material": "Soft clay"
+      },
+      {
+        "point": [
+          60.0,
+          -6.0
+        ],
+        "material": "Weathered rock"
+      }
+    ]
   },
   "settings": {
     "general": {
@@ -83,10 +169,10 @@
     "methods": {
       "methods": [
         "bishop",
-        "spencer",
-        "gle"
+        "janbu_simplified",
+        "spencer"
       ],
-      "n_slices": 40,
+      "n_slices": 30,
       "tolerance": 0.005,
       "max_iter": 75,
       "interslice": "half-sine",
@@ -96,8 +182,7 @@
     "groundwater": {
       "method": "water_table",
       "gamma_w": 9.81,
-      "ru": 0.0,
-      "crack_water": 1.0
+      "ru": 0.0
     },
     "seismic": {
       "kh": 0.0,

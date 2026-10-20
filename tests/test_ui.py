@@ -239,7 +239,7 @@ def test_draw_material_boundary_and_assign(app, win):
     app.processEvents()
     QTest.mouseClick(c, Qt.LeftButton, Qt.NoModifier, screen(c, 30, -4))
     mats = {r.material for r in win.doc.geometry.regions}
-    assert mats == {"Zemin 1", "Kil"}
+    assert mats == {"Soil 1", "Kil"}
 
 
 def test_osnap_and_grid_snap(app, win):
@@ -308,10 +308,10 @@ def test_project_settings_dialog(app, win):
 
 def test_materials_dialog_rename_propagates(app, win):
     from slipsurface.ui.dialogs.materials import MaterialsDialog
-    d = MaterialsDialog(win.doc.project.materials, win, "Yumuşak kil")
+    d = MaterialsDialog(win.doc.project.materials, win, "Soft clay")
     d.name.setText("Kil (CH)")
     d._name_edited("Kil (CH)")
-    assert d.renames == {"Yumuşak kil": "Kil (CH)"}
+    assert d.renames == {"Soft clay": "Kil (CH)"}
     mats, renames = d.result_materials(), d.renames
 
     def fn(p):
