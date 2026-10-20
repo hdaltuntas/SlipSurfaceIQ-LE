@@ -120,7 +120,8 @@ def freeze() -> None:
 DEB_REQUIRES = (
     "libc6 (>= 2.39), libgl1, libegl1, libxkbcommon-x11-0, libfontconfig1, "
     "libdbus-1-3, libglib2.0-0t64, libx11-6, libxcb-cursor0, libxcb-icccm4, "
-    "libxcb-image0, libxcb-keysyms1, libxcb-render-util0, libxcb-xinerama0, libxcb-xkb1"
+    "libxcb-image0, libxcb-keysyms1, libxcb-render-util0, libxcb-xinerama0, libxcb-xkb1, "
+    "libxcb-shape0"
 )
 RPM_REQUIRES = {
     "fedora": "glibc >= 2.39, libglvnd-egl, libglvnd-glx, libxkbcommon-x11, fontconfig, "
@@ -128,7 +129,7 @@ RPM_REQUIRES = {
     "xcb-util-keysyms, xcb-util-renderutil",
     "opensuse": "glibc >= 2.39, libglvnd, libxkbcommon-x11-0, fontconfig, libdbus-1-3, "
     "libglib-2_0-0, libX11-6, libxcb-cursor0, libxcb-icccm4, libxcb-image0, "
-    "libxcb-keysyms1, libxcb-render-util0, libxcb-xinerama0, libxcb-xkb1",
+    "libxcb-keysyms1, libxcb-render-util0, libxcb-xinerama0, libxcb-xkb1, libxcb-shape0",
 }
 
 
