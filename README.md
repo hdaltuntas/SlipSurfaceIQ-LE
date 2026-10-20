@@ -118,8 +118,8 @@ Gereksinim: Python 3.10+ (önerilen 3.11–3.13).
 
 | IDE | Hazır ayar |
 |---|---|
-| **VS Code** | `.vscode/launch.json`: *SlipSurface LE*, *ankrajlı örnek*, *açık dosyayı aç*, *Ortam kontrolü*, *Testler*. Yorumlayıcı: `.venv` |
-| **PyCharm** | `.idea/runConfigurations`: *SlipSurface LE* ve *Tests*. Settings → Python Interpreter → `.venv` |
+| **VS Code** | `.vscode/launch.json`: *SlipSurface LE*, *ankrajlı örnek*, *örnek seç*, *açık dosyayı aç*, *Ortam kontrolü*, *Testler*. Yorumlayıcı: `.venv` (otomatik bulunur) |
+| **PyCharm** | `.idea/runConfigurations`: *SlipSurface LE*, *Ortam kontrolü* ve *Tests*. Settings → Python Interpreter → `.venv` |
 | **Spyder / diğer** | `main.py`'yi çalıştırın (Spyder'da Run → Configuration → *Execute in an external system terminal* önerilir) |
 
 ### Komut satırı
@@ -249,7 +249,7 @@ main.py           IDE / komut satırı giriş noktası
 pyproject.toml    paket tanımı (pip install -e .)
 requirements*.txt bağımlılıklar
 run_windows.bat, run_linux_mac.sh   tek tık kurulum + çalıştırma
-.vscode/, .idea/  hazır çalıştırma/hata ayıklama ayarları
+.vscode/, .idea/  isteğe bağlı IDE çalıştırma/hata ayıklama ayarları (program için gerekli değil)
 slipsurface/
   geometry/   slope.py, surfaces.py (daire, polyline, B-spline), builder.py (sınırlardan bölgeler)
   materials/  Mohr-Coulomb, Hoek-Brown

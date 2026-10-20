@@ -15,7 +15,21 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
-            "args": ["examples/ankrajli_yarma.slp.json"],
+            "args": [
+                "examples/ankrajli_yarma.slp.json"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "SlipSurface LE — örnek seç (--example)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": [
+                "--example",
+                "${input:example}"
+            ],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal"
         },
@@ -24,7 +38,9 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
-            "args": ["${file}"],
+            "args": [
+                "${file}"
+            ],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal"
         },
@@ -33,7 +49,9 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
-            "args": ["--check"],
+            "args": [
+                "--check"
+            ],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal"
         },
@@ -43,7 +61,29 @@
             "request": "launch",
             "module": "pytest",
             "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "args": [
+                "-p",
+                "no:cacheprovider"
+            ]
+        }
+    ],
+    "inputs": [
+        {
+            "id": "example",
+            "type": "pickString",
+            "description": "Örnek proje",
+            "options": [
+                "Basit şev (10 m, 2H:1V)",
+                "ACADS EX1(a)",
+                "Katmanlı şev + YASS",
+                "Ankrajlı yarma + sürşarj",
+                "Gerilme çatlaklı şev",
+                "Zemin çivisi + püskürtme beton",
+                "Drenajsız kil / Undrained clay",
+                "Power-law envelope",
+                "Sismik / Seismic kh=0.15"
+            ]
         }
     ]
 }

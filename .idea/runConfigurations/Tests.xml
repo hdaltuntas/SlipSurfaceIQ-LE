@@ -1,7 +1,9 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Tests" type="tests" factoryName="py.test">
-    <module name="slipsurface_le" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="ADD_CONTENT_ROOTS" value="true" />
+    <option name="ADD_SOURCE_ROOTS" value="true" />
+    <option name="_new_additionalArguments" value="&quot;-p no:cacheprovider&quot;" />
     <option name="_new_targetType" value="&quot;PATH&quot;" />
     <option name="_new_target" value="&quot;$PROJECT_DIR$/tests&quot;" />
     <method v="2" />
