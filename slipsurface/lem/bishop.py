@@ -24,7 +24,7 @@ import numpy as np
 from slipsurface.geometry import CircularSurface
 from slipsurface.lem.slicing import SliceSet
 
-M_ALPHA_MIN = 0.2   # Slide2 / Whitman & Bailey (1967) threshold
+M_ALPHA_MIN = 0.2  # Slide2 / Whitman & Bailey (1967) threshold
 
 
 @dataclass
@@ -35,17 +35,22 @@ class LEMResult:
     iterations: int
     m_alpha_min: float = np.nan
     message: str = ""
-    lam: float = np.nan          # interslice force scaling (Spencer / GLE)
-    admissible: bool = True      # physical checks passed (see check_admissibility)
-    issue: str = ""              # why not admissible
+    lam: float = np.nan  # interslice force scaling (Spencer / GLE)
+    admissible: bool = True  # physical checks passed (see check_admissibility)
+    issue: str = ""  # why not admissible
 
     @property
     def ok(self) -> bool:
         return self.converged and np.isfinite(self.fos) and self.fos > 0
 
 
-def check_admissibility(res: LEMResult, ma: np.ndarray, base_strength: np.ndarray,
-                        W: np.ndarray, m_alpha_min: float = M_ALPHA_MIN) -> LEMResult:
+def check_admissibility(
+    res: LEMResult,
+    ma: np.ndarray,
+    base_strength: np.ndarray,
+    W: np.ndarray,
+    m_alpha_min: float = M_ALPHA_MIN,
+) -> LEMResult:
     """Flag numerically/physically unreliable solutions.
 
     * m_alpha < m_alpha_min on any slice (default 0.2, Whitman & Bailey 1967;
@@ -83,7 +88,7 @@ def slice_strength(s: SliceSet, i: int) -> tuple[float, float]:
     mat = s.materials[s.mat_idx[i]]
     sn = np.array([max(s.W[i] / s.b[i] - s.u[i], 0.0)])
     if getattr(mat, "uses_vertical_stress", False):
-        c, tp = cast(Any, mat).strength(sn, sigma_v=s.sigma_v_eff[i:i + 1])
+        c, tp = cast(Any, mat).strength(sn, sigma_v=s.sigma_v_eff[i : i + 1])
     else:
         c, tp = mat.strength(sn)
     return float(c[0]), float(tp[0])
@@ -108,7 +113,7 @@ def _driving_moment_over_R(s: SliceSet, F: float = 1.0) -> float:
     weight term is sum Wv sin(a).
     """
     sign = -1.0 if s.direction == +1 else 1.0
-    circ = cast(CircularSurface, s.surface)        # only called for circles
+    circ = cast(CircularSurface, s.surface)  # only called for circles
     xc, yc, R = sign * circ.xc, circ.yc, circ.r
     qx, qy, m0 = frame_ext(s, F)
     m_ext = np.sum(m0 - xc * qy + yc * qx)
@@ -123,8 +128,8 @@ def ordinary(s: SliceSet, tol: float = 1e-9, max_iter: int = 50) -> LEMResult:
     it = 0
     for it in range(1, (max_iter if s.has_passive else 1) + 1):  # noqa: B007 (used after loop)
         qx, qy, _m = frame_ext(s, F)
-        Hx = -s.Fh + qx                       # horizontal external force (frame, +x)
-        V = s.Wv - qy                         # net downward external force
+        Hx = -s.Fh + qx  # horizontal external force (frame, +x)
+        V = s.Wv - qy  # net downward external force
         if s.is_circular:
             driving = _driving_moment_over_R(s, F)
         else:
@@ -143,12 +148,21 @@ def ordinary(s: SliceSet, tol: float = 1e-9, max_iter: int = 50) -> LEMResult:
     return LEMResult(F, "Ordinary", True, it, float(np.min(cos_a)))
 
 
-def bishop_simplified(s: SliceSet, tol: float = 1e-6, max_iter: int = 100,
-                      f0: float | None = None,
-                      m_alpha_min: float = M_ALPHA_MIN) -> LEMResult:
+def bishop_simplified(
+    s: SliceSet,
+    tol: float = 1e-6,
+    max_iter: int = 100,
+    f0: float | None = None,
+    m_alpha_min: float = M_ALPHA_MIN,
+) -> LEMResult:
     if not s.is_circular:
-        return LEMResult(np.nan, "Bishop", False, 0,
-                         message="Simplified Bishop is defined for circular surfaces only")
+        return LEMResult(
+            np.nan,
+            "Bishop",
+            False,
+            0,
+            message="Simplified Bishop is defined for circular surfaces only",
+        )
     sin_a, cos_a, tan_a = np.sin(s.alpha), np.cos(s.alpha), np.tan(s.alpha)
     if _driving_moment_over_R(s, 1.0 if not s.has_passive else 1e9) <= 0:
         return LEMResult(np.nan, "Bishop", False, 0, message="non-positive driving moment")
@@ -164,8 +178,14 @@ def bishop_simplified(s: SliceSet, tol: float = 1e-6, max_iter: int = 100,
     for it in range(1, max_iter + 1):
         m_a = cos_a + sin_a * tp / f
         if np.any(m_a <= 1e-9):
-            return LEMResult(np.nan, "Bishop", False, it, float(m_a.min()),
-                             "m_alpha <= 0 (steep negative base angle)")
+            return LEMResult(
+                np.nan,
+                "Bishop",
+                False,
+                it,
+                float(m_a.min()),
+                "m_alpha <= 0 (steep negative base angle)",
+            )
         _, qy, _ = frame_ext(s, f)
         eff_w = s.Wv - qy - s.u * s.b
         driving = _driving_moment_over_R(s, f)

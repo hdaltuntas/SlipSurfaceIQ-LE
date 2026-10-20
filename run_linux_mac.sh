@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# SlipSurfaceIQ LE - Linux/macOS: sanal ortami kurar / gunceller ve programi baslatir.
+# SlipSurfaceIQ LE - Linux/macOS: creates/updates the virtual environment and starts the app.
 set -e
 cd "$(dirname "$0")"
 if [ ! -x .venv/bin/python ]; then
-    echo "Sanal ortam olusturuluyor..."
+    echo "Creating virtual environment..."
     python3 -m venv .venv
     .venv/bin/python -m pip install --upgrade pip
 fi
-# requirements.txt degistiyse (yeni surum) paketleri yeniden kur
+# Reinstall packages if requirements.txt changed (new release)
 if ! cmp -s requirements.txt .venv/requirements.stamp; then
-    echo "Gerekli paketler kuruluyor / guncelleniyor..."
+    echo "Installing / updating required packages..."
     .venv/bin/python -m pip install -r requirements.txt
     cp requirements.txt .venv/requirements.stamp
 fi

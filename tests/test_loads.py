@@ -18,8 +18,7 @@ from slipsurface.loads import (
 )
 from slipsurface.materials import MohrCoulomb
 
-FORCE_EQ = ["spencer", "gle", "janbu_simplified", "corps1", "corps2", "lowe_karafiath",
-            "ordinary"]
+FORCE_EQ = ["spencer", "gle", "janbu_simplified", "corps1", "corps2", "lowe_karafiath", "ordinary"]
 TH = math.radians(15)
 TP = math.tan(math.radians(19.6))
 
@@ -60,10 +59,10 @@ def exact_passive(Px, Py, Qx=0.0, Qy=0.0):
 @pytest.mark.parametrize("method", FORCE_EQ)
 def test_block_with_line_and_distributed_load(method):
     g, mats = acads()
-    loads = LoadSet(distributed=[DistributedLoad(42, 52, 10, 30, "vertical")],
-                    line=[LineLoad(45, 10, 50, 250)])
-    res, _ = analyze(g, plane(), mats, n_slices=40, method=method,
-                     opts=SliceOptions(loads=loads))
+    loads = LoadSet(
+        distributed=[DistributedLoad(42, 52, 10, 30, "vertical")], line=[LineLoad(45, 10, 50, 250)]
+    )
+    res, _ = analyze(g, plane(), mats, n_slices=40, method=method, opts=SliceOptions(loads=loads))
     qtot = 0.5 * (10 + 30) * 10
     px, py = 50 * math.cos(math.radians(250)), 50 * math.sin(math.radians(250))
     assert res.ok, res.message
@@ -81,8 +80,14 @@ def _anchor(kind="end_anchored", app="active", T=300.0, spacing=1.0, **kw):
 def test_block_with_active_anchor(method):
     g, mats = acads()
     sup, d = _anchor(app="active", T=300, spacing=1.5)
-    res, s = analyze(g, plane(), mats, n_slices=40, method=method,
-                     opts=SliceOptions(loads=LoadSet(supports=[sup])))
+    res, s = analyze(
+        g,
+        plane(),
+        mats,
+        n_slices=40,
+        method=method,
+        opts=SliceOptions(loads=LoadSet(supports=[sup])),
+    )
     T = 300 / 1.5
     assert res.ok and len(s.support_forces) == 1
     assert res.fos == pytest.approx(exact_active(T * d[0], T * d[1]), rel=1e-6)
@@ -92,8 +97,14 @@ def test_block_with_active_anchor(method):
 def test_block_with_passive_anchor(method):
     g, mats = acads()
     sup, d = _anchor(app="passive", T=300)
-    res, _ = analyze(g, plane(), mats, n_slices=40, method=method,
-                     opts=SliceOptions(loads=LoadSet(supports=[sup])))
+    res, _ = analyze(
+        g,
+        plane(),
+        mats,
+        n_slices=40,
+        method=method,
+        opts=SliceOptions(loads=LoadSet(supports=[sup])),
+    )
     assert res.ok
     assert res.fos == pytest.approx(exact_passive(300 * d[0], 300 * d[1]), rel=1e-6)
 
@@ -109,11 +120,11 @@ def test_support_intersection_and_lengths():
 
 def test_support_capacities():
     st = SupportType(kind="grouted_tieback", tensile=500, bond_strength=40, bond_length=5)
-    assert support_capacity(st, 3, 10)[0] == pytest.approx(200)      # bond governs
-    assert support_capacity(st, 3, 2)[0] == pytest.approx(80)        # partial bond length
+    assert support_capacity(st, 3, 10)[0] == pytest.approx(200)  # bond governs
+    assert support_capacity(st, 3, 2)[0] == pytest.approx(80)  # partial bond length
     st = SupportType(kind="soil_nail", tensile=150, plate=50, bond_strength=20)
-    assert support_capacity(st, 2, 10)[0] == pytest.approx(90)       # plate + inner bond
-    assert support_capacity(st, 10, 3)[0] == pytest.approx(60)       # outer pullout
+    assert support_capacity(st, 2, 10)[0] == pytest.approx(90)  # plate + inner bond
+    assert support_capacity(st, 10, 3)[0] == pytest.approx(60)  # outer pullout
     st = SupportType(kind="geotextile", tensile=40, pullout=10)
     assert support_capacity(st, 1, 5)[0] == pytest.approx(10)
     assert support_capacity(st, 8, 9)[0] == pytest.approx(40)
@@ -136,10 +147,13 @@ def test_bishop_consistent_with_gle_moment_under_loads():
     Bishop FoS — also with line loads, distributed loads and (passive) anchors."""
     from slipsurface.lem import bishop_simplified, make_slices
     from slipsurface.lem.gle import _Frame, _residuals, _strengths_frame, interslice_function
+
     g, mats = acads()
-    loads = LoadSet(line=[LineLoad(30, 5, 40, 250)],
-                    distributed=[DistributedLoad(40, 46, 15, 25, "vertical")],
-                    supports=[_anchor(app="passive", T=200)[0]])
+    loads = LoadSet(
+        line=[LineLoad(30, 5, 40, 250)],
+        distributed=[DistributedLoad(40, 46, 15, 25, "vertical")],
+        supports=[_anchor(app="passive", T=200)[0]],
+    )
     s = make_slices(g, CircularSurface(20, 28, 28), mats, opts=SliceOptions(loads=loads))
     fb = bishop_simplified(s, tol=1e-12).fos
     fr = _Frame(s)
@@ -150,24 +164,28 @@ def test_bishop_consistent_with_gle_moment_under_loads():
 
 def test_surcharge_reduces_fos_and_mirror_invariance():
     from slipsurface.project import acads_1a_project
+
     p = acads_1a_project()
     g, m = p.build_geometry(), p.build_materials()
     surf = CircularSurface(20, 28, 28)
-    load = LoadSet(distributed=[DistributedLoad(40, 46, 20, 20)],
-                   supports=[_anchor(T=150)[0]])
+    load = LoadSet(distributed=[DistributedLoad(40, 46, 20, 20)], supports=[_anchor(T=150)[0]])
     a0, _ = analyze(g, surf, m, method="spencer")
-    a, _ = analyze(g, surf, m, method="spencer", opts=SliceOptions(loads=LoadSet(
-        distributed=load.distributed)))
+    a, _ = analyze(
+        g, surf, m, method="spencer", opts=SliceOptions(loads=LoadSet(distributed=load.distributed))
+    )
     assert a.fos < a0.fos
     full, _ = analyze(g, surf, m, method="spencer", opts=SliceOptions(loads=load))
     # mirrored model, mirrored loads
     p.external = [[-x, y] for x, y in p.external]
     gm = p.build_geometry()
     sup = load.supports[0]
-    mload = LoadSet(distributed=[DistributedLoad(-46, -40, 20, 20)],
-                    supports=[Support((-sup.a[0], sup.a[1]), (-sup.b[0], sup.b[1]), sup.stype)])
-    b, s = analyze(gm, CircularSurface(-20, 28, 28), m, method="spencer",
-                   opts=SliceOptions(loads=mload))
+    mload = LoadSet(
+        distributed=[DistributedLoad(-46, -40, 20, 20)],
+        supports=[Support((-sup.a[0], sup.a[1]), (-sup.b[0], sup.b[1]), sup.stype)],
+    )
+    b, s = analyze(
+        gm, CircularSurface(-20, 28, 28), m, method="spencer", opts=SliceOptions(loads=mload)
+    )
     assert s.direction == +1
     assert b.fos == pytest.approx(full.fos, rel=1e-6)
 
@@ -178,13 +196,14 @@ def test_normal_distributed_load_on_face():
     loads = LoadSet(distributed=[DistributedLoad(25, 35, 10, 10, "normal")])
     _, s = analyze(g, CircularSurface(20, 28, 28), mats, opts=SliceOptions(loads=loads))
     L = math.hypot(10, 5)
-    n = np.array([0.5, -1.0]) / math.hypot(0.5, 1.0)    # into the soil (face dy/dx = 0.5)
+    n = np.array([0.5, -1.0]) / math.hypot(0.5, 1.0)  # into the soil (face dy/dx = 0.5)
     assert s.Qx_a.sum() == pytest.approx(10 * L * n[0], rel=1e-6)
     assert s.Qy_a.sum() == pytest.approx(10 * L * n[1], rel=1e-6)
 
 
-@pytest.mark.parametrize("method", ["spencer", "gle", "janbu_simplified", "corps1",
-                                    "corps2", "lowe_karafiath"])
+@pytest.mark.parametrize(
+    "method", ["spencer", "gle", "janbu_simplified", "corps1", "corps2", "lowe_karafiath"]
+)
 def test_ponded_water_weight_and_pore_pressure(method):
     """Water table above the crest (fully submerged slope): the ponded-water
     column over each slice adds weight, and the base pore pressure uses the
@@ -194,8 +213,9 @@ def test_ponded_water_weight_and_pore_pressure(method):
     with V = soil + ponded-water weight and U = sum u l."""
     g, mats = acads()
     g.water_table = np.array([[0.0, 12.0], [70.0, 12.0]])
-    res, s = analyze(g, plane(), mats, n_slices=40, method=method,
-                     opts=SliceOptions(pore="water_table"))
+    res, s = analyze(
+        g, plane(), mats, n_slices=40, method=method, opts=SliceOptions(pore="water_table")
+    )
     assert res.ok, res.message
     assert s.W.sum() > 0
     t = math.tan(TH)
@@ -216,8 +236,9 @@ def test_ponded_water_ordinary_loose():
     only approximates the closed form (see test above)."""
     g, mats = acads()
     g.water_table = np.array([[0.0, 12.0], [70.0, 12.0]])
-    res, _ = analyze(g, plane(), mats, n_slices=40, method="ordinary",
-                     opts=SliceOptions(pore="water_table"))
+    res, _ = analyze(
+        g, plane(), mats, n_slices=40, method="ordinary", opts=SliceOptions(pore="water_table")
+    )
     t = math.tan(TH)
     xe = 20 + 10 / t
     L = math.hypot(xe - 20, 10)

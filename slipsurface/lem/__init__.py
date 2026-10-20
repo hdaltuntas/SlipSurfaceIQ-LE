@@ -34,13 +34,35 @@ def method_name(key: str) -> str:
     return METHODS[key][1] if key in METHODS else key
 
 
-__all__ = ["GAMMA_W", "LEMResult", "METHODS", "SOLVERS", "SliceOptions", "SliceSet",
-           "SlicingError", "analyze", "analyze_circle", "bishop_simplified", "make_slices",
-           "method_name", "morgenstern_price", "ordinary", "solve_gle", "spencer"]
+__all__ = [
+    "GAMMA_W",
+    "LEMResult",
+    "METHODS",
+    "SOLVERS",
+    "SliceOptions",
+    "SliceSet",
+    "SlicingError",
+    "analyze",
+    "analyze_circle",
+    "bishop_simplified",
+    "make_slices",
+    "method_name",
+    "morgenstern_price",
+    "ordinary",
+    "solve_gle",
+    "spencer",
+]
 
 
-def analyze(geom, surf, materials, n_slices: int | None = None, method: str = "bishop",
-            opts: SliceOptions | None = None, **solver_kw):
+def analyze(
+    geom,
+    surf,
+    materials,
+    n_slices: int | None = None,
+    method: str = "bishop",
+    opts: SliceOptions | None = None,
+    **solver_kw,
+):
     """Slice + solve. Returns (LEMResult, SliceSet | None).
 
     Ordinary/Fellenius on a non-circular surface uses its force form.
@@ -51,19 +73,22 @@ def analyze(geom, surf, materials, n_slices: int | None = None, method: str = "b
         return LEMResult(float("nan"), method, False, 0, message=str(exc)), None
     fn = SOLVERS[method]
     if method in ("bishop", "ordinary"):
-        kw = {k: v for k, v in solver_kw.items()
-              if k in ("tol", "max_iter", "m_alpha_min") and not (method == "ordinary"
-                                                                 and k == "m_alpha_min")}
+        kw = {
+            k: v
+            for k, v in solver_kw.items()
+            if k in ("tol", "max_iter", "m_alpha_min")
+            and not (method == "ordinary" and k == "m_alpha_min")
+        }
     else:
         kw = {k: v for k, v in solver_kw.items() if k in ("tol", "max_outer")}
         if "max_iter" in solver_kw:
             kw["max_outer"] = solver_kw["max_iter"]
         if method == "gle":
-            kw.update({k: v for k, v in solver_kw.items()
-                       if k in ("interslice", "f_start", "f_end")})
-        kw.update({k: v for k, v in solver_kw.items()
-                   if k in ("m_alpha_min", "e_max_ratio")})
+            kw.update(
+                {k: v for k, v in solver_kw.items() if k in ("interslice", "f_start", "f_end")}
+            )
+        kw.update({k: v for k, v in solver_kw.items() if k in ("m_alpha_min", "e_max_ratio")})
     return fn(s, **kw), s
 
 
-analyze_circle = analyze   # backwards-compatible name
+analyze_circle = analyze  # backwards-compatible name

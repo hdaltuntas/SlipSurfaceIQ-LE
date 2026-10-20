@@ -24,6 +24,7 @@ def test_dxf_roundtrip(tmp_path):
 
 def test_dxf_millimetres_and_ambiguity(tmp_path):
     import ezdxf
+
     doc = ezdxf.new()
     doc.units = 4
     points = [[x * 1000, y * 1000] for x, y in default_project().external]
@@ -62,7 +63,7 @@ def test_examples_serialize_and_build(name):
 
 
 def test_strength_envelopes():
-    stress = np.array([0., 10., 100., 1000.])
+    stress = np.array([0.0, 10.0, 100.0, 1000.0])
     m = PowerLaw("test", gamma=19, coefficient=0.3, exponent=0.7)
     c, slope = m.strength(stress)
     expected = 30 * (1 + stress / 100) ** 0.7
@@ -82,6 +83,7 @@ def test_live_language_preserves_document_and_dialog_values(monkeypatch):
     from PySide6.QtWidgets import QApplication, QDialog, QVBoxLayout, QLabel, QLineEdit
     from slipsurface.ui import i18n
     from slipsurface.ui.modeler import ModelerWindow
+
     app = QApplication.instance() or QApplication([])
     # Do not change the user's persisted language during tests.
     monkeypatch.setattr(i18n, "settings", lambda: _MemorySettings())
@@ -127,6 +129,7 @@ def test_new_models_against_equivalent_linear_material(method, model):
     from slipsurface.project import acads_1a_project
     from slipsurface.lem import analyze
     from slipsurface.geometry import CircularSurface
+
     p = acads_1a_project()
     material = p.materials[0]
     if model == "UD":
@@ -149,16 +152,22 @@ def test_undrained_ignores_global_ru():
     from slipsurface.project import acads_1a_project
     from slipsurface.geometry import CircularSurface
     from slipsurface.lem import analyze, SliceOptions
+
     project = acads_1a_project()
     project.materials[0].model = "UD"
-    result, slices = analyze(project.build_geometry(), CircularSurface(20, 28, 28),
-                             project.build_materials(), opts=SliceOptions(pore="ru", ru=0.4))
+    result, slices = analyze(
+        project.build_geometry(),
+        CircularSurface(20, 28, 28),
+        project.build_materials(),
+        opts=SliceOptions(pore="ru", ru=0.4),
+    )
     assert result.ok
     assert np.all(slices.u == 0)
 
 
 def test_complete_script_example():
     from pathlib import Path
+
     source = Path(__file__).parents[1] / "examples" / "scripted_slope.py"
     project, _ = run_script(source.read_text(encoding="utf-8"), default_project())
     assert project.support_patterns and project.facings and project.tension_crack
@@ -170,6 +179,7 @@ def test_new_models_in_pdf(tmp_path, model, expected):
     from slipsurface.analysis import run_analysis
     from slipsurface.project import acads_1a_project
     from slipsurface.report import build_pdf
+
     p = acads_1a_project()
     p.materials[0].model = model
     p.surfaces.surface_type = "user"
@@ -182,6 +192,7 @@ def test_new_models_in_pdf(tmp_path, model, expected):
     text = "\n".join(page.extract_text() for page in PdfReader(path).pages)
     assert "diğer dayanım modelleri" in text and expected in text
     from slipsurface.report import ReportOptions
+
     build_pdf(results, path, ReportOptions(language="en"))
     text = "\n".join(page.extract_text() for page in PdfReader(path).pages)
     assert "other strength models" in text and expected in text

@@ -39,11 +39,13 @@ def upper_profile(poly: Polygon) -> np.ndarray:
     for left, right in zip(profile[:-1], profile[1:], strict=False):
         x = 0.5 * (left[0] + right[0])
         cut = LineString([(x, ymin), (x, ymax)]).intersection(poly)
-        if (not isinstance(cut, LineString) or
-                not np.isclose(cut.bounds[3], 0.5 * (left[1] + right[1]),
-                               rtol=0.0, atol=1e-10 * scale)):
-            raise ValueError("Dik şev yüzü veya çıkmalı geometri desteklenmiyor. "
-                             "Zemin yüzeyi sürekli ve x artan bir profil olmalı.")
+        if not isinstance(cut, LineString) or not np.isclose(
+            cut.bounds[3], 0.5 * (left[1] + right[1]), rtol=0.0, atol=1e-10 * scale
+        ):
+            raise ValueError(
+                "Dik şev yüzü veya çıkmalı geometri desteklenmiyor. "
+                "Zemin yüzeyi sürekli ve x artan bir profil olmalı."
+            )
     return profile
 
 
@@ -75,8 +77,14 @@ def _attach_ends(ml: np.ndarray, boundary, domain: Polygon, tol: float) -> np.nd
     return ml
 
 
-def build_regions(external, material_lines, assignments, default_material: str,
-                  snap_tol: float | None = None, min_area: float = 1e-6):
+def build_regions(
+    external,
+    material_lines,
+    assignments,
+    default_material: str,
+    snap_tol: float | None = None,
+    min_area: float = 1e-6,
+):
     """Return (domain polygon, [Region], clipped material lines)."""
     ext = np.asarray(external, dtype=float)
     if len(ext) < 3:
@@ -108,25 +116,35 @@ def build_regions(external, material_lines, assignments, default_material: str,
                 clipped.append(np.asarray(g.coords))
 
     noded = unary_union(lines)
-    polys = [p for p in polygonize(noded)
-             if p.area > min_area and domain.buffer(tol).contains(p.representative_point())]
+    polys = [
+        p
+        for p in polygonize(noded)
+        if p.area > min_area and domain.buffer(tol).contains(p.representative_point())
+    ]
     if not polys:
         polys = [domain]
 
     regions = []
     for p in polys:
         mat = default_material
-        for (x, y, name) in assignments or []:
+        for x, y, name in assignments or []:
             if p.contains(Point(x, y)):
                 mat = name
         regions.append(Region(p, mat))
     return domain, regions, clipped
 
 
-def boundary_geometry(external, material_lines=(), assignments=(), default_material="Zemin 1",
-                      water_table=None, name: str = "Model") -> SlopeGeometry:
-    domain, regions, clipped = build_regions(external, material_lines, assignments,
-                                             default_material)
+def boundary_geometry(
+    external,
+    material_lines=(),
+    assignments=(),
+    default_material="Zemin 1",
+    water_table=None,
+    name: str = "Model",
+) -> SlopeGeometry:
+    domain, regions, clipped = build_regions(
+        external, material_lines, assignments, default_material
+    )
     surface = upper_profile(domain)
     x0, x1 = surface[0, 0], surface[-1, 0]
     wt = None
@@ -135,6 +153,14 @@ def boundary_geometry(external, material_lines=(), assignments=(), default_mater
         if np.any(np.diff(wt[:, 0]) <= 0):
             raise ValueError("YASS noktaları x artan sırada olmalı.")
         wt = _extend_flat(wt, x0, x1)
-    return SlopeGeometry(surface=surface, regions=regions, water_table=wt,
-                         meta={"name": name, "external": np.asarray(external, float),
-                               "boundaries": clipped, "domain": domain})
+    return SlopeGeometry(
+        surface=surface,
+        regions=regions,
+        water_table=wt,
+        meta={
+            "name": name,
+            "external": np.asarray(external, float),
+            "boundaries": clipped,
+            "domain": domain,
+        },
+    )

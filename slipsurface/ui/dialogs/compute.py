@@ -28,8 +28,12 @@ STAGES = {
     "final": "Kritik yüzeyin son çözümü",
     "user": "Kullanıcı tanımlı yüzey çözülüyor",
 }
-SURFACES = {"circular": "Dairesel", "polyline": "Dairesel olmayan (poligonal)",
-            "spline": "Dairesel olmayan (B-spline)", "user": "Kullanıcı tanımlı"}
+SURFACES = {
+    "circular": "Dairesel",
+    "polyline": "Dairesel olmayan (poligonal)",
+    "spline": "Dairesel olmayan (B-spline)",
+    "user": "Kullanıcı tanımlı",
+}
 
 
 def _clock(seconds: float) -> str:
@@ -61,7 +65,7 @@ class ComputeDialog(QDialog):
         self.header.setStyleSheet("font-size:16px;font-weight:600;")
         self.subtitle = QLabel(title)
         self.subtitle.setStyleSheet("color:#6b7a90;")
-        self.label = QLabel()                    # one-line summary (also for tests)
+        self.label = QLabel()  # one-line summary (also for tests)
         self.label.setWordWrap(True)
         self.overall = QProgressBar()
         self.overall.setRange(0, self.n * 100)
@@ -75,12 +79,19 @@ class ComputeDialog(QDialog):
         grid.setColumnStretch(1, 1)
         grid.setColumnStretch(3, 1)
         self.fields = {}
-        rows = [("method", tr("Yöntem")), ("stage", tr("Aşama")),
-                ("surface", tr("Yüzey tipi")), ("slices", tr("Dilim sayısı")),
-                ("generation", tr("Nesil")), ("evaluated", tr("Değerlendirilen yüzey")),
-                ("valid", tr("Geçerli / reddedilen")), ("best", tr("En düşük FS")),
-                ("current", tr("Son geçerli FS")), ("elapsed", tr("Geçen süre")),
-                ("remaining", tr("Tahmini kalan süre"))]
+        rows = [
+            ("method", tr("Yöntem")),
+            ("stage", tr("Aşama")),
+            ("surface", tr("Yüzey tipi")),
+            ("slices", tr("Dilim sayısı")),
+            ("generation", tr("Nesil")),
+            ("evaluated", tr("Değerlendirilen yüzey")),
+            ("valid", tr("Geçerli / reddedilen")),
+            ("best", tr("En düşük FS")),
+            ("current", tr("Son geçerli FS")),
+            ("elapsed", tr("Geçen süre")),
+            ("remaining", tr("Tahmini kalan süre")),
+        ]
         for r, (key, text) in enumerate(rows):
             lab = QLabel(text + ":")
             lab.setStyleSheet("color:#6b7a90;")
@@ -94,8 +105,7 @@ class ComputeDialog(QDialog):
         self.log.setReadOnly(True)
         self.log.setMaximumBlockCount(500)
         self.log.setMinimumHeight(130)
-        self.log.setStyleSheet("font-family:Consolas,'DejaVu Sans Mono',monospace;"
-                               "font-size:12px;")
+        self.log.setStyleSheet("font-family:Consolas,'DejaVu Sans Mono',monospace;font-size:12px;")
 
         buttons = QDialogButtonBox(QDialogButtonBox.Cancel)
         self.cancel_button = buttons.button(QDialogButtonBox.Cancel)
@@ -130,7 +140,7 @@ class ComputeDialog(QDialog):
         self._log(tr("İptal istendi"))
         self.canceled.emit()
 
-    def reject(self) -> None:                     # Esc / window close = cancel
+    def reject(self) -> None:  # Esc / window close = cancel
         if self._finished:
             super().reject()
         elif self.cancel_button.isEnabled():
@@ -186,5 +196,7 @@ class ComputeDialog(QDialog):
         f["elapsed"].setText(_clock(elapsed))
         f["remaining"].setText(_clock(remaining) if math.isfinite(remaining) else "—")
         pre = f" ({tr('ön arama')})" if stage == "presearch" else ""
-        self.label.setText(f"{tr('Yöntem')} {i + 1}/{self.n}: {mname}{pre} — "
-                           f"{tr('Nesil')} {gen}, {tr('en düşük FS')} {_fs(st.get('best'))}")
+        self.label.setText(
+            f"{tr('Yöntem')} {i + 1}/{self.n}: {mname}{pre} — "
+            f"{tr('Nesil')} {gen}, {tr('en düşük FS')} {_fs(st.get('best'))}"
+        )

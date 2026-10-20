@@ -40,7 +40,7 @@ class CircularSurface:
         """Lower arc elevation; NaN outside [xc-r, xc+r]."""
         x = np.asarray(x, dtype=float)
         d2 = self.r**2 - (x - self.xc) ** 2
-        tol = 1e-10 * self.r**2                     # round-off at x = xc ± r
+        tol = 1e-10 * self.r**2  # round-off at x = xc ± r
         return np.where(d2 >= -tol, self.yc - np.sqrt(np.maximum(d2, 0.0)), np.nan)
 
     def sin_alpha(self, x):
@@ -104,7 +104,7 @@ class SplineSurface:
 
     def control_points(self) -> np.ndarray:
         t, k = self._bs.t, self.k
-        gx = np.array([t[i + 1:i + k + 1].mean() for i in range(len(self.ctrl_y))])
+        gx = np.array([t[i + 1 : i + k + 1].mean() for i in range(len(self.ctrl_y))])
         return np.column_stack([gx, self.ctrl_y])
 
     def y(self, x):
@@ -125,8 +125,7 @@ class SplineSurface:
         return f"SplineSurface(x0={self.x0:.2f}, x1={self.x1:.2f}, n_ctrl={len(self.ctrl_y)})"
 
 
-def slip_extent(geom: SlopeGeometry, surf,
-                n_scan: int = 400) -> tuple[float, float] | None:
+def slip_extent(geom: SlopeGeometry, surf, n_scan: int = 400) -> tuple[float, float] | None:
     """Exit (left) and entry (right) x of the slipping mass.
 
     Returns None when the surface does not cut the ground, or when the
@@ -140,7 +139,7 @@ def slip_extent(geom: SlopeGeometry, surf,
     if hi - lo <= 1e-9:
         return None
     xs = np.linspace(lo, hi, n_scan)
-    f = geom.ground_y(xs) - surf.y(xs)          # >0 : arc below ground
+    f = geom.ground_y(xs) - surf.y(xs)  # >0 : arc below ground
     f = np.nan_to_num(f, nan=-1.0)
     eps = 1e-9
     inside = f > eps
@@ -157,7 +156,7 @@ def slip_extent(geom: SlopeGeometry, surf,
 
     best, best_area = None, 0.0
     for i0, i1 in zip(starts, ends, strict=False):
-        area = np.trapezoid(f[i0:i1 + 1], xs[i0:i1 + 1]) if i1 > i0 else 0.0
+        area = np.trapezoid(f[i0 : i1 + 1], xs[i0 : i1 + 1]) if i1 > i0 else 0.0
         if area > best_area:
             best, best_area = (i0, i1), area
     if best is None:

@@ -5,8 +5,9 @@ from slipsurface.geometry import simple_slope
 
 
 def test_simple_slope_shape():
-    g = simple_slope(height=10, ratio_h_to_v=2, toe_x=15, left_bench=15, right_bench=20,
-                     depth_below_toe=10)
+    g = simple_slope(
+        height=10, ratio_h_to_v=2, toe_x=15, left_bench=15, right_bench=20, depth_below_toe=10
+    )
     assert g.meta["toe"] == (15.0, 0.0)
     assert g.meta["crest"] == (35.0, 10.0)
     assert g.bounds == (0.0, -10.0, 55.0, 10.0)

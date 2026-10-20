@@ -17,16 +17,19 @@ from slipsurface.ui.icons import icon
 def _install_excepthook() -> None:
     """Show unexpected errors in a dialog (and the IDE console) instead of a
     silent crash; the application keeps running."""
+
     def hook(exc_type, exc, tb):
         text = "".join(traceback.format_exception(exc_type, exc, tb))
-        if sys.__stderr__ is not None:              # None under pythonw.exe
+        if sys.__stderr__ is not None:  # None under pythonw.exe
             sys.__stderr__.write(text)
         app = QApplication.instance()
         if app is not None and not app.closingDown():
-            box = QMessageBox(QMessageBox.Critical, "Beklenmeyen hata",
-                              f"{exc_type.__name__}: {exc}")
+            box = QMessageBox(
+                QMessageBox.Critical, "Beklenmeyen hata", f"{exc_type.__name__}: {exc}"
+            )
             box.setDetailedText(text)
             box.exec()
+
     sys.excepthook = hook
 
 
@@ -36,13 +39,20 @@ def light_palette() -> QPalette:
     not invert text colours."""
     pal = QPalette()
     c = {
-        QPalette.Window: "#f0f0f0", QPalette.WindowText: "#000000",
-        QPalette.Base: "#ffffff", QPalette.AlternateBase: "#f5f6f8",
-        QPalette.ToolTipBase: "#ffffdc", QPalette.ToolTipText: "#000000",
-        QPalette.Text: "#000000", QPalette.Button: "#f0f0f0",
-        QPalette.ButtonText: "#000000", QPalette.BrightText: "#ff0000",
-        QPalette.Highlight: "#3478d4", QPalette.HighlightedText: "#ffffff",
-        QPalette.Link: "#2a7ad0", QPalette.PlaceholderText: "#8a8a8a",
+        QPalette.Window: "#f0f0f0",
+        QPalette.WindowText: "#000000",
+        QPalette.Base: "#ffffff",
+        QPalette.AlternateBase: "#f5f6f8",
+        QPalette.ToolTipBase: "#ffffdc",
+        QPalette.ToolTipText: "#000000",
+        QPalette.Text: "#000000",
+        QPalette.Button: "#f0f0f0",
+        QPalette.ButtonText: "#000000",
+        QPalette.BrightText: "#ff0000",
+        QPalette.Highlight: "#3478d4",
+        QPalette.HighlightedText: "#ffffff",
+        QPalette.Link: "#2a7ad0",
+        QPalette.PlaceholderText: "#8a8a8a",
     }
     for role, col in c.items():
         pal.setColor(role, QColor(col))
@@ -51,8 +61,12 @@ def light_palette() -> QPalette:
     return pal
 
 
-def run(argv: list[str] | None = None, project_path: str | None = None,
-        example: str | None = None, smoke: float | None = None) -> int:
+def run(
+    argv: list[str] | None = None,
+    project_path: str | None = None,
+    example: str | None = None,
+    smoke: float | None = None,
+) -> int:
     argv = list(argv if argv is not None else sys.argv)
     app = QApplication.instance() or QApplication(argv)
     app.setApplicationName("SlipSurfaceIQ LE")
@@ -61,6 +75,7 @@ def run(argv: list[str] | None = None, project_path: str | None = None,
     app.setStyle("Fusion")
     from slipsurface.ui.preferences import apply_theme
     from slipsurface.ui.i18n import initialize
+
     initialize()
     apply_theme()
     app.setWindowIcon(icon("interpret"))
@@ -83,11 +98,14 @@ def run(argv: list[str] | None = None, project_path: str | None = None,
     if project_path:
         win.open_project(project_path)
     from slipsurface.ui.preferences import show_screen_sized
+
     show_screen_sized(win)
     if smoke:
+
         def _quit():
             win.doc.mark_clean()
             win.close()
             app.quit()
+
         QTimer.singleShot(int(smoke * 1000), _quit)
     return app.exec()

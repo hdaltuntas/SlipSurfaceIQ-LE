@@ -45,12 +45,15 @@ def test_every_catalogue_model_builds_and_round_trips(key):
     q.validate()
 
 
-@pytest.mark.parametrize("model", [
-    PowerCurve("p", gamma=20, pc_a=2.0, pc_b=0.7, pc_c=3.0, pc_d=10.0),
-    BartonBandis("b", gamma=26, phi_r=28, jrc=12, jcs=60_000, l0=0.1, ln=1.0),
-    CNIRockMass("c", gamma=26, sigma_cm=8000, cni_a=0.5, cni_n=0.7, tensile=80),
-    Sanisand("s", gamma=19),
-])
+@pytest.mark.parametrize(
+    "model",
+    [
+        PowerCurve("p", gamma=20, pc_a=2.0, pc_b=0.7, pc_c=3.0, pc_d=10.0),
+        BartonBandis("b", gamma=26, phi_r=28, jrc=12, jcs=60_000, l0=0.1, ln=1.0),
+        CNIRockMass("c", gamma=26, sigma_cm=8000, cni_a=0.5, cni_n=0.7, tensile=80),
+        Sanisand("s", gamma=19),
+    ],
+)
 def test_tangent_strength_matches_envelope(model):
     """(c, tan phi) is the tangent of tau(sigma): c + s tan phi = tau and the
     slope equals the numerical derivative (away from the 70 degree cap)."""
@@ -80,7 +83,7 @@ def test_cni_and_power_curve_formulas():
     cni = CNIRockMass("c", gamma=26, sigma_cm=10_000, cni_a=0.6, cni_n=0.75, tensile=100)
     assert cni.tau(200.0) == pytest.approx(0.6 * 10_000 * (300 / 10_000) ** 0.75)
     pc = PowerCurve("p", gamma=20, pc_a=1.5, pc_b=0.8, pc_c=4.0, pc_d=5.0)
-    assert pc.tau(95.0) == pytest.approx(1.5 * 100 ** 0.8 + 4.0)
+    assert pc.tau(95.0) == pytest.approx(1.5 * 100**0.8 + 4.0)
 
 
 def test_hoek_brown_direct_matches_generalized():
@@ -92,7 +95,7 @@ def test_hoek_brown_direct_matches_generalized():
 
 def test_shansep_uses_effective_vertical_stress():
     m = Shansep("s", gamma=18, s_ratio=0.25, m_exp=0.8, ocr=2.0, su_min=5.0)
-    su = 0.25 * 100 * 2 ** 0.8
+    su = 0.25 * 100 * 2**0.8
     c, tp = m.strength(np.array([10.0]), sigma_v=np.array([100.0]))
     assert c[0] == pytest.approx(su) and tp[0] == 0
     c, _ = m.strength(np.array([10.0]), sigma_v=np.array([0.0]))
@@ -100,12 +103,15 @@ def test_shansep_uses_effective_vertical_stress():
     # in the solver: dry homogeneous slope, su = S W/b at each base
     p = acads_1a_project()
     p.methods.methods = ["spencer"]
-    p.materials[0] = MaterialSpec(name=p.materials[0].name, model="SH", gamma=18,
-                                  shansep_s=0.3, shansep_m=0.8, ocr=1.0)
+    p.materials[0] = MaterialSpec(
+        name=p.materials[0].name, model="SH", gamma=18, shansep_s=0.3, shansep_m=0.8, ocr=1.0
+    )
     geom, mats = p.build_geometry(), p.build_materials()
     from slipsurface.geometry import CircularSurface
-    res, s = analyze(geom, CircularSurface(20.0, 30.0, 30.0), mats, method="spencer",
-                     opts=p.slice_options())
+
+    res, s = analyze(
+        geom, CircularSurface(20.0, 30.0, 30.0), mats, method="spencer", opts=p.slice_options()
+    )
     np.testing.assert_allclose(s.sigma_v_eff, s.W / s.b)
     assert res.ok and np.isfinite(res.fos)
 
@@ -136,26 +142,44 @@ def test_micro_pile_and_geosynthetic_capacity():
     assert support_capacity(geo, 2, 2, 1.0, 1.0)[0] == 40.0
 
 
-@pytest.mark.parametrize("kind,extra", [
-    ("micro_pile", dict(pile_shear=150, orientation="perpendicular", application="passive")),
-    ("micro_pile", dict(pile_shear=150, orientation="tangent", application="passive")),
-    ("geosynthetic", dict(tensile=60, anchorage="none", interface_friction=30)),
-])
+@pytest.mark.parametrize(
+    "kind,extra",
+    [
+        ("micro_pile", dict(pile_shear=150, orientation="perpendicular", application="passive")),
+        ("micro_pile", dict(pile_shear=150, orientation="tangent", application="passive")),
+        ("geosynthetic", dict(tensile=60, anchorage="none", interface_friction=30)),
+    ],
+)
 def test_new_supports_raise_the_factor_of_safety(kind, extra):
     p = acads_1a_project()
     p.methods.methods = ["spencer"]
     p.surfaces.effort = "fast"
     surf = run_analysis(p).results["spencer"].surface
-    base, _ = analyze(p.build_geometry(), surf, p.build_materials(), method="spencer",
-                      opts=p.slice_options(), **p.solver_kw())
+    base, _ = analyze(
+        p.build_geometry(),
+        surf,
+        p.build_materials(),
+        method="spencer",
+        opts=p.slice_options(),
+        **p.solver_kw(),
+    )
     p.support_types = [SupportType("S", kind, spacing=1.0, **extra)]
-    p.supports = ([{"a": [30, 5], "b": [30, -4], "type": "S"}] if kind == "micro_pile"
-                  else [{"a": [25.0, 2.5], "b": [45.0, 2.5], "type": "S"}])
-    res, s = analyze(p.build_geometry(), surf, p.build_materials(), method="spencer",
-                     opts=p.slice_options(), **p.solver_kw())
+    p.supports = (
+        [{"a": [30, 5], "b": [30, -4], "type": "S"}]
+        if kind == "micro_pile"
+        else [{"a": [25.0, 2.5], "b": [45.0, 2.5], "type": "S"}]
+    )
+    res, s = analyze(
+        p.build_geometry(),
+        surf,
+        p.build_materials(),
+        method="spencer",
+        opts=p.slice_options(),
+        **p.solver_kw(),
+    )
     assert len(s.support_forces) == 1
     f = s.support_forces[0]
-    assert f.fx > 0                          # opposes the right-to-left movement
+    assert f.fx > 0  # opposes the right-to-left movement
     assert res.fos > base.fos + 0.05
     q = Project.from_dict(p.to_dict())
     assert q.support_types[0].kind == kind
@@ -165,8 +189,7 @@ def test_new_supports_raise_the_factor_of_safety(kind, extra):
 def test_search_reports_status_and_keeps_centres():
     p = acads_1a_project()
     st = {}
-    settings = SearchSettings(method="bishop", popsize=8, maxiter=10,
-                              slice_opts=p.slice_options())
+    settings = SearchSettings(method="bishop", popsize=8, maxiter=10, slice_opts=p.slice_options())
     res = search(p.build_geometry(), p.build_materials(), settings, None, st)
     assert st["stage"] == "final" and st["evaluated"] == res.n_evals
     assert st["valid"] + st["rejected"] == st["evaluated"]
@@ -187,6 +210,7 @@ def test_run_analysis_status_lists_finished_methods():
 
 def test_fs_contour_grid():
     from slipsurface.ui.cad import fs_contour
+
     rng = np.random.default_rng(1)
     xy = rng.uniform([0, 10], [20, 40], size=(600, 2))
     fs = 1.0 + 0.05 * np.hypot(xy[:, 0] - 8, xy[:, 1] - 25)
@@ -210,21 +234,32 @@ def test_fs_contour_grid():
 @pytest.fixture(scope="module")
 def app():
     from PySide6.QtWidgets import QApplication
+
     return QApplication.instance() or QApplication([])
 
 
 def test_note_picking_by_shape(app):
     from PySide6.QtCore import QPointF
     from slipsurface.ui.cad import CadArea
+
     area = CadArea()
     area.resize(800, 600)
     c = area.canvas
     p = acads_1a_project()
-    base = {"color": "#c00", "width": 1.5, "fill": None, "text": "", "size": 10,
-            "bold": False, "box": True}
-    p.annotations = [dict(base, kind="arrow", pts=[[0, 20], [20, 20]]),
-                     dict(base, kind="rect", pts=[[30, 15], [40, 25]]),
-                     dict(base, kind="ellipse", pts=[[45, 10], [59, 30]])]
+    base = {
+        "color": "#c00",
+        "width": 1.5,
+        "fill": None,
+        "text": "",
+        "size": 10,
+        "bold": False,
+        "box": True,
+    }
+    p.annotations = [
+        dict(base, kind="arrow", pts=[[0, 20], [20, 20]]),
+        dict(base, kind="rect", pts=[[30, 15], [40, 25]]),
+        dict(base, kind="ellipse", pts=[[45, 10], [59, 30]]),
+    ]
     c.set_scene(p, p.build_geometry())
     c.zoom_extents()
     c.grab()
@@ -232,32 +267,36 @@ def test_note_picking_by_shape(app):
     def at(x, y, dx=0.0, dy=0.0):
         s = c.w2s(x, y)
         return c.pick_annotation(QPointF(s.x() + dx, s.y() + dy))
+
     assert at(10, 20) == ("annot", 0)
-    assert at(10, 20, dy=5) == ("annot", 0)           # within the pick distance
+    assert at(10, 20, dy=5) == ("annot", 0)  # within the pick distance
     assert at(10, 20, dy=30) is None
-    assert at(35, 20) == ("annot", 1)                 # inside the rectangle
-    assert at(52, 20) == ("annot", 2)                 # inside the ellipse
-    assert at(45.5, 10.5) is None                     # bounding-box corner, outside ellipse
+    assert at(35, 20) == ("annot", 1)  # inside the rectangle
+    assert at(52, 20) == ("annot", 2)  # inside the ellipse
+    assert at(45.5, 10.5) is None  # bounding-box corner, outside ellipse
     c.selection = ("annot", 1)
-    c.grab()                                          # paints grips + frame
+    c.grab()  # paints grips + frame
 
 
 def test_example_aliases():
     from slipsurface.project import EXAMPLE_ALIASES, EXAMPLES, example_project
+
     assert all(v in EXAMPLES for v in EXAMPLE_ALIASES.values())
-    assert example_project("Katmanlı şev + YASS").summary.title == \
-        "Layered slope with water table"
+    assert example_project("Katmanlı şev + YASS").summary.title == "Layered slope with water table"
 
 
 def test_english_templates():
     from slipsurface.ui import i18n
+
     old = i18n.language()
     i18n._language = "en"
     try:
-        assert i18n.tr("Hesaplama tamamlandı (3.2 s). Global minimum: Spencer FS = 0.984") \
+        assert (
+            i18n.tr("Hesaplama tamamlandı (3.2 s). Global minimum: Spencer FS = 0.984")
             == "Computation finished (3.2 s). Global minimum: Spencer FS = 0.984"
+        )
         assert i18n.tr("⚠ Yakında köşe yok.") == "⚠ No vertex nearby."
-        assert i18n.tr("Destek 2: Ankraj 1") == "Support 2: Ankraj 1"   # user name kept
+        assert i18n.tr("Destek 2: Ankraj 1") == "Support 2: Ankraj 1"  # user name kept
         assert i18n.tr("Göçme yönü         : Sağdan sola") == "Failure direction  : Right to left"
         assert i18n.trf("Malzeme {}", 3) == "Material 3"
         assert i18n.tr("Zemin 1") == "Zemin 1"
@@ -268,6 +307,7 @@ def test_english_templates():
 def test_fit_to_screen(app):
     from PySide6.QtWidgets import QDialog
     from slipsurface.ui.preferences import available_geometry, fit_to_screen
+
     d = QDialog()
     fit_to_screen(d, 5000, 4000)
     avail = available_geometry(d)

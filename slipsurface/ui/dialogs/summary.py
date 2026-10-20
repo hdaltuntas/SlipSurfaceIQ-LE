@@ -23,9 +23,13 @@ from PySide6.QtWidgets import (
 from slipsurface.project import ProjectSummary
 from slipsurface.ui.icons import icon
 
-ROWS = [("title", tr("Proje başlığı")), ("analysis", "Analiz"), ("author", tr("Hazırlayan")),
-        ("company", "Kurum"), ("date_created", tr("Oluşturulma tarihi"))] + \
-       [(f"comment{i}", f"Not {i + 1}") for i in range(5)]
+ROWS = [
+    ("title", tr("Proje başlığı")),
+    ("analysis", "Analiz"),
+    ("author", tr("Hazırlayan")),
+    ("company", "Kurum"),
+    ("date_created", tr("Oluşturulma tarihi")),
+] + [(f"comment{i}", f"Not {i + 1}") for i in range(5)]
 
 
 class ProjectSummaryDialog(QDialog):
@@ -82,21 +86,29 @@ class ProjectSummaryDialog(QDialog):
         lay.addLayout(bottom)
 
     def summary(self) -> ProjectSummary:
-        vals = {key: (self.table.item(r, 1).text() if self.table.item(r, 1) else "")
-                for r, (key, _) in enumerate(ROWS)}
-        return ProjectSummary(title=vals["title"], analysis=vals["analysis"],
-                              author=vals["author"], company=vals["company"],
-                              date_created=vals["date_created"],
-                              comments=[vals[f"comment{i}"] for i in range(5)])
+        vals = {
+            key: (self.table.item(r, 1).text() if self.table.item(r, 1) else "")
+            for r, (key, _) in enumerate(ROWS)
+        }
+        return ProjectSummary(
+            title=vals["title"],
+            analysis=vals["analysis"],
+            author=vals["author"],
+            company=vals["company"],
+            date_created=vals["date_created"],
+            comments=[vals[f"comment{i}"] for i in range(5)],
+        )
 
     def _copy(self) -> None:
-        lines = [f"{self.table.item(r, 0).text()}\t{self.table.item(r, 1).text()}"
-                 for r in range(len(ROWS))]
+        lines = [
+            f"{self.table.item(r, 0).text()}\t{self.table.item(r, 1).text()}"
+            for r in range(len(ROWS))
+        ]
         QGuiApplication.clipboard().setText("\n".join(lines))
 
     def _paste(self) -> None:
         lines = QGuiApplication.clipboard().text().splitlines()
-        for r, line in enumerate(lines[:len(ROWS)]):
+        for r, line in enumerate(lines[: len(ROWS)]):
             val = line.split("\t", 1)[-1]
             if ROWS[r][0] != "date_created":
                 self.table.item(r, 1).setText(val)

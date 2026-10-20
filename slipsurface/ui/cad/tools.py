@@ -99,9 +99,9 @@ class SelectTool(Tool):
 
     def __init__(self, canvas) -> None:
         super().__init__(canvas)
-        self.drag = None          # (key, vertex, original points)
+        self.drag = None  # (key, vertex, original points)
         self.drag_pts = None
-        self.translate = None     # (key, start world point, original points) — whole annotation
+        self.translate = None  # (key, start world point, original points) — whole annotation
 
     @property
     def uses_snap(self):
@@ -113,7 +113,7 @@ class SelectTool(Tool):
             key, (x0, y0), orig = self.translate
             x, y = c.s2w(ev.position())
             self.drag_pts = [[q[0] + x - x0, q[1] + y - y0] for q in orig]
-            c.project.annotations[key[1]]["pts"] = self.drag_pts     # live preview
+            c.project.annotations[key[1]]["pts"] = self.drag_pts  # live preview
             c.update()
             return
         if self.drag is not None:
@@ -159,7 +159,7 @@ class SelectTool(Tool):
             new = self.drag_pts
             self.translate = None
             self.drag_pts = None
-            c.project.annotations[key[1]]["pts"] = orig              # undo live preview
+            c.project.annotations[key[1]]["pts"] = orig  # undo live preview
             if new is not None and new != orig:
                 c.request_edit("Notu taşı", lambda p: set_points(p, key, new))
             c.update()
@@ -220,10 +220,14 @@ class SelectTool(Tool):
             c.selection, c.sel_vertex = ann, None
             c.selection_changed.emit(ann)
             menu.addAction(tr("Özellikler…"), lambda: c.entity_double_clicked.emit(ann))
-            menu.addAction(tr("Notu sil"),
-                           lambda: (c.request_edit(tr("Not sil"), lambda p: delete_entity(p, ann)),
-                                    setattr(c, "selection", None),
-                                    c.selection_changed.emit(None)))
+            menu.addAction(
+                tr("Notu sil"),
+                lambda: (
+                    c.request_edit(tr("Not sil"), lambda p: delete_entity(p, ann)),
+                    setattr(c, "selection", None),
+                    c.selection_changed.emit(None),
+                ),
+            )
         elif hit is not None:
             key, k = hit
             menu.addAction("Köşeyi sil", lambda: _delete_vertex(c, key, k))
@@ -232,15 +236,19 @@ class SelectTool(Tool):
             key, k, pt = seg
             menu.addAction("Buraya köşe ekle", lambda: _insert_vertex(c, key, k, pt))
             menu.addAction("Koordinatları düzenle…", lambda: c.entity_double_clicked.emit(key))
-            menu.addAction(f"{_label(key)} sil",
-                           lambda: c.request_edit(f"{_label(key)} sil",
-                                                  lambda p: delete_entity(p, key)))
+            menu.addAction(
+                f"{_label(key)} sil",
+                lambda: c.request_edit(f"{_label(key)} sil", lambda p: delete_entity(p, key)),
+            )
 
 
 def _label(key) -> str:
     kind, i = key
-    return f"{LABELS[kind]} {i + 1}" if kind in ("material", "load", "support", "pattern",
-                                                  "facing", "annot") else LABELS[kind]
+    return (
+        f"{LABELS[kind]} {i + 1}"
+        if kind in ("material", "load", "support", "pattern", "facing", "annot")
+        else LABELS[kind]
+    )
 
 
 def _delete_vertex(c, key, k) -> None:
@@ -270,29 +278,51 @@ class DrawTool(Tool):
     """Polyline / polygon drawing for boundaries, water table, user surface."""
 
     uses_snap = True
-    TITLES = {"external": tr("Dış sınır"), "material": tr("Malzeme sınırı"), "water": "YASS",
-              "user": "Kullanıcı tanımlı kayma yüzeyi", "load_distributed": "Yayılı yük",
-              "load_line": "Tekil yük", "support": tr("Destek"), "crack": tr("Gerilme çatlağı"),
-              "facing": "Kaplama", "pattern": "Bulon paterni", "annot_text": tr("Yazı"),
-              "annot_line": tr("Çizgi"), "annot_arrow": tr("Ok"), "annot_rect": tr("Dikdörtgen"),
-              "annot_ellipse": tr("Elips")}
-    MIN = {"load_distributed": 2, "load_line": 1, "support": 2, "facing": 2, "pattern": 2,
-           "annot_text": 1, "annot_line": 2, "annot_arrow": 2, "annot_rect": 2,
-           "annot_ellipse": 2}
+    TITLES = {
+        "external": tr("Dış sınır"),
+        "material": tr("Malzeme sınırı"),
+        "water": "YASS",
+        "user": "Kullanıcı tanımlı kayma yüzeyi",
+        "load_distributed": "Yayılı yük",
+        "load_line": "Tekil yük",
+        "support": tr("Destek"),
+        "crack": tr("Gerilme çatlağı"),
+        "facing": "Kaplama",
+        "pattern": "Bulon paterni",
+        "annot_text": tr("Yazı"),
+        "annot_line": tr("Çizgi"),
+        "annot_arrow": tr("Ok"),
+        "annot_rect": tr("Dikdörtgen"),
+        "annot_ellipse": tr("Elips"),
+    }
+    MIN = {
+        "load_distributed": 2,
+        "load_line": 1,
+        "support": 2,
+        "facing": 2,
+        "pattern": 2,
+        "annot_text": 1,
+        "annot_line": 2,
+        "annot_arrow": 2,
+        "annot_rect": 2,
+        "annot_ellipse": 2,
+    }
     MAX = dict(MIN)
-    HINTS = {"load_distributed": "Yayılı yük: yükün başlangıç ve bitiş noktalarını zemin "
-                                 "yüzeyinde tıklayın.",
-             "load_line": "Tekil yük: yükün etkidiği noktayı zemin yüzeyinde tıklayın.",
-             "support": "Destek: önce şev yüzündeki başı (A), sonra zemin içindeki ucu (B) "
-                        "tıklayın veya koordinat girin.",
-             "facing": "Kaplama: şev yüzünde kaplamanın başlangıç ve bitiş noktalarını tıklayın.",
-             "pattern": "Bulon paterni: şev yüzünde paternin başlangıç ve bitiş noktalarını "
-                        "tıklayın; aralık ve açı sonra sorulur.",
-             "annot_text": "Yazı: yazının konumunu tıklayın.",
-             "annot_line": "Çizgi: iki nokta tıklayın.",
-             "annot_arrow": "Ok: başlangıç ve uç (ok başı) noktalarını tıklayın.",
-             "annot_rect": "Dikdörtgen: iki köşe tıklayın.",
-             "annot_ellipse": "Elips: çevreleyen dikdörtgenin iki köşesini tıklayın."}
+    HINTS = {
+        "load_distributed": "Yayılı yük: yükün başlangıç ve bitiş noktalarını zemin "
+        "yüzeyinde tıklayın.",
+        "load_line": "Tekil yük: yükün etkidiği noktayı zemin yüzeyinde tıklayın.",
+        "support": "Destek: önce şev yüzündeki başı (A), sonra zemin içindeki ucu (B) "
+        "tıklayın veya koordinat girin.",
+        "facing": "Kaplama: şev yüzünde kaplamanın başlangıç ve bitiş noktalarını tıklayın.",
+        "pattern": "Bulon paterni: şev yüzünde paternin başlangıç ve bitiş noktalarını "
+        "tıklayın; aralık ve açı sonra sorulur.",
+        "annot_text": "Yazı: yazının konumunu tıklayın.",
+        "annot_line": "Çizgi: iki nokta tıklayın.",
+        "annot_arrow": "Ok: başlangıç ve uç (ok başı) noktalarını tıklayın.",
+        "annot_rect": "Dikdörtgen: iki köşe tıklayın.",
+        "annot_ellipse": "Elips: çevreleyen dikdörtgenin iki köşesini tıklayın.",
+    }
 
     def __init__(self, canvas, kind: str) -> None:
         super().__init__(canvas)
@@ -305,7 +335,8 @@ class DrawTool(Tool):
         closing = " — ilk noktaya tıklayarak veya C ile kapatın" if kind == "external" else ""
         self.hint = self.HINTS.get(kind) or (
             f"{self.TITLES[kind]}: noktaları tıklayın veya koordinat girin (x,y | "
-            f"@dx,dy | @L<açı); Enter/sağ tık = bitir{closing}, Backspace = geri, Esc = iptal")
+            f"@dx,dy | @L<açı); Enter/sağ tık = bitir{closing}, Backspace = geri, Esc = iptal"
+        )
 
     def ref_point(self):
         return self.pts[-1] if self.pts else None
@@ -318,9 +349,11 @@ class DrawTool(Tool):
             dx, dy = pt[0] - self.pts[-1][0], pt[1] - self.pts[-1][1]
             L = math.hypot(dx, dy)
             a = math.degrees(math.atan2(dy, dx))
-            self.c.status.emit(f"{self.TITLES[self.kind]}: nokta {len(self.pts) + 1}  "
-                               f"x = {pt[0]:.3f}, y = {pt[1]:.3f}   "
-                               f"(uzunluk {L:.3f} m, açı {a:.1f}°)")
+            self.c.status.emit(
+                f"{self.TITLES[self.kind]}: nokta {len(self.pts) + 1}  "
+                f"x = {pt[0]:.3f}, y = {pt[1]:.3f}   "
+                f"(uzunluk {L:.3f} m, açı {a:.1f}°)"
+            )
 
     def press(self, ev) -> None:
         if ev.button() != Qt.LeftButton:
@@ -343,8 +376,9 @@ class DrawTool(Tool):
 
     def finish(self) -> None:
         if len(self.pts) < self.min_points:
-            self.c.status.emit(f"⚠ {self.TITLES[self.kind]} için en az "
-                               f"{self.min_points} nokta gerekli.")
+            self.c.status.emit(
+                f"⚠ {self.TITLES[self.kind]} için en az {self.min_points} nokta gerekli."
+            )
             return
         pts = [list(q) for q in self.pts]
         self.pts = []
@@ -397,8 +431,10 @@ class DrawTool(Tool):
             menu.addAction("Bitir (Enter)", self.finish)
             if self.kind == "external":
                 menu.addAction("Kapat (C)", self.finish)
-            menu.addAction("Son noktayı geri al (Backspace)",
-                           lambda: (self.pts.pop() if self.pts else None, self.c.update()))
+            menu.addAction(
+                "Son noktayı geri al (Backspace)",
+                lambda: (self.pts.pop() if self.pts else None, self.c.update()),
+            )
         menu.addAction("İptal (Esc)", self.cancel)
 
     def paint(self, p) -> None:
@@ -407,11 +443,16 @@ class DrawTool(Tool):
         pts = list(self.pts)
         if self.preview is not None:
             pts.append(self.preview)
-        col = {"external": QColor("#303030"), "material": QColor("#e07b00"),
-               "water": QColor("#1f5fd1"), "user": QColor("#c0392b"),
-               "load_distributed": QColor("#c0392b"), "load_line": QColor("#c0392b"),
-               "support": QColor("#1f3d7a"), "crack": QColor("#8d5524")}.get(
-                   self.kind, QColor("#c0392b"))
+        col = {
+            "external": QColor("#303030"),
+            "material": QColor("#e07b00"),
+            "water": QColor("#1f5fd1"),
+            "user": QColor("#c0392b"),
+            "load_distributed": QColor("#c0392b"),
+            "load_line": QColor("#c0392b"),
+            "support": QColor("#1f3d7a"),
+            "crack": QColor("#8d5524"),
+        }.get(self.kind, QColor("#c0392b"))
         p.setPen(QPen(col, 2))
         p.setBrush(Qt.NoBrush)
         p.drawPolyline(QPolygonF([self.c.w2s(*q) for q in self.pts]))
@@ -447,7 +488,7 @@ class AddVertexTool(Tool):
             return
         key, k, pt = seg
         pt = tuple(pt)
-        if self.c.snap_on:      # grid snap along the segment is not exact; keep nearest
+        if self.c.snap_on:  # grid snap along the segment is not exact; keep nearest
             pass
         _insert_vertex(self.c, key, k, pt)
 
@@ -486,15 +527,15 @@ class AssignTool(Tool):
             c.status.emit("⚠ Önce bir malzeme seçin.")
             return
         x, y = c.s2w(ev.position())
-        region = next((r for r in c.geometry.regions if shapely.contains_xy(r.polygon, x, y)),
-                      None)
+        region = next((r for r in c.geometry.regions if shapely.contains_xy(r.polygon, x, y)), None)
         if region is None:
             c.status.emit("⚠ Tıklanan nokta model içinde değil.")
             return
 
         def fn(p):
-            p.assignments = [a for a in p.assignments
-                             if not region.polygon.contains(shapely.Point(*a["point"]))]
+            p.assignments = [
+                a for a in p.assignments if not region.polygon.contains(shapely.Point(*a["point"]))
+            ]
             p.assignments.append({"point": [float(x), float(y)], "material": mat})
 
         if c.request_edit(f"Özellik ata: {mat}", fn):
@@ -529,8 +570,10 @@ class MeasureTool(Tool):
         else:
             self.b = pt
             dx, dy = self.b[0] - self.a[0], self.b[1] - self.a[1]
-            self.c.status.emit(f"Uzaklık = {math.hypot(dx, dy):.3f} m   Δx = {dx:.3f}   "
-                               f"Δy = {dy:.3f}   açı = {math.degrees(math.atan2(dy, dx)):.2f}°")
+            self.c.status.emit(
+                f"Uzaklık = {math.hypot(dx, dy):.3f} m   Δx = {dx:.3f}   "
+                f"Δy = {dy:.3f}   açı = {math.degrees(math.atan2(dy, dx)):.2f}°"
+            )
 
     def paint(self, p) -> None:
         if self.a is None:
@@ -616,8 +659,12 @@ class SlopeLimitsTool(Tool):
         self.hint = self._hint()
 
     def _hint(self) -> str:
-        steps = ["sol aralığın başlangıcı", "sol aralığın bitişi", "sağ aralığın başlangıcı",
-                 "sağ aralığın bitişi"]
+        steps = [
+            "sol aralığın başlangıcı",
+            "sol aralığın bitişi",
+            "sağ aralığın başlangıcı",
+            "sağ aralığın bitişi",
+        ]
         return f"Kayma sınırları: zemin yüzeyi üzerinde {steps[len(self.xs)]} noktasına tıklayın."
 
     def press(self, ev) -> None:
@@ -673,7 +720,6 @@ class SliceQueryTool(Tool):
         self.callback(int(idx[0]))
 
 
-
 # ================================================================ bolts
 class BoltTool(Tool):
     """Click on the slope face: a bolt / anchor is added with its head there,
@@ -687,11 +733,14 @@ class BoltTool(Tool):
         super().__init__(canvas)
         self.angle_getter, self.length_getter = angle_getter, length_getter
         self.preview = None
-        self.hint = ("Tekil bulon/ankraj: şev yüzünde başlığın konumunu tıklayın "
-                     "(eğim ve boy araç çubuğundan). Esc = bitir.")
+        self.hint = (
+            "Tekil bulon/ankraj: şev yüzünde başlığın konumunu tıklayın "
+            "(eğim ve boy araç çubuğundan). Esc = bitir."
+        )
 
     def _bolt(self, x):
         from slipsurface.loads import bolt_at
+
         g = self.c.geometry
         if g is None or not (g.x_min <= x <= g.x_max):
             return None
@@ -716,7 +765,7 @@ class BoltTool(Tool):
         pt = parse_coordinate(text, None)
         if pt is None:
             try:
-                pt = (float(text.replace(",", ".")), 0.0)     # just an x value
+                pt = (float(text.replace(",", ".")), 0.0)  # just an x value
             except ValueError:
                 return False
         ab = self._bolt(pt[0])

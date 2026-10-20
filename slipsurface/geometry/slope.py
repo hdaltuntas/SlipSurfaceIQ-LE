@@ -26,9 +26,9 @@ class Region:
 
 @dataclass
 class SlopeGeometry:
-    surface: np.ndarray                     # (n, 2) ground profile, x increasing
-    regions: list[Region]                   # material zones (union = model domain)
-    water_table: np.ndarray | None = None   # (m, 2) piezometric line, x increasing
+    surface: np.ndarray  # (n, 2) ground profile, x increasing
+    regions: list[Region]  # material zones (union = model domain)
+    water_table: np.ndarray | None = None  # (m, 2) piezometric line, x increasing
     meta: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -55,6 +55,7 @@ class SlopeGeometry:
     @property
     def domain(self) -> Polygon:
         from shapely.ops import unary_union
+
         return unary_union([r.polygon for r in self.regions])
 
     @property
@@ -174,7 +175,7 @@ def layered_geometry(
 
     regions: list[Region] = []
     for i, (mat, _) in enumerate(layers):
-        deeper = unary_union(belows[i + 1:]) if i + 1 < len(belows) else None
+        deeper = unary_union(belows[i + 1 :]) if i + 1 < len(belows) else None
         zone = belows[i] if deeper is None else belows[i].difference(deeper)
         parts = getattr(zone, "geoms", [zone])
         for part in parts:
@@ -194,5 +195,9 @@ def layered_geometry(
         if wt[-1, 0] < x1:
             wt = np.vstack([wt, [x1, wt[-1, 1]]])
 
-    return SlopeGeometry(surface=surface, regions=regions, water_table=wt,
-                         meta={"name": name, "boundaries": boundaries, "bottom": bottom})
+    return SlopeGeometry(
+        surface=surface,
+        regions=regions,
+        water_table=wt,
+        meta={"name": name, "boundaries": boundaries, "bottom": bottom},
+    )

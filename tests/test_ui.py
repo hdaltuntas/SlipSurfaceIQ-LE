@@ -29,6 +29,7 @@ def app():
 @pytest.fixture
 def win(app):
     from slipsurface.ui.modeler import ModelerWindow
+
     w = ModelerWindow(layered_example_project())
     w.resize(1400, 900)
     w.show()
@@ -59,10 +60,17 @@ def screen(c, x, y) -> QPoint:
 
 
 # ------------------------------------------------------------ parsing
-@pytest.mark.parametrize("text,last,expected", [
-    ("10,5", None, (10, 5)), ("10 5", None, (10, 5)), ("-2.5;3", None, (-2.5, 3)),
-    ("@5,0", (1, 1), (6, 1)), ("@10<90", (0, 0), (0, 10)), ("@2<0", (1, 1), (3, 1)),
-])
+@pytest.mark.parametrize(
+    "text,last,expected",
+    [
+        ("10,5", None, (10, 5)),
+        ("10 5", None, (10, 5)),
+        ("-2.5;3", None, (-2.5, 3)),
+        ("@5,0", (1, 1), (6, 1)),
+        ("@10<90", (0, 0), (0, 10)),
+        ("@2<0", (1, 1), (3, 1)),
+    ],
+)
 def test_parse_coordinate(text, last, expected):
     x, y = parse_coordinate(text, last)
     assert x == pytest.approx(expected[0], abs=1e-9) and y == pytest.approx(expected[1], abs=1e-9)
@@ -77,8 +85,19 @@ def test_parse_coordinate_invalid():
 def test_layout(win):
     assert win.workflow.width() > 200
     titles = [a.text().replace("&", "") for a in win.menuBar().actions()]
-    assert titles == ["Dosya", "Düzen", "Görünüm", "Analiz", "Sınırlar", "Yükleme", "Destek",
-                      "Yüzeyler", "Özellikler", "Araçlar", "Yardım"]
+    assert titles == [
+        "Dosya",
+        "Düzen",
+        "Görünüm",
+        "Analiz",
+        "Sınırlar",
+        "Yükleme",
+        "Destek",
+        "Yüzeyler",
+        "Özellikler",
+        "Araçlar",
+        "Yardım",
+    ]
     assert win.workflow.steps == ["Geometri", "Destek", "Yükleme", "Özellikler", "Yüzeyler"]
     assert set(win.status.toggles) == {"snap_on", "grid_on", "ortho_on", "osnap_on"}
     assert win.doc.geometry is not None and len(win.doc.geometry.regions) == 4
@@ -105,17 +124,20 @@ def fixed_results(win):
     from slipsurface.geometry import CircularSurface
     from slipsurface.lem import analyze
     from slipsurface.optimizer import SearchResult
+
     win.load_project(acads_1a_project())
     p = win.doc.project
     surf = CircularSurface(20, 28, 28)
     lem, slices = analyze(win.doc.geometry, surf, p.build_materials())
     assert lem.ok
-    return AnalysisResults(p.copy(), win.doc.geometry,
-                           results={"bishop": SearchResult(surf, lem.fos, lem, slices, 1)})
+    return AnalysisResults(
+        p.copy(), win.doc.geometry, results={"bishop": SearchResult(surf, lem.fos, lem, slices, 1)}
+    )
 
 
 def test_empty_results_disable_result_actions(win):
     from slipsurface.analysis import AnalysisResults
+
     win.last_results = AnalysisResults(win.doc.project.copy(), win.doc.geometry)
     win._update_actions()
     assert not win.a_report.isEnabled() and not win.a_interpret.isEnabled()
@@ -136,19 +158,22 @@ def test_interpret_reuses_window_and_explains_partial_results(win):
     iw._display_option("show_fs_legend", False)
     iw._display_option("show_all_surfaces", True)
     iw._display_reset()
-    assert iw.a_fs_legend.isChecked() and not iw.a_all.isChecked()   # default: contour map
+    assert iw.a_fs_legend.isChecked() and not iw.a_all.isChecked()  # default: contour map
     assert not iw.project.display_opt("show_vertices")
 
 
 def test_close_during_analysis_is_deferred(app, win, monkeypatch):
     from threading import Event
     from slipsurface.optimizer import SearchCancelled
+
     started, release = Event(), Event()
+
     def slow_analysis(project, progress, **kw):
         started.set()
         release.wait(5)
         assert progress(0, 1, "bishop", 1, 1.0)
         raise SearchCancelled()
+
     monkeypatch.setattr("slipsurface.ui.worker.run_analysis", slow_analysis)
     win.compute()
     wait_for(app, started.is_set)
@@ -173,11 +198,16 @@ def test_compute_stays_disabled_until_thread_finishes(win):
 def test_image_export_checks_save_result(win, monkeypatch, success):
     from types import SimpleNamespace
     from slipsurface.ui import export
+
     saved, warnings = [], []
-    monkeypatch.setattr(export.QFileDialog, "getSaveFileName", lambda *a: ("drawing", "JPEG (*.jpg *.jpeg)"))
+    monkeypatch.setattr(
+        export.QFileDialog, "getSaveFileName", lambda *a: ("drawing", "JPEG (*.jpg *.jpeg)")
+    )
+
     def save(path):
         saved.append(path)
         return success
+
     monkeypatch.setattr(export.QMessageBox, "warning", lambda *a: warnings.append(a))
     widget = SimpleNamespace(grab=lambda: SimpleNamespace(save=save))
     result = export.export_image(win, widget, "model.png")
@@ -188,6 +218,7 @@ def test_image_export_checks_save_result(win, monkeypatch, success):
 
 def test_user_surface_disables_search_controls(win):
     from slipsurface.ui.dialogs.surface_options import SurfaceOptionsDialog
+
     dlg = SurfaceOptionsDialog(win.doc.project, win)
     dlg.r_user.setChecked(True)
     assert not dlg.opt_btn.isEnabled() and not dlg.use_limits.isEnabled()
@@ -203,6 +234,7 @@ def test_user_surface_disables_search_controls(win):
 
 def test_stale_background_result_is_not_installed(win):
     from slipsurface.analysis import AnalysisResults
+
     results = AnalysisResults(win.doc.project.copy(), win.doc.geometry)
     win.doc.edit("material", lambda p: setattr(p.materials[0], "c", 123))
     win._on_finished(results)
@@ -219,7 +251,9 @@ def test_draw_external_by_commands_undo_redo(app, win):
     app.processEvents()
     p = win.doc.project
     assert len(p.external) == 6 and win.doc.geometry is not None
-    assert win.doc.geometry.domain.area == pytest.approx(60 * 20 - 15 * 10 * 0 - 20 * 10 - 0.5 * 20 * 10)
+    assert win.doc.geometry.domain.area == pytest.approx(
+        60 * 20 - 15 * 10 * 0 - 20 * 10 - 0.5 * 20 * 10
+    )
     win.doc.undo_stack.undo()
     assert win.doc.project.external == []
     win.doc.undo_stack.redo()
@@ -276,6 +310,7 @@ def test_drag_vertex_and_undo(app, win):
 
 def test_delete_and_insert_vertex(app, win):
     from slipsurface.ui.cad.tools import _delete_vertex, _insert_vertex
+
     c = win.canvas
     n = len(win.doc.project.water_table)
     _insert_vertex(c, ("water", 0), 0, (10.0, -0.5))
@@ -290,12 +325,13 @@ def test_water_table_must_be_x_increasing(app, win):
     c.set_tool(T.DrawTool(c, "water"))
     for cmd in ["0,0", "30,5", "20,6", ""]:
         c.command(cmd)
-    assert win.doc.project.water_table is None          # rejected
+    assert win.doc.project.water_table is None  # rejected
 
 
 # ------------------------------------------------------------ dialogs
 def test_project_settings_dialog(app, win):
     from slipsurface.ui.dialogs.project_settings import ProjectSettingsDialog
+
     d = ProjectSettingsDialog(win.doc.project, win, 1)
     d.method_checks["gle"].setChecked(True)
     d.method_checks["janbu_simplified"].setChecked(False)
@@ -308,6 +344,7 @@ def test_project_settings_dialog(app, win):
 
 def test_materials_dialog_rename_propagates(app, win):
     from slipsurface.ui.dialogs.materials import MaterialsDialog
+
     d = MaterialsDialog(win.doc.project.materials, win, "Soft clay")
     d.name.setText("Kil (CH)")
     d._name_edited("Kil (CH)")
@@ -318,12 +355,14 @@ def test_materials_dialog_rename_propagates(app, win):
         p.materials = mats
         for a in p.assignments:
             a["material"] = renames.get(a["material"], a["material"])
+
     win.doc.edit("mat", fn)
     assert "Kil (CH)" in {r.material for r in win.doc.geometry.regions}
 
 
 def test_surface_options_dialog(app, win):
     from slipsurface.ui.dialogs.surface_options import SurfaceOptionsDialog
+
     d = SurfaceOptionsDialog(win.doc.project, win)
     d.r_non.setChecked(True)
     d.use_limits.setChecked(True)
@@ -334,6 +373,7 @@ def test_surface_options_dialog(app, win):
 
 def test_summary_dialog(app, win):
     from slipsurface.ui.dialogs.summary import ProjectSummaryDialog
+
     d = ProjectSummaryDialog(win.doc.project.summary, win)
     d.table.item(2, 1).setText("H. D. Altuntaş")
     assert d.summary().author == "H. D. Altuntaş"
@@ -358,6 +398,7 @@ def test_compute_opens_interpret_window(app, win):
     rows = __import__("slipsurface.ui.dialogs.misc", fromlist=["slice_rows"]).slice_rows(r, 3)
     assert rows[0][1].startswith("4 /")
     from slipsurface.analysis import report_text
+
     assert "Spencer" in report_text(win.last_results)
 
 
@@ -377,7 +418,7 @@ def test_cancel_compute(app, win):
 def test_draw_support_by_commands(app, win):
     win.load_project(acads_1a_project())
     c = win.canvas
-    c.set_tool(win._support_tool())               # creates a default support type
+    c.set_tool(win._support_tool())  # creates a default support type
     assert win.doc.project.support_types
     assert c.command("30,5") and c.command("@20<-15")
     sp = win.doc.project.supports
@@ -391,6 +432,7 @@ def test_draw_support_by_commands(app, win):
 
 def test_add_loads_via_tools(app, win, monkeypatch):
     from slipsurface.ui.dialogs import loads_supports as LS
+
     monkeypatch.setattr(LS.DistributedLoadDialog, "exec", lambda self: 1)
     monkeypatch.setattr(LS.LineLoadDialog, "exec", lambda self: 1)
     win.load_project(acads_1a_project())
@@ -402,11 +444,12 @@ def test_add_loads_via_tools(app, win, monkeypatch):
     c.command("55,10")
     loads = win.doc.project.loads
     assert [ld["kind"] for ld in loads] == ["distributed", "line"]
-    assert loads[0]["points"][0][1] == pytest.approx(10.0)       # snapped onto ground
+    assert loads[0]["points"][0][1] == pytest.approx(10.0)  # snapped onto ground
     assert loads[0]["q"] == [20.0, 20.0]
     # deletion of a selected load
     from PySide6.QtCore import QEvent
     from PySide6.QtGui import QKeyEvent
+
     c.select_tool()
     c.selection = ("load", 0)
     c.tool.key(QKeyEvent(QEvent.KeyPress, Qt.Key_Delete, Qt.NoModifier))
@@ -416,11 +459,12 @@ def test_add_loads_via_tools(app, win, monkeypatch):
 def test_support_types_dialog_rename(app, win):
     from slipsurface.project import anchored_example_project
     from slipsurface.ui.dialogs.loads_supports import SupportTypesDialog
+
     win.load_project(anchored_example_project())
     d = SupportTypesDialog(win.doc.project.support_types, win)
     d.name.setText("TB-60")
     d._rename("TB-60")
-    d.kind.setCurrentIndex(2)          # soil nail
+    d.kind.setCurrentIndex(2)  # soil nail
     d.r_passive.setChecked(True)
     types, ren = d.types, d.renames
     assert types[0].kind == "soil_nail" and types[0].application == "passive"
@@ -429,6 +473,7 @@ def test_support_types_dialog_rename(app, win):
         p.support_types = types
         for sp in p.supports:
             sp["type"] = ren.get(sp["type"], sp["type"])
+
     win.doc.edit("sup", fn)
     assert {sp["type"] for sp in win.doc.project.supports} == {"TB-60"}
     assert win.doc.project.load_set().supports[0].stype.kind == "soil_nail"
@@ -436,6 +481,7 @@ def test_support_types_dialog_rename(app, win):
 
 def test_compute_with_supports(app, win):
     from slipsurface.project import anchored_example_project
+
     p = anchored_example_project()
     p.methods.methods = ["bishop"]
     p.surfaces.effort = "fast"
@@ -449,10 +495,11 @@ def test_compute_with_supports(app, win):
 # ------------------------------------------------------- tension crack
 def test_draw_tension_crack_and_settings(app, win):
     from slipsurface.ui.dialogs.project_settings import ProjectSettingsDialog
+
     win.load_project(acads_1a_project())
     c = win.canvas
     c.set_tool(win._draw("crack"))
-    for cmd in ["60,7", "40,7", ""]:            # drawn right-to-left -> stored x-increasing
+    for cmd in ["60,7", "40,7", ""]:  # drawn right-to-left -> stored x-increasing
         c.command(cmd)
     assert win.doc.project.tension_crack == [[40.0, 7.0], [60.0, 7.0]]
     d = ProjectSettingsDialog(win.doc.project, win, 2)
@@ -465,15 +512,17 @@ def test_draw_tension_crack_and_settings(app, win):
 
 def test_crack_from_depth_points(app, win):
     from slipsurface.ui.dialogs.loads_supports import CrackFromDepthDialog
+
     win.load_project(acads_1a_project())
     d = CrackFromDepthDialog(35, 60, 2.0, 1.0, "", win)
     pts = d.points(win.doc.geometry.surface)
     assert pts[0] == pytest.approx([35, 5.5]) and pts[-1] == pytest.approx([60, 8.0])
-    assert [40.0, 8.0] in [list(map(float, q)) for q in pts]      # follows the crest vertex
+    assert [40.0, 8.0] in [list(map(float, q)) for q in pts]  # follows the crest vertex
 
 
 def test_compute_with_crack(app, win):
     from slipsurface.project import cracked_example_project
+
     p = cracked_example_project()
     p.methods.methods = ["spencer"]
     p.surfaces.effort = "fast"
@@ -492,15 +541,15 @@ def test_single_bolt_tool_15_degrees(app, win):
     assert win.bolt_angle.value() == 15.0
     st = win.doc.project.support_types[0]
     assert win.bolt_length.value() == pytest.approx(st.length)
-    assert c.command("30")                       # x on the slope face
-    assert c.command("34")                       # tool stays active
+    assert c.command("30")  # x on the slope face
+    assert c.command("34")  # tool stays active
     sp = win.doc.project.supports
     assert len(sp) == 2 and c.tool.name == "bolt"
     a, b = np.array(sp[0]["a"]), np.array(sp[0]["b"])
-    assert a == pytest.approx([30.0, 5.0])        # head on the ground
+    assert a == pytest.approx([30.0, 5.0])  # head on the ground
     d = b - a
     assert np.hypot(*d) == pytest.approx(st.length)
-    assert np.degrees(np.arctan2(-d[1], d[0])) == pytest.approx(15.0)   # into slope, 15° down
+    assert np.degrees(np.arctan2(-d[1], d[0])) == pytest.approx(15.0)  # into slope, 15° down
 
 
 def test_bolt_pattern_dialog_and_engine(app, win, monkeypatch):
@@ -510,6 +559,7 @@ def test_bolt_pattern_dialog_and_engine(app, win, monkeypatch):
         self.spacing.setValue(2.5)
         self.offset.setValue(1.0)
         return 1
+
     monkeypatch.setattr(D.PatternDialog, "exec", fake_exec)
     win.load_project(acads_1a_project())
     c = win.canvas
@@ -531,6 +581,7 @@ def test_bolt_pattern_dialog_and_engine(app, win, monkeypatch):
 def test_facing_types_dialog_and_assign_face(app, win):
     from slipsurface.ui.dialogs.facing_pattern_annot import FacingTypesDialog
     from slipsurface.loads import FacingType
+
     d = FacingTypesDialog([FacingType()], win)
     d.thickness.setValue(0.15)
     d.mesh.setCurrentIndex(d.mesh.findData("Q257"))
@@ -539,7 +590,7 @@ def test_facing_types_dialog_and_assign_face(app, win):
     assert t.capacity == pytest.approx(400 * 0.15 + 257 * 500 / 1000)
     win.load_project(acads_1a_project())
     assert win.slope_face_range() == (20.0, 40.0)
-    win.facing_whole_face()                         # creates a default facing type
+    win.facing_whole_face()  # creates a default facing type
     p = win.doc.project
     assert p.facing_types and p.facings[0]["x1"] == 20.0 and p.facings[0]["x2"] == 40.0
     assert p.facings[0]["points"][1] == [40.0, 10.0]
@@ -552,6 +603,7 @@ def test_annotations_in_modeler(app, win, monkeypatch):
     def fake_exec(self):
         self.text.setPlainText("Kritik bölge")
         return 1
+
     monkeypatch.setattr(D.AnnotationDialog, "exec", fake_exec)
     win.load_project(acads_1a_project())
     c = win.canvas
@@ -566,10 +618,11 @@ def test_annotations_in_modeler(app, win, monkeypatch):
     ann = win.doc.project.annotations
     assert [a["kind"] for a in ann] == ["text", "arrow", "rect"]
     assert ann[0]["text"] == "Kritik bölge"
-    c.grab()                                        # paints annotations (hit rects)
+    c.grab()  # paints annotations (hit rects)
     assert 0 in c._annot_rects
     # translate the arrow
     from slipsurface.ui.cad.model import set_points
+
     win.doc.edit("taşı", lambda p: set_points(p, ("annot", 1), [[13, 14], [26, 4]]))
     assert win.doc.project.annotations[1]["pts"][0] == [13, 14]
     win.doc.undo_stack.undo()
@@ -590,8 +643,10 @@ def test_material_labels_option(app, win):
 
 def test_interpret_fs_legend_and_notes(app, win, monkeypatch):
     from slipsurface.ui.dialogs import facing_pattern_annot as D
-    monkeypatch.setattr(D.AnnotationDialog, "exec",
-                        lambda self: (self.text.setPlainText("FS notu"), 1)[1])
+
+    monkeypatch.setattr(
+        D.AnnotationDialog, "exec", lambda self: (self.text.setPlainText("FS notu"), 1)[1]
+    )
     p = acads_1a_project()
     p.methods.methods = ["bishop", "janbu_simplified"]
     p.surfaces.effort = "fast"
@@ -600,7 +655,7 @@ def test_interpret_fs_legend_and_notes(app, win, monkeypatch):
     wait_for(app, lambda: win.last_results is not None and not win.busy)
     iw = win.interpret_windows[-1]
     assert iw.project.display_opt("show_fs_legend")
-    iw.canvas.grab()                                 # paints the FS legend
+    iw.canvas.grab()  # paints the FS legend
     c = iw.canvas
     assert c.edit_kinds == {"annot"}
     c.set_tool(T.DrawTool(c, "annot_text"))
@@ -614,6 +669,7 @@ def test_interpret_fs_legend_and_notes(app, win, monkeypatch):
     # model entities are not editable in Interpret
     from PySide6.QtCore import QEvent
     from PySide6.QtGui import QKeyEvent
+
     c.select_tool()
     c.selection = ("external", 0)
     c.tool.key(QKeyEvent(QEvent.KeyPress, Qt.Key_Delete, Qt.NoModifier))
@@ -643,12 +699,14 @@ def test_interpret_window_close_and_recompute(app, win):
 # --------------------------------------------------- v0.6: PDF report
 def test_pdf_report_from_interpret(app, win, monkeypatch, tmp_path):
     from slipsurface.ui.dialogs import report as R
+
     out = tmp_path / "rapor.pdf"
     monkeypatch.setattr(R.ReportDialog, "exec", lambda self: 1)
     monkeypatch.setattr(R.QFileDialog, "getSaveFileName", lambda *a, **k: (str(out), ""))
     monkeypatch.setattr(R.QDesktopServices, "openUrl", lambda *a: True)
-    monkeypatch.setattr(R, "_settings", lambda: R.QSettings(str(tmp_path / "s.ini"),
-                                                            R.QSettings.IniFormat))
+    monkeypatch.setattr(
+        R, "_settings", lambda: R.QSettings(str(tmp_path / "s.ini"), R.QSettings.IniFormat)
+    )
     p = acads_1a_project()
     p.methods.methods = ["bishop"]
     p.surfaces.effort = "fast"

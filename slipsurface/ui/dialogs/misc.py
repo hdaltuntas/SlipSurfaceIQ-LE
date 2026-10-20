@@ -102,8 +102,15 @@ class CoordinatesDialog(QDialog):
     def points(self) -> list[list[float]]:
         out = []
         for r in range(self.table.rowCount()):
-            out.append([parse_float(self.table.item(r, c).text() if self.table.item(r, c) else "",
-                                    f"satır {r + 1}, {'xy'[c]}") for c in range(2)])
+            out.append(
+                [
+                    parse_float(
+                        self.table.item(r, c).text() if self.table.item(r, c) else "",
+                        f"satır {r + 1}, {'xy'[c]}",
+                    )
+                    for c in range(2)
+                ]
+            )
         return out
 
     def _accept(self) -> None:
@@ -129,8 +136,11 @@ class InfoViewer(QDialog):
         f.setStyleHint(QFont.TypeWriter)
         f.setPointSize(9)
         self.edit.setFont(f)
-        copy_b, save_b, close_b = QPushButton(tr("Kopyala")), QPushButton(tr("Kaydet…")), \
-            QPushButton(tr("Kapat"))
+        copy_b, save_b, close_b = (
+            QPushButton(tr("Kopyala")),
+            QPushButton(tr("Kaydet…")),
+            QPushButton(tr("Kapat")),
+        )
         copy_b.clicked.connect(lambda: QGuiApplication.clipboard().setText(self.edit.toPlainText()))
         save_b.clicked.connect(self._save)
         close_b.clicked.connect(self.accept)
@@ -144,8 +154,7 @@ class InfoViewer(QDialog):
         lay.addLayout(row)
 
     def _save(self) -> None:
-        path, _ = QFileDialog.getSaveFileName(self, "Raporu kaydet", "rapor.txt",
-                                              "Metin (*.txt)")
+        path, _ = QFileDialog.getSaveFileName(self, "Raporu kaydet", "rapor.txt", "Metin (*.txt)")
         if path:
             with open(path, "w", encoding="utf-8") as fh:
                 fh.write(self.edit.toPlainText())

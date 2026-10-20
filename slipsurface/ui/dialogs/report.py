@@ -60,7 +60,7 @@ class ReportDialog(QDialog):
         default = tr("Şev Stabilite Analiz Raporu")
         stored = st.value("report/title", default)
         if stored in ("Şev Stabilite Analiz Raporu", "Slope Stability Analysis Report"):
-            stored = default                      # default title follows the language
+            stored = default  # default title follows the language
         self.title = QLineEdit(stored)
         self.project = QLineEdit(sm.title)
         self.analysis = QLineEdit(sm.analysis)
@@ -69,8 +69,9 @@ class ReportDialog(QDialog):
         self.company = QLineEdit(sm.company or st.value("report/company", ""))
         self.report_no = QLineEdit()
         self.report_no.setPlaceholderText("örn. KGM-13-2026-041")
-        self.date = QLineEdit(_dt.date.today().strftime(
-            "%Y-%m-%d" if language() == "en" else "%d.%m.%Y"))
+        self.date = QLineEdit(
+            _dt.date.today().strftime("%Y-%m-%d" if language() == "en" else "%d.%m.%Y")
+        )
         info = QGroupBox("Rapor bilgileri")
         f = QFormLayout(info)
         f.addRow("Rapor başlığı:", self.title)
@@ -124,12 +125,16 @@ class ReportDialog(QDialog):
     def options(self) -> ReportOptions:
         o = ReportOptions(
             title=self.title.text().strip() or tr("Şev Stabilite Analiz Raporu"),
-            project=self.project.text().strip(), analysis=self.analysis.text().strip(),
-            author=self.author.text().strip(), checker=self.checker.text().strip(),
-            company=self.company.text().strip(), report_no=self.report_no.text().strip(),
+            project=self.project.text().strip(),
+            analysis=self.analysis.text().strip(),
+            author=self.author.text().strip(),
+            checker=self.checker.text().strip(),
+            company=self.company.text().strip(),
+            report_no=self.report_no.text().strip(),
             date=self.date.text().strip(),
             target_fs=self.target.value() if self.use_target.isChecked() else None,
-            language=language())
+            language=language(),
+        )
         for key, cb in self.checks.items():
             setattr(o, key, cb.isChecked())
         return o
@@ -151,8 +156,14 @@ def make_report(results, path, opts: ReportOptions, display_project=None) -> int
     """Render the drawings and write the PDF (no dialogs). Returns page count."""
     from slipsurface.report import build_pdf
     from slipsurface.ui.report_figures import report_figures
-    figs = report_figures(results, display_project, method_figures=opts.method_figures,
-                          model_figure=opts.model, global_figure=True)
+
+    figs = report_figures(
+        results,
+        display_project,
+        method_figures=opts.method_figures,
+        model_figure=opts.model,
+        global_figure=True,
+    )
     return build_pdf(results, path, opts, figs)
 
 
@@ -180,10 +191,13 @@ def export_report(parent, results, display_project=None, model_path=None) -> str
         n = make_report(results, path, opts, display_project)
     except PermissionError:
         QGuiApplication.restoreOverrideCursor()
-        QMessageBox.critical(parent, tr("PDF Rapor"),
-                             tr(f"Dosya yazılamadı (başka bir programda açık olabilir):\n{path}"))
+        QMessageBox.critical(
+            parent,
+            tr("PDF Rapor"),
+            tr(f"Dosya yazılamadı (başka bir programda açık olabilir):\n{path}"),
+        )
         return None
-    except Exception as exc:          # report must never crash the app
+    except Exception as exc:  # report must never crash the app
         QGuiApplication.restoreOverrideCursor()
         QMessageBox.critical(parent, tr("PDF Rapor"), tr(f"Rapor oluşturulamadı:\n{exc}"))
         return None

@@ -25,6 +25,7 @@ class WorkflowBar(QWidget):
 
     def sizeHint(self):
         from PySide6.QtCore import QSize
+
         self._layout()
         w = int(self._rects[-1].right() + 8) if self._rects else 200
         return QSize(w, 30)

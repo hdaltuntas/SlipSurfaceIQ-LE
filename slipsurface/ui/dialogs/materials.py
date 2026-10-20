@@ -41,8 +41,10 @@ from slipsurface.ui.icons import color_icon, icon
 TITLE_CSS = "color:#2a7ad0;font-size:16px;"
 
 # (attribute, label, min, max, decimals) per model, from the shared catalogue
-ROWS = {k: [(a, tr(lab), lo, hi, dec) for a, lab, lo, hi, dec in info.rows]
-        for k, info in MODELS.items()}
+ROWS = {
+    k: [(a, tr(lab), lo, hi, dec) for a, lab, lo, hi, dec in info.rows]
+    for k, info in MODELS.items()
+}
 FORMULA = {k: info.formula for k, info in MODELS.items()}
 MC_ROWS, HB_ROWS = ROWS["MC"], ROWS["HB"]
 
@@ -58,7 +60,9 @@ def _spin(lo, hi, dec, val):
 
 
 class MaterialsDialog(QDialog):
-    def __init__(self, materials: list[MaterialSpec], parent=None, select: str | None = None) -> None:
+    def __init__(
+        self, materials: list[MaterialSpec], parent=None, select: str | None = None
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle(tr("Malzeme Özelliklerini Tanımla"))
         fit_to_screen(self, 980, 700)
@@ -72,11 +76,13 @@ class MaterialsDialog(QDialog):
         self.list = QListWidget()
         self.list.currentRowChanged.connect(self._select)
         tb = QHBoxLayout()
-        for name, tip, slot in (("add", tr("Malzeme ekle"), self._add),
-                                ("delete", tr("Seçili malzemeyi sil"), self._delete),
-                                ("up", tr("Yukarı taşı"), lambda: self._move(-1)),
-                                ("down", tr("Aşağı taşı"), lambda: self._move(1)),
-                                ("copy", tr("Kopyala"), self._copy)):
+        for name, tip, slot in (
+            ("add", tr("Malzeme ekle"), self._add),
+            ("delete", tr("Seçili malzemeyi sil"), self._delete),
+            ("up", tr("Yukarı taşı"), lambda: self._move(-1)),
+            ("down", tr("Aşağı taşı"), lambda: self._move(1)),
+            ("copy", tr("Kopyala"), self._copy),
+        ):
             b = QToolButton()
             b.setToolTip(tip)
             b.setIcon(icon(name))
@@ -130,7 +136,8 @@ class MaterialsDialog(QDialog):
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self.table.horizontalHeader().setStyleSheet(
-            "QHeaderView::section{background:#3a3a3a;color:white;font-weight:bold;}")
+            "QHeaderView::section{background:#3a3a3a;color:white;font-weight:bold;}"
+        )
 
         sl.addWidget(self.table, 1)
         self.derived = QLabel()
@@ -144,8 +151,10 @@ class MaterialsDialog(QDialog):
         self.hu.setButtonSymbols(QDoubleSpinBox.UpDownArrows)
         wl.addRow(self.use_water)
         wl.addRow(tr("Hu (piyezometrik yükseklik katsayısı):"), self.hu)
-        hint = QLabel("u = Hu · γw · h  (h: dilim tabanından su tablosuna düşey mesafe). "
-                      "Hu = 1 hidrostatik; Hu < 1 akım nedeniyle azaltılmış basınç.")
+        hint = QLabel(
+            "u = Hu · γw · h  (h: dilim tabanından su tablosuna düşey mesafe). "
+            "Hu = 1 hidrostatik; Hu < 1 akım nedeniyle azaltılmış basınç."
+        )
         hint.setWordWrap(True)
         wl.addRow(hint)
 
@@ -153,8 +162,10 @@ class MaterialsDialog(QDialog):
         self.tabs.addTab(strength, tr("Dayanım"))
         self.tabs.addTab(water, tr("Su Parametreleri"))
 
-        note = QLabel("Not: Malzeme özellikleri tüm projede ortaktır. Bir malzeme silinirse, "
-                      "ona atanmış bölgeler ilk malzemeye döner.")
+        note = QLabel(
+            "Not: Malzeme özellikleri tüm projede ortaktır. Bir malzeme silinirse, "
+            "ona atanmış bölgeler ilk malzemeye döner."
+        )
         note.setWordWrap(True)
 
         right = QVBoxLayout()
@@ -249,10 +260,12 @@ class MaterialsDialog(QDialog):
     def _update_derived(self, m: MaterialSpec) -> None:
         if m.model == "HB":
             try:
-                hb = HoekBrown(m.name, gamma=m.gamma, sigma_ci=m.sigma_ci, gsi=m.gsi, mi=m.mi,
-                               d=m.d)
-                self.derived.setText(tr(f"{tr('Türetilen')}: mb = {hb.mb:.4f}   s = {hb.s:.5f}   "
-                                     f"a = {hb.a:.4f}"))
+                hb = HoekBrown(
+                    m.name, gamma=m.gamma, sigma_ci=m.sigma_ci, gsi=m.gsi, mi=m.mi, d=m.d
+                )
+                self.derived.setText(
+                    tr(f"{tr('Türetilen')}: mb = {hb.mb:.4f}   s = {hb.s:.5f}   a = {hb.a:.4f}")
+                )
             except ValueError:
                 self.derived.setText("")
         elif m.model == "BB":
@@ -284,8 +297,9 @@ class MaterialsDialog(QDialog):
                 self.error.setText(tr(f"⚠ '{self.table.item(r, 0).text()}' sayısal olmalı."))
                 continue
             if not lo <= v <= hi:
-                self.error.setText(tr(f"⚠ '{self.table.item(r, 0).text()}' {lo:g} – {hi:g} "
-                                   f"aralığında olmalı."))
+                self.error.setText(
+                    tr(f"⚠ '{self.table.item(r, 0).text()}' {lo:g} – {hi:g} aralığında olmalı.")
+                )
                 continue
             setattr(m, attr, v)
         self._update_derived(m)
@@ -316,7 +330,7 @@ class MaterialsDialog(QDialog):
         if m.model == "UD":
             m.use_water = False
         elif m.model == "SH":
-            m.use_water = True               # σ′v needs the water table
+            m.use_water = True  # σ′v needs the water table
         self.use_water.setChecked(m.use_water)
         self.use_water.setEnabled(m.model != "UD")
         self.hu.setEnabled(m.model != "UD")
@@ -344,8 +358,9 @@ class MaterialsDialog(QDialog):
 
     def _add(self) -> None:
         n = len(self.mats) + 1
-        self.mats.append(MaterialSpec(name=self._unique(f"Malzeme {n}"),
-                                      color=PALETTE[(n - 1) % len(PALETTE)]))
+        self.mats.append(
+            MaterialSpec(name=self._unique(f"Malzeme {n}"), color=PALETTE[(n - 1) % len(PALETTE)])
+        )
         self._refresh_list()
         self.list.setCurrentRow(len(self.mats) - 1)
 

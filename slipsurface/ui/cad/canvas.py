@@ -36,7 +36,7 @@ from slipsurface.lem import method_name
 from slipsurface.project import DEFAULT_DISPLAY, Project
 from slipsurface.ui.cad.model import entities, point_segment_distance, segment_intersection
 
-PICK_PX = 9          # pick / snap tolerance in pixels
+PICK_PX = 9  # pick / snap tolerance in pixels
 SELECT_COLOR = QColor("#1e88ff")
 SNAP_COLOR = QColor("#00a020")
 
@@ -47,7 +47,7 @@ def nice_step(raw: float) -> float:
         return 1.0
     e = math.floor(math.log10(raw))
     for m in (1, 2, 5, 10):
-        step = m * 10 ** e
+        step = m * 10**e
         if step >= raw:
             return step
     return 10 ** (e + 1)
@@ -55,8 +55,13 @@ def nice_step(raw: float) -> float:
 
 def fs_color(t: float) -> QColor:
     """t in [0,1]: 0 = critical (red) ... 1 = highest shown (blue)."""
-    stops = [(0.0, (220, 30, 30)), (0.25, (240, 140, 20)), (0.5, (230, 220, 30)),
-             (0.75, (60, 180, 75)), (1.0, (40, 100, 220))]
+    stops = [
+        (0.0, (220, 30, 30)),
+        (0.25, (240, 140, 20)),
+        (0.5, (230, 220, 30)),
+        (0.75, (60, 180, 75)),
+        (1.0, (40, 100, 220)),
+    ]
     t = min(max(t, 0.0), 1.0)
     for (t0, c0), (t1, c1) in zip(stops, stops[1:], strict=False):
         if t <= t1:
@@ -69,9 +74,9 @@ class CadCanvas(QWidget):
     view_changed = Signal()
     mouse_world = Signal(float, float)
     status = Signal(str)
-    selection_changed = Signal(object)        # key or None
-    entity_double_clicked = Signal(object)    # key
-    drawn = Signal(str, list)                 # kind, points (from draw tools)
+    selection_changed = Signal(object)  # key or None
+    entity_double_clicked = Signal(object)  # key
+    drawn = Signal(str, list)  # kind, points (from draw tools)
     tool_changed = Signal(str)
 
     def __init__(self, parent: QWidget | None = None, editable: bool = True) -> None:
@@ -89,33 +94,40 @@ class CadCanvas(QWidget):
         self.result_key: str | None = None
         self.doc = None
 
-        self.scale = 10.0          # px per metre
+        self.scale = 10.0  # px per metre
         self.cx, self.cy = 20.0, 5.0
-        self.grid_spacing = 1.0    # snap / grid spacing [m]
+        self.grid_spacing = 1.0  # snap / grid spacing [m]
         self.snap_on = False
         self.grid_on = True
         self.ortho_on = False
         self.osnap_on = True
 
-        self.selection = None      # entity key
-        self.sel_vertex = None     # vertex index of the selected entity
-        self.hover = None          # (key, vertex) under cursor
-        self.snap_marker = None    # (kind, (x, y))
+        self.selection = None  # entity key
+        self.sel_vertex = None  # vertex index of the selected entity
+        self.hover = None  # (key, vertex) under cursor
+        self.snap_marker = None  # (kind, (x, y))
         self.mouse_pos: QPointF | None = None
         self._pan_last = None
         self._snap_cache = None
         self.highlight_slice: int | None = None
-        self.edit_kinds: set | None = None     # None = all entity kinds are editable
-        self._annot_rects: dict = {}           # annotation index -> screen QRectF (hit test)
+        self.edit_kinds: set | None = None  # None = all entity kinds are editable
+        self._annot_rects: dict = {}  # annotation index -> screen QRectF (hit test)
         self.assign_material: str | None = None
-        self._contour_cache: tuple | None = None   # (result id, grid, image)
+        self._contour_cache: tuple | None = None  # (result id, grid, image)
 
         from slipsurface.ui.cad.tools import SelectTool
+
         self.tool = SelectTool(self)
 
     # =============================================================== scene
-    def set_scene(self, project: Project | None, geometry=None, results=None,
-                  result_key: str | None = None, fit: bool = False) -> None:
+    def set_scene(
+        self,
+        project: Project | None,
+        geometry=None,
+        results=None,
+        result_key: str | None = None,
+        fit: bool = False,
+    ) -> None:
         self.project = project
         self.geometry = geometry
         self.results = results
@@ -142,12 +154,16 @@ class CadCanvas(QWidget):
 
     # ============================================================ transform
     def w2s(self, x, y) -> QPointF:
-        return QPointF(self.width() / 2 + (x - self.cx) * self.scale,
-                       self.height() / 2 - (y - self.cy) * self.scale)
+        return QPointF(
+            self.width() / 2 + (x - self.cx) * self.scale,
+            self.height() / 2 - (y - self.cy) * self.scale,
+        )
 
     def s2w(self, pt) -> tuple[float, float]:
-        return (self.cx + (pt.x() - self.width() / 2) / self.scale,
-                self.cy - (pt.y() - self.height() / 2) / self.scale)
+        return (
+            self.cx + (pt.x() - self.width() / 2) / self.scale,
+            self.cy - (pt.y() - self.height() / 2) / self.scale,
+        )
 
     def visible_world(self) -> tuple[float, float, float, float]:
         x0, y1 = self.s2w(QPointF(0, 0))
@@ -164,8 +180,14 @@ class CadCanvas(QWidget):
         cg = self._contour()
         if cg is not None:
             g = cg[0]
-            pts.append(np.array([[g["x0"], g["y0"]], [g["x0"] + g["nx"] * g["side"],
-                                                     g["y0"] + g["ny"] * g["side"]]]))
+            pts.append(
+                np.array(
+                    [
+                        [g["x0"], g["y0"]],
+                        [g["x0"] + g["nx"] * g["side"], g["y0"] + g["ny"] * g["side"]],
+                    ]
+                )
+            )
         if not pts:
             return None
         a = np.vstack(pts)
@@ -227,6 +249,7 @@ class CadCanvas(QWidget):
 
     def select_tool(self) -> None:
         from slipsurface.ui.cad.tools import SelectTool
+
         self.set_tool(SelectTool(self))
 
     def request_edit(self, text: str, fn) -> bool:
@@ -384,7 +407,7 @@ class CadCanvas(QWidget):
             self._pan_last = ev.position()
             return
         if ev.button() == Qt.RightButton:
-            return                    # handled by contextMenuEvent
+            return  # handled by contextMenuEvent
         self.tool.press(ev)
         self.update()
 
@@ -417,7 +440,7 @@ class CadCanvas(QWidget):
     def wheelEvent(self, ev) -> None:
         steps = ev.angleDelta().y() / 120.0
         if steps:
-            self.zoom(1.2 ** steps, ev.position())
+            self.zoom(1.2**steps, ev.position())
 
     def leaveEvent(self, ev) -> None:
         self.mouse_pos = None
@@ -487,7 +510,7 @@ class CadCanvas(QWidget):
         dark = self.palette().base().color().lightness() < 128
         pen_minor = QPen(QColor("#29364a") if dark else QColor(232, 235, 240), 1)
         pen_major = QPen(QColor("#384a62") if dark else QColor(208, 214, 222), 1)
-        for (lo, hi, vertical) in ((x0, x1, True), (y0, y1, False)):
+        for lo, hi, vertical in ((x0, x1, True), (y0, y1, False)):
             k0 = math.floor(lo / step)
             k1 = math.ceil(hi / step)
             if k1 - k0 > 2000:
@@ -527,7 +550,7 @@ class CadCanvas(QWidget):
             kind = e.key[0]
             selected = e.key == self.selection
             if kind in ("load", "support", "pattern", "facing", "annot"):
-                continue                     # drawn by their own painters
+                continue  # drawn by their own painters
             if kind == "external":
                 pen = QPen(ext_col, lw + (1.5 if selected else 0))
             elif kind == "material":
@@ -572,15 +595,23 @@ class CadCanvas(QWidget):
                     hov = self.hover is not None and self.hover == (e.key, k)
                     sel = e.key == self.selection and (self.sel_vertex in (None, k))
                     if e.key[0] == "annot" and not (hov or sel):
-                        continue                 # note handles only when active
+                        continue  # note handles only when active
                     r = 4.0 if (hov or (sel and self.sel_vertex == k)) else 2.6
                     p.setPen(QPen(SELECT_COLOR if (hov or sel) else QColor(40, 40, 40), 1))
                     p.setBrush(QColor("white") if not hov else SELECT_COLOR)
                     p.drawRect(QRectF(s.x() - r, s.y() - r, 2 * r, 2 * r))
 
     # ------------------------------------------------- loads & supports
-    def _arrow(self, p: QPainter, tip: QPointF, direction, length: float, col: QColor,
-               width: float = 1.4, head: float = 7.0) -> QPointF:
+    def _arrow(
+        self,
+        p: QPainter,
+        tip: QPointF,
+        direction,
+        length: float,
+        col: QColor,
+        width: float = 1.4,
+        head: float = 7.0,
+    ) -> QPointF:
         """Arrow ending at `tip`, pointing along screen `direction` (unit). Returns tail."""
         dx, dy = direction
         tail = QPointF(tip.x() - dx * length, tip.y() - dy * length)
@@ -589,11 +620,21 @@ class CadCanvas(QWidget):
         nx, ny = -dy, dx
         p.setPen(Qt.NoPen)
         p.setBrush(col)
-        p.drawPolygon(QPolygonF([tip,
-                                 QPointF(tip.x() - dx * head + nx * head * 0.45,
-                                         tip.y() - dy * head + ny * head * 0.45),
-                                 QPointF(tip.x() - dx * head - nx * head * 0.45,
-                                         tip.y() - dy * head - ny * head * 0.45)]))
+        p.drawPolygon(
+            QPolygonF(
+                [
+                    tip,
+                    QPointF(
+                        tip.x() - dx * head + nx * head * 0.45,
+                        tip.y() - dy * head + ny * head * 0.45,
+                    ),
+                    QPointF(
+                        tip.x() - dx * head - nx * head * 0.45,
+                        tip.y() - dy * head - ny * head * 0.45,
+                    ),
+                ]
+            )
+        )
         return tail
 
     def _paint_loads_supports(self, p: QPainter) -> None:
@@ -604,8 +645,9 @@ class CadCanvas(QWidget):
         red = QColor("#c0392b")
         p.setFont(QFont("Source Sans 3", 8))
         # distributed loads
-        qmax = max([abs(q) for ld in pr.loads if ld["kind"] == "distributed" for q in ld["q"]]
-                   or [1.0])
+        qmax = max(
+            [abs(q) for ld in pr.loads if ld["kind"] == "distributed" for q in ld["q"]] or [1.0]
+        )
         for i, ld in enumerate(pr.loads):
             sel = self.selection == ("load", i)
             col = SELECT_COLOR if sel else red
@@ -643,7 +685,7 @@ class CadCanvas(QWidget):
                 if g is not None:
                     y = float(g.ground_y(x))
                 a = math.radians(ld.get("angle", 270.0))
-                d = (math.cos(a), -math.sin(a))          # screen y is down
+                d = (math.cos(a), -math.sin(a))  # screen y is down
                 tail = self._arrow(p, self.w2s(x, y), d, 46, col, 2.2, 10)
                 p.setPen(col)
                 p.drawText(tail + QPointF(4, -4), f"{ld['magnitude']:g} kN/m")
@@ -654,20 +696,24 @@ class CadCanvas(QWidget):
             lo, hi = sorted((f["x1"], f["x2"]))
             if g is None:
                 continue
-            xs = np.unique(np.concatenate([[lo, hi], g.surface[(g.surface[:, 0] > lo) &
-                                                               (g.surface[:, 0] < hi), 0]]))
+            xs = np.unique(
+                np.concatenate(
+                    [[lo, hi], g.surface[(g.surface[:, 0] > lo) & (g.surface[:, 0] < hi), 0]]
+                )
+            )
             poly = QPolygonF([self.w2s(x, float(g.ground_y(x))) for x in xs])
             col = QColor(SELECT_COLOR if sel else (ft.color if ft else "#7f8c8d"))
             col.setAlpha(210)
             band = QPen(col, 8, Qt.SolidLine, Qt.FlatCap, Qt.RoundJoin)
             p.setPen(band)
             p.drawPolyline(poly)
-            p.setPen(QPen(QColor("#2c3e50"), 1, Qt.DashLine))   # wire mesh
+            p.setPen(QPen(QColor("#2c3e50"), 1, Qt.DashLine))  # wire mesh
             p.drawPolyline(poly)
         # supports
         for i, sp in enumerate(pr.supports):
-            self._draw_support(p, sp["a"], sp["b"], pr.support_type(sp["type"]),
-                               self.selection == ("support", i))
+            self._draw_support(
+                p, sp["a"], sp["b"], pr.support_type(sp["type"]), self.selection == ("support", i)
+            )
         # bolt patterns (generated)
         if g is not None:
             for i, pt in enumerate(pr.support_patterns):
@@ -680,8 +726,13 @@ class CadCanvas(QWidget):
                 for a, b in bolts:
                     self._draw_support(p, a, b, st, sel)
                 # bracket along the patterned face
-                p.setPen(QPen(SELECT_COLOR if sel else QColor(st.color if st else "#1f3d7a"),
-                              1, Qt.DotLine))
+                p.setPen(
+                    QPen(
+                        SELECT_COLOR if sel else QColor(st.color if st else "#1f3d7a"),
+                        1,
+                        Qt.DotLine,
+                    )
+                )
                 p.drawLine(self.w2s(*pt["p1"]), self.w2s(*pt["p2"]))
 
     def _draw_support(self, p: QPainter, a, b, st, sel: bool) -> None:
@@ -709,11 +760,11 @@ class CadCanvas(QWidget):
             for t in np.arange(0.1, 1.0, 0.1):
                 q = QPointF(A.x() + ux * L * t, A.y() + uy * L * t)
                 p.drawLine(q + QPointF(nx * 3, ny * 3), q - QPointF(nx * 3, ny * 3))
-        if kind == "micro_pile":            # pile cap + toe
+        if kind == "micro_pile":  # pile cap + toe
             p.setPen(QPen(col, 1.5))
             p.setBrush(QColor("white"))
             p.drawEllipse(B, 4, 4)
-        if kind not in ("geotextile", "geosynthetic"):   # head plate
+        if kind not in ("geotextile", "geosynthetic"):  # head plate
             p.setPen(QPen(col, 3))
             p.drawLine(A + QPointF(nx * 6, ny * 6), A - QPointF(nx * 6, ny * 6))
         if kind == "end_anchored":
@@ -735,8 +786,13 @@ class CadCanvas(QWidget):
             if bot.y() <= top.y():
                 continue
             k = 4
-            zig = [QPointF(top.x() + (3 if j % 2 else -3) * (1 - j / k),
-                           top.y() + (bot.y() - top.y()) * j / k) for j in range(k + 1)]
+            zig = [
+                QPointF(
+                    top.x() + (3 if j % 2 else -3) * (1 - j / k),
+                    top.y() + (bot.y() - top.y()) * j / k,
+                )
+                for j in range(k + 1)
+            ]
             p.drawPolyline(QPolygonF(zig))
 
     def _paint_water_symbol(self, p: QPainter, pts, col: QColor) -> None:
@@ -745,8 +801,15 @@ class CadCanvas(QWidget):
         s = self.w2s(xs, ys)
         p.setPen(Qt.NoPen)
         p.setBrush(col)
-        p.drawPolygon(QPolygonF([QPointF(s.x() - 7, s.y() - 14), QPointF(s.x() + 7, s.y() - 14),
-                                 QPointF(s.x(), s.y() - 3)]))
+        p.drawPolygon(
+            QPolygonF(
+                [
+                    QPointF(s.x() - 7, s.y() - 14),
+                    QPointF(s.x() + 7, s.y() - 14),
+                    QPointF(s.x(), s.y() - 3),
+                ]
+            )
+        )
         p.setPen(QPen(col, 1.2))
         p.drawLine(QPointF(s.x() - 7, s.y() + 4), QPointF(s.x() + 7, s.y() + 4))
         p.drawLine(QPointF(s.x() - 4, s.y() + 8), QPointF(s.x() + 4, s.y() + 8))
@@ -780,11 +843,15 @@ class CadCanvas(QWidget):
     def _contour(self):
         """(grid, image) of the slip-centre FS contour map of the current result."""
         res = self.current_result()
-        if res is None or not self.display("show_fs_contours") \
-                or getattr(res, "centres", None) is None:
+        if (
+            res is None
+            or not self.display("show_fs_contours")
+            or getattr(res, "centres", None) is None
+        ):
             return None
         if self._contour_cache is None or self._contour_cache[0] is not res:
             from slipsurface.ui.cad import fs_contour
+
             g = fs_contour.build_grid(res.centres)
             self._contour_cache = (res, g, fs_contour.render_image(g) if g else None)
         _, g, img = self._contour_cache
@@ -801,13 +868,18 @@ class CadCanvas(QWidget):
         p.setRenderHint(QPainter.SmoothPixmapTransform, True)
         p.drawImage(QRectF(tl, br), img)
         from slipsurface.ui.cad.fs_contour import LINE, contour_segments
+
         seg = contour_segments(g)
         if len(seg):
             sx = self.width() / 2 + (seg[:, [0, 2]] - self.cx) * self.scale
             sy = self.height() / 2 - (seg[:, [1, 3]] - self.cy) * self.scale
             p.setPen(QPen(QColor(*LINE), 0.9))
-            p.drawLines([QLineF(a, b, c, d) for a, c, b, d in
-                         np.column_stack([sx[:, 0], sx[:, 1], sy[:, 0], sy[:, 1]])])
+            p.drawLines(
+                [
+                    QLineF(a, b, c, d)
+                    for a, c, b, d in np.column_stack([sx[:, 0], sx[:, 1], sy[:, 0], sy[:, 1]])
+                ]
+            )
         p.restore()
 
     def _paint_results(self, p: QPainter) -> None:
@@ -845,8 +917,12 @@ class CadCanvas(QWidget):
                 p.drawLine(self.w2s(x, float(surf.y(x))), self.w2s(x, float(g.ground_y(x))))
             if self.highlight_slice is not None and 0 <= self.highlight_slice < s.n:
                 i = self.highlight_slice
-                quad = [(s.xl[i], surf.y(s.xl[i])), (s.xr[i], surf.y(s.xr[i])),
-                        (s.xr[i], g.ground_y(s.xr[i])), (s.xl[i], g.ground_y(s.xl[i]))]
+                quad = [
+                    (s.xl[i], surf.y(s.xl[i])),
+                    (s.xr[i], surf.y(s.xr[i])),
+                    (s.xr[i], g.ground_y(s.xr[i])),
+                    (s.xl[i], g.ground_y(s.xl[i])),
+                ]
                 p.setPen(QPen(SELECT_COLOR, 2))
                 p.setBrush(QColor(30, 136, 255, 70))
                 p.drawPolygon(self._poly_screen(np.asarray(quad, float)))
@@ -862,8 +938,10 @@ class CadCanvas(QWidget):
                 p.drawPolygon(QPolygonF([wtop, bot, QPointF(bot.x() + dx, bot.y())]))
                 p.setFont(QFont("Source Sans 3", 8))
                 p.setPen(QColor("#1f5fd1"))
-                p.drawText(QPointF(bot.x() + dx - (60 if dx < 0 else -4), bot.y() + 14),
-                           f"V = {ck['Pw']:.1f} kN/m")
+                p.drawText(
+                    QPointF(bot.x() + dx - (60 if dx < 0 else -4), bot.y() + 14),
+                    f"V = {ck['Pw']:.1f} kN/m",
+                )
             p.setPen(QPen(QColor("#8d5524"), 2.2))
             p.drawLine(top, bot)
         # mobilised support forces at the slip-surface intersections
@@ -883,8 +961,9 @@ class CadCanvas(QWidget):
             c = self.w2s(surf.xc, surf.yc)
             anchor = c
             if self.display("show_lines_to_center"):
-                p.setPen(QPen(dark if contour else crit, 1.1,
-                              Qt.DashLine if contour else Qt.SolidLine))
+                p.setPen(
+                    QPen(dark if contour else crit, 1.1, Qt.DashLine if contour else Qt.SolidLine)
+                )
                 for x in (s.x_exit, s.x_entry):
                     p.drawLine(c, self.w2s(x, float(g.ground_y(x))))
             self._paint_contour(p)
@@ -924,7 +1003,7 @@ class CadCanvas(QWidget):
             fm = QFontMetrics(f)
             w, h = fm.horizontalAdvance(txt) + 10, fm.height() + 4
             box = QRectF(anchor.x() - w / 2, anchor.y() - h - 4, w, h)
-            if contour:                          # centred on the critical centre
+            if contour:  # centred on the critical centre
                 box.moveCenter(anchor)
             p.setPen(QPen(QColor(40, 40, 40), 1))
             p.setBrush(QColor("white"))
@@ -938,6 +1017,7 @@ class CadCanvas(QWidget):
         if cg is None:
             return 0.0
         from slipsurface.ui.cad import fs_contour as fc
+
         g = cg[0]
         labels = fc.legend_labels(g["vmax"])
         f = QFont("Source Sans 3", 8)
@@ -957,7 +1037,7 @@ class CadCanvas(QWidget):
         p.drawText(QRectF(x0, y0 + 3, w, 18), Qt.AlignHCenter | Qt.AlignVCenter, "FS")
         top = y0 + 24 + fm.height() // 4
         bx = x0 + 8
-        for k in range(fc.N_BANDS):              # highest band on top
+        for k in range(fc.N_BANDS):  # highest band on top
             col = QColor(fc.PALETTE[fc.N_BANDS - 1 - k])
             p.setPen(Qt.NoPen)
             p.setBrush(col)
@@ -968,11 +1048,14 @@ class CadCanvas(QWidget):
         p.setFont(f)
         p.setPen(QColor(30, 30, 30))
         n = len(labels) - 1
-        for k, t in enumerate(labels):           # label k at boundary k*2 from the bottom
+        for k, t in enumerate(labels):  # label k at boundary k*2 from the bottom
             y = top + band_h * fc.N_BANDS - k * (band_h * fc.N_BANDS / n)
             p.drawLine(QPointF(bx + sw, y), QPointF(bx + sw + 3, y))
-            p.drawText(QRectF(bx + sw + 6, y - fm.height() / 2, lw, fm.height()),
-                       Qt.AlignLeft | Qt.AlignVCenter, t)
+            p.drawText(
+                QRectF(bx + sw + 6, y - fm.height() / 2, lw, fm.height()),
+                Qt.AlignLeft | Qt.AlignVCenter,
+                t,
+            )
         return y0 + h
 
     # ----------------------------------------------------------- legend
@@ -1025,9 +1108,10 @@ class CadCanvas(QWidget):
         if self.geometry is None or self.project is None:
             return
         from shapely.ops import polylabel
+
         mode = self.display("material_labels")
         best: dict[str, object] = {}
-        for r in self.geometry.regions:          # label each material at its largest region
+        for r in self.geometry.regions:  # label each material at its largest region
             if r.material not in best or r.polygon.area > best[r.material].area:
                 best[r.material] = r.polygon
         sz = int(self.display("label_size") or 8)
@@ -1041,10 +1125,11 @@ class CadCanvas(QWidget):
             lines = [name]
             if mode == "full":
                 from slipsurface.materials.catalog import model_name, parameter_text
+
                 if spec.model != "MC":
                     lines.append(model_name(spec.model))
                 parts = parameter_text(spec).split(", ")
-                lines += [", ".join(parts[k:k + 2]) for k in range(0, len(parts), 2)]
+                lines += [", ".join(parts[k : k + 2]) for k in range(0, len(parts), 2)]
                 g_txt = f"γ = {spec.gamma:g} kN/m³"
                 if spec.use_sat:
                     g_txt += f",  γsat = {spec.gamma_sat:g}"
@@ -1053,17 +1138,25 @@ class CadCanvas(QWidget):
                 c = polylabel(poly, tolerance=max(poly.length / 200, 1e-3))
                 # long bands have many equally good points: prefer the centroid
                 cen = poly.centroid
-                if poly.contains(cen) and poly.exterior.distance(cen) >= \
-                        0.7 * poly.exterior.distance(c):
+                if poly.contains(cen) and poly.exterior.distance(
+                    cen
+                ) >= 0.7 * poly.exterior.distance(c):
                     c = cen
             except Exception:
                 c = poly.representative_point()
             q = self.w2s(c.x, c.y)
-            w = max([fmb.horizontalAdvance(lines[0])] + [fm.horizontalAdvance(t) for t in lines[1:]]) + 10
+            w = (
+                max(
+                    [fmb.horizontalAdvance(lines[0])] + [fm.horizontalAdvance(t) for t in lines[1:]]
+                )
+                + 10
+            )
             h = fm.height() * len(lines) + 6
             box = QRectF(q.x() - w / 2, q.y() - h / 2, w, h)
-            if box.width() > 2 * abs(self.w2s(*poly.bounds[2:]).x() - self.w2s(*poly.bounds[:2]).x()):
-                continue                         # region far too small on screen
+            if box.width() > 2 * abs(
+                self.w2s(*poly.bounds[2:]).x() - self.w2s(*poly.bounds[:2]).x()
+            ):
+                continue  # region far too small on screen
             p.setPen(QPen(QColor(90, 90, 90), 0.8))
             p.setBrush(QColor(255, 255, 255, 215))
             p.drawRect(box)
@@ -1128,8 +1221,15 @@ class CadCanvas(QWidget):
             elif kind == "arrow":
                 dx, dy = pts[1].x() - pts[0].x(), pts[1].y() - pts[0].y()
                 L = math.hypot(dx, dy) or 1.0
-                self._arrow(p, pts[1], (dx / L, dy / L), L, SELECT_COLOR if sel else col,
-                            width + (1 if sel else 0), 8 + 2 * width)
+                self._arrow(
+                    p,
+                    pts[1],
+                    (dx / L, dy / L),
+                    L,
+                    SELECT_COLOR if sel else col,
+                    width + (1 if sel else 0),
+                    8 + 2 * width,
+                )
             elif kind == "rect":
                 p.drawRect(r)
             elif kind == "ellipse":
@@ -1185,8 +1285,11 @@ class CadCanvas(QWidget):
                 p.drawRect(QRectF(x0 + 3, y, w - 6, rh))
             p.setFont(fb if cur else f)
             p.setPen(QColor("#0a8a2a") if is_min else QColor(30, 30, 30))
-            p.drawText(QRectF(x0 + 8, y, wn, rh), Qt.AlignLeft | Qt.AlignVCenter,
-                       ("● " if is_min else "   ") + name)
+            p.drawText(
+                QRectF(x0 + 8, y, wn, rh),
+                Qt.AlignLeft | Qt.AlignVCenter,
+                ("● " if is_min else "   ") + name,
+            )
             p.drawText(QRectF(x0 + wn, y, wv - 8, rh), Qt.AlignRight | Qt.AlignVCenter, val)
 
     # ----------------------------------------------------- snap / cursor
@@ -1201,8 +1304,15 @@ class CadCanvas(QWidget):
         if kind == "end":
             p.drawRect(QRectF(s.x() - r, s.y() - r, 2 * r, 2 * r))
         elif kind == "mid":
-            p.drawPolygon(QPolygonF([QPointF(s.x(), s.y() - r), QPointF(s.x() + r, s.y() + r),
-                                     QPointF(s.x() - r, s.y() + r)]))
+            p.drawPolygon(
+                QPolygonF(
+                    [
+                        QPointF(s.x(), s.y() - r),
+                        QPointF(s.x() + r, s.y() + r),
+                        QPointF(s.x() - r, s.y() + r),
+                    ]
+                )
+            )
         elif kind == "int":
             p.drawLine(QPointF(s.x() - r, s.y() - r), QPointF(s.x() + r, s.y() + r))
             p.drawLine(QPointF(s.x() - r, s.y() + r), QPointF(s.x() + r, s.y() - r))
@@ -1212,8 +1322,14 @@ class CadCanvas(QWidget):
             p.drawLine(QPointF(s.x() - r, s.y() + r), QPointF(s.x() + r, s.y() + r))
         elif kind == "grid":
             p.drawEllipse(s, 4, 4)
-        label = {"end": "Uç nokta", "mid": "Orta nokta", "int": "Kesişim", "near": "En yakın",
-                 "grid": "Izgara", "ortho": "Orto"}.get(kind)
+        label = {
+            "end": "Uç nokta",
+            "mid": "Orta nokta",
+            "int": "Kesişim",
+            "near": "En yakın",
+            "grid": "Izgara",
+            "ortho": "Orto",
+        }.get(kind)
         if label:
             p.setFont(QFont("Source Sans 3", 8))
             p.setPen(QPen(SNAP_COLOR, 1))

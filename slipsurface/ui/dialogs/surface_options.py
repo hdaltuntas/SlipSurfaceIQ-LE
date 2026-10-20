@@ -27,7 +27,10 @@ from PySide6.QtWidgets import (
 from slipsurface.project import EFFORT, Project, SurfaceSettings
 
 SEARCH = {
-    "circular": (tr("Otomatik iyileştirmeli arama (Diferansiyel Evrim + Nelder-Mead)"), "auto_refine"),
+    "circular": (
+        tr("Otomatik iyileştirmeli arama (Diferansiyel Evrim + Nelder-Mead)"),
+        "auto_refine",
+    ),
     "noncircular": (tr("Yol araması + optimizasyon (DE + Nelder-Mead)"), "path_search"),
     "user": (tr("— (kullanıcı tanımlı yüzey analiz edilir)"), "none"),
 }
@@ -52,7 +55,8 @@ class SurfaceOptionsDialog(QDialog):
             self.type_group.addButton(rb, i)
             grid.addWidget(rb, i, 1)
         {"circular": self.r_circ, "noncircular": self.r_non, "user": self.r_user}[
-            s.surface_type].setChecked(True)
+            s.surface_type
+        ].setChecked(True)
         if not s.user_surface:
             self.r_user.setToolTip(tr("Önce Yüzeyler → Kullanıcı Yüzeyi Çiz ile bir yüzey çizin."))
 
@@ -196,8 +200,9 @@ class SurfaceOptionsDialog(QDialog):
 
     def _accept(self) -> None:
         if self._type() == "user" and not self.p.surfaces.user_surface:
-            self.error.setText(tr("⚠ Kullanıcı tanımlı yüzey yok. Önce Yüzeyler → Kullanıcı Yüzeyi "
-                               "Çiz ile çizin."))
+            self.error.setText(
+                tr("⚠ Kullanıcı tanımlı yüzey yok. Önce Yüzeyler → Kullanıcı Yüzeyi Çiz ile çizin.")
+            )
             return
         if self._type() != "user" and self.use_limits.isChecked():
             if self.l1.value() <= self.l0.value() or self.r1.value() <= self.r0.value():
@@ -206,11 +211,17 @@ class SurfaceOptionsDialog(QDialog):
             xs = [q[0] for q in self.p.external]
             if xs:
                 lo, hi = min(xs), max(xs)
-                for start, end in ((self.l0.value(), self.l1.value()),
-                                   (self.r0.value(), self.r1.value())):
+                for start, end in (
+                    (self.l0.value(), self.l1.value()),
+                    (self.r0.value(), self.r1.value()),
+                ):
                     if min(end, hi) <= max(start, lo):
-                        self.error.setText(tr("⚠ Her uç aralığı modelin yatay sınırlarıyla "
-                                           f"kesişmeli ({lo:g} – {hi:g} m)."))
+                        self.error.setText(
+                            tr(
+                                "⚠ Her uç aralığı modelin yatay sınırlarıyla "
+                                f"kesişmeli ({lo:g} – {hi:g} m)."
+                            )
+                        )
                         return
         self.accept()
 

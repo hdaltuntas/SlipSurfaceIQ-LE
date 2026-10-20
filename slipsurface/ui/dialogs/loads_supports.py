@@ -85,8 +85,9 @@ class DistributedLoadDialog(QDialog):
         f.addRow("Büyüklük q₁:", self.q1)
         f.addRow("Büyüklük q₂:", self.q2)
         f.addRow(tr("Yön:"), self.orient)
-        note = QLabel("Pozitif q zemine doğru (basınç) etkir. Yük, x₁–x₂ arasında zemin "
-                      "yüzeyine uygulanır.")
+        note = QLabel(
+            "Pozitif q zemine doğru (basınç) etkir. Yük, x₁–x₂ arasında zemin yüzeyine uygulanır."
+        )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
         lay = QVBoxLayout(self)
@@ -122,8 +123,10 @@ class LineLoadDialog(QDialog):
         f.addRow("Konum x:", self.x)
         f.addRow(tr("Büyüklük P:"), self.mag)
         f.addRow(tr("Kuvvet açısı:"), self.angle)
-        note = QLabel("Açı +x ekseninden saat yönünün tersine ölçülür: 270° = düşey aşağı, "
-                      "180° = sola (sağdan sola göçmede itici). Nokta zemin yüzeyine oturtulur.")
+        note = QLabel(
+            "Açı +x ekseninden saat yönünün tersine ölçülür: 270° = düşey aşağı, "
+            "180° = sola (sağdan sola göçmede itici). Nokta zemin yüzeyine oturtulur."
+        )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
         lay = QVBoxLayout(self)
@@ -146,10 +149,10 @@ FORMULAS = {
     "soil_nail": "T = min(çekme, kök dayanımı × L_dış, plaka + kök dayanımı × L_iç)",
     "geotextile": "T = min(çekme dayanımı, sıyrılma dayanımı × min(L_iç, L_dış))",
     "geosynthetic": "T = min(C·çekme, P_iç, P_dış);  P = 2·C·∫(adezyon + σv·tan δ) ds,  "
-                    "σv = γ·derinlik (ankrajlı uçta sıyrılma yok)",
+    "σv = γ·derinlik (ankrajlı uçta sıyrılma yok)",
     "micro_pile": "T = kazık kesme dayanımı / aralık  (kayma yüzeyini kestiği noktada)",
 }
-FIELDS = {   # which inputs apply to which kind
+FIELDS = {  # which inputs apply to which kind
     "spacing": {"end_anchored", "grouted_tieback", "soil_nail", "micro_pile"},
     "tensile": {"end_anchored", "grouted_tieback", "soil_nail", "geotextile", "geosynthetic"},
     "plate": {"soil_nail"},
@@ -183,8 +186,11 @@ class SupportTypesDialog(QDialog):
         self.list = QListWidget()
         self.list.currentRowChanged.connect(self._select)
         bar = QHBoxLayout()
-        for txt, tip, slot in (("+", "Destek tipi ekle", self._add), ("✕", tr("Sil"), self._delete),
-                               ("⧉", tr("Kopyala"), self._copy)):
+        for txt, tip, slot in (
+            ("+", "Destek tipi ekle", self._add),
+            ("✕", tr("Sil"), self._delete),
+            ("⧉", tr("Kopyala"), self._copy),
+        ):
             b = QToolButton()
             b.setText(txt)
             b.setToolTip(tip)
@@ -224,14 +230,20 @@ class SupportTypesDialog(QDialog):
             "pile_shear": _spin(0, 1e6, 2, 100, " kN"),
             "length": _spin(0.1, 200, 2, 12, " m"),
         }
-        self.labels = {"spacing": tr("Düzlem dışı aralık:"), "tensile": tr("Çekme kapasitesi:"),
-                       "plate": "Plaka kapasitesi:", "bond_strength": tr("Kök (yapışma) dayanımı:"),
-                       "bond_length": tr("Kök boyu:"), "pullout": tr("Sıyrılma dayanımı:"),
-                       "coverage": tr("Şerit kaplama oranı:"), "adhesion": tr("Arayüz adezyonu:"),
-                       "interface_friction": tr("Arayüz sürtünme açısı δ:"),
-                       "overburden_gamma": tr("Örtü birim hacim ağırlığı:"),
-                       "pile_shear": tr("Kazık kesme dayanımı:"),
-                       "length": tr("Varsayılan boy (otomatik yerleşim):")}
+        self.labels = {
+            "spacing": tr("Düzlem dışı aralık:"),
+            "tensile": tr("Çekme kapasitesi:"),
+            "plate": "Plaka kapasitesi:",
+            "bond_strength": tr("Kök (yapışma) dayanımı:"),
+            "bond_length": tr("Kök boyu:"),
+            "pullout": tr("Sıyrılma dayanımı:"),
+            "coverage": tr("Şerit kaplama oranı:"),
+            "adhesion": tr("Arayüz adezyonu:"),
+            "interface_friction": tr("Arayüz sürtünme açısı δ:"),
+            "overburden_gamma": tr("Örtü birim hacim ağırlığı:"),
+            "pile_shear": tr("Kazık kesme dayanımı:"),
+            "length": tr("Varsayılan boy (otomatik yerleşim):"),
+        }
         self.anchorage = QComboBox()
         for k, v in ANCHORAGES.items():
             self.anchorage.addItem(tr(v), k)
@@ -280,6 +292,7 @@ class SupportTypesDialog(QDialog):
         body = QHBoxLayout()
         lw = QListWidget  # noqa: F841 (kept for clarity)
         from PySide6.QtWidgets import QWidget
+
         lwid = QWidget()
         lwid.setLayout(left)
         lwid.setFixedWidth(220)
@@ -331,13 +344,18 @@ class SupportTypesDialog(QDialog):
             w = self.w.get(k) or self.w_extra[k]
             w.setVisible(on)
             self._rows[k].setVisible(on)
-        self._rows["tensile"].setText(tr("Çekme dayanımı (kN/m):")
-                                      if kind in ("geotextile", "geosynthetic")
-                                      else tr("Çekme kapasitesi:"))
+        self._rows["tensile"].setText(
+            tr("Çekme dayanımı (kN/m):")
+            if kind in ("geotextile", "geosynthetic")
+            else tr("Çekme kapasitesi:")
+        )
 
     def _kind_changed(self, *_):
-        if not self._loading and self.kind.currentData() == "micro_pile" \
-                and self.orient.currentData() == "parallel":
+        if (
+            not self._loading
+            and self.kind.currentData() == "micro_pile"
+            and self.orient.currentData() == "parallel"
+        ):
             self.orient.setCurrentIndex(self.orient.findData("tangent"))
         self._update_fields()
         self._store()
@@ -400,8 +418,9 @@ class SupportTypesDialog(QDialog):
 
     def _delete(self):
         if len(self.types) <= 1:
-            self.error.setText(tr("⚠ En az bir destek tipi kalmalı (destekleri silmek için "
-                               "çizimden silin)."))
+            self.error.setText(
+                tr("⚠ En az bir destek tipi kalmalı (destekleri silmek için çizimden silin).")
+            )
             return
         del self.types[self.cur]
         self._refresh()
@@ -446,8 +465,9 @@ class SupportEditDialog(QDialog):
 class CrackFromDepthDialog(QDialog):
     """Create a tension crack line at a constant depth below the ground."""
 
-    def __init__(self, x1: float, x2: float, z: float, water: float, zc_note: str = "",
-                 parent=None) -> None:
+    def __init__(
+        self, x1: float, x2: float, z: float, water: float, zc_note: str = "", parent=None
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle(tr("Derinlikten Gerilme Çatlağı"))
         self.x1 = _spin(-1e6, 1e6, 3, x1, " m")
@@ -459,9 +479,11 @@ class CrackFromDepthDialog(QDialog):
         f.addRow(tr("Bitiş x₂:"), self.x2)
         f.addRow(tr("Çatlak derinliği z:"), self.z)
         f.addRow(tr("Çatlaktaki su (doluluk):"), self.water)
-        note = QLabel("Çatlak çizgisi x₁–x₂ arasında zemin yüzeyinin z kadar altına yerleştirilir. "
-                      "Kayma yüzeyi bu çizgiyi kret tarafında kestiği yerde kesilir ve çatlak "
-                      "yüzü düşey olarak zemine uzanır." + (f"\n{zc_note}" if zc_note else ""))
+        note = QLabel(
+            "Çatlak çizgisi x₁–x₂ arasında zemin yüzeyinin z kadar altına yerleştirilir. "
+            "Kayma yüzeyi bu çizgiyi kret tarafında kestiği yerde kesilir ve çatlak "
+            "yüzü düşey olarak zemine uzanır." + (f"\n{zc_note}" if zc_note else "")
+        )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
         self.error = QLabel("")
@@ -481,6 +503,7 @@ class CrackFromDepthDialog(QDialog):
     def points(self, surface) -> list[list[float]]:
         """Polyline following the ground (vertices of `surface` inside the range)."""
         import numpy as np
+
         x1, x2, z = self.x1.value(), self.x2.value(), self.z.value()
         xs = [x1] + [float(x) for x in surface[:, 0] if x1 < x < x2] + [x2]
         return [[x, float(np.interp(x, surface[:, 0], surface[:, 1])) - z] for x in xs]

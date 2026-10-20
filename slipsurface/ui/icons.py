@@ -151,8 +151,12 @@ def _draw(name: str, p: QPainter) -> None:
         p.drawLine(QPointF(32, 6), QPointF(32, 58))
         p.drawLine(QPointF(6, 32), QPointF(58, 32))
         p.setBrush(INK)
-        for poly in (_poly((32, 2), (24, 12), (40, 12)), _poly((32, 62), (24, 52), (40, 52)),
-                     _poly((2, 32), (12, 24), (12, 40)), _poly((62, 32), (52, 24), (52, 40))):
+        for poly in (
+            _poly((32, 2), (24, 12), (40, 12)),
+            _poly((32, 62), (24, 52), (40, 52)),
+            _poly((2, 32), (12, 24), (12, 40)),
+            _poly((62, 32), (52, 24), (52, 40)),
+        ):
             p.drawPolygon(poly)
     elif name == "select":
         p.setPen(_pen(INK, 2.5))
@@ -344,8 +348,9 @@ def _draw(name: str, p: QPainter) -> None:
         p.drawRect(QRectF(4, 44, 56, 16))
         p.setPen(_pen(RED, 3))
         p.setBrush(Qt.NoBrush)
-        p.drawPolyline(_poly((4, 26), (12, 14), (20, 36), (28, 10), (36, 38), (44, 16),
-                             (52, 30), (60, 22)))
+        p.drawPolyline(
+            _poly((4, 26), (12, 14), (20, 36), (28, 10), (36, 38), (44, 16), (52, 30), (60, 22))
+        )
     elif name == "tension_crack":
         p.setPen(_pen(INK, 2.5))
         p.setBrush(YELLOW)
@@ -360,7 +365,7 @@ def _draw(name: str, p: QPainter) -> None:
         p.drawPolygon(_poly((4, 60), (4, 52), (14, 52), (40, 6), (60, 6), (60, 60)))
         heads = [(30, 24)] if name == "bolt" else [(36, 14), (28, 28), (20, 42)]
         for hx, hy in heads:
-            tx, ty = hx + 26, hy + 7          # ~15° below horizontal
+            tx, ty = hx + 26, hy + 7  # ~15° below horizontal
             p.setPen(_pen(QColor("#1f3d7a"), 3.5 if name == "bolt" else 3))
             p.drawLine(QPointF(hx, hy), QPointF(tx, ty))
             p.setPen(_pen(QColor("#1f3d7a"), 3.5))
@@ -438,17 +443,38 @@ def _draw(name: str, p: QPainter) -> None:
 @cache
 def icon(name: str) -> QIcon:
     import qtawesome as qta
+
     names = {
-        "new": "file-plus-outline", "open": "folder-open-outline", "save": "content-save-outline",
-        "undo": "undo", "redo": "redo", "delete": "delete-outline", "copy": "content-copy",
-        "zoom_all": "fit-to-screen-outline", "zoom_in": "magnify-plus-outline",
-        "zoom_out": "magnify-minus-outline", "zoom_window": "selection-search", "pan": "hand-back-right-outline",
-        "settings": "tune-variant", "summary": "clipboard-text-outline", "compute": "play-circle-outline",
-        "interpret": "chart-line", "report": "file-pdf-box", "export": "export-variant",
-        "materials": "layers-outline", "surface_options": "vector-curve", "coords": "table-edit",
-        "select": "cursor-default-outline", "measure": "ruler", "grid": "grid",
-        "add": "plus", "up": "chevron-up", "down": "chevron-down",
-        "water": "waves", "support": "screw-machine-flat-top", "seismic": "waveform",
+        "new": "file-plus-outline",
+        "open": "folder-open-outline",
+        "save": "content-save-outline",
+        "undo": "undo",
+        "redo": "redo",
+        "delete": "delete-outline",
+        "copy": "content-copy",
+        "zoom_all": "fit-to-screen-outline",
+        "zoom_in": "magnify-plus-outline",
+        "zoom_out": "magnify-minus-outline",
+        "zoom_window": "selection-search",
+        "pan": "hand-back-right-outline",
+        "settings": "tune-variant",
+        "summary": "clipboard-text-outline",
+        "compute": "play-circle-outline",
+        "interpret": "chart-line",
+        "report": "file-pdf-box",
+        "export": "export-variant",
+        "materials": "layers-outline",
+        "surface_options": "vector-curve",
+        "coords": "table-edit",
+        "select": "cursor-default-outline",
+        "measure": "ruler",
+        "grid": "grid",
+        "add": "plus",
+        "up": "chevron-up",
+        "down": "chevron-down",
+        "water": "waves",
+        "support": "screw-machine-flat-top",
+        "seismic": "waveform",
     }
     if name in names:
         return qta.icon("mdi6." + names[name], color="#568cce", color_disabled="#8794a6")

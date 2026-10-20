@@ -24,8 +24,11 @@ def pytest_sessionfinish(session, exitstatus):
 
 
 def pytest_unconfigure(config):
-    if (_exit_status is not None and sys.platform.startswith("linux")
-            and "PySide6.QtWidgets" in sys.modules):
+    if (
+        _exit_status is not None
+        and sys.platform.startswith("linux")
+        and "PySide6.QtWidgets" in sys.modules
+    ):
         sys.stdout.flush()
         sys.stderr.flush()
         os._exit(_exit_status)

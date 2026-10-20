@@ -1,6 +1,12 @@
 from slipsurface.ui.preferences import fit_to_screen
 from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QLabel, QPlainTextEdit, QPushButton, QFileDialog, QHBoxLayout,
+    QDialog,
+    QVBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QPushButton,
+    QFileDialog,
+    QHBoxLayout,
 )
 from slipsurface.scripting import TEMPLATE, run_script
 
@@ -12,9 +18,12 @@ class ScriptDialog(QDialog):
         self.setWindowTitle("Python scripting")
         fit_to_screen(self, 960, 720)
         layout = QVBoxLayout(self)
-        layout.addWidget(QLabel(
-            "Python scripts run with your account permissions. Run trusted code only.\n"
-            "Changes are validated and applied as one undoable operation. Units: m, kN, kPa."))
+        layout.addWidget(
+            QLabel(
+                "Python scripts run with your account permissions. Run trusted code only.\n"
+                "Changes are validated and applied as one undoable operation. Units: m, kN, kPa."
+            )
+        )
         self.editor = QPlainTextEdit()
         self.editor.setPlainText(TEMPLATE)
         self.editor.setStyleSheet("font-family: Consolas; font-size: 13px;")
@@ -23,8 +32,12 @@ class ScriptDialog(QDialog):
         self.output.setReadOnly(True)
         layout.addWidget(self.output, 1)
         buttons = QHBoxLayout()
-        for title, slot in (("Open .py", self.load), ("Save .py", self.save),
-                            ("Run / Apply", self.run), ("Close", self.accept)):
+        for title, slot in (
+            ("Open .py", self.load),
+            ("Save .py", self.save),
+            ("Run / Apply", self.run),
+            ("Close", self.accept),
+        ):
             button = QPushButton(title)
             button.clicked.connect(slot)
             buttons.addWidget(button)
@@ -32,6 +45,7 @@ class ScriptDialog(QDialog):
 
     def load(self):
         from pathlib import Path
+
         path, _ = QFileDialog.getOpenFileName(self, "Open script", "", "Python (*.py)")
         if path:
             try:
@@ -41,6 +55,7 @@ class ScriptDialog(QDialog):
 
     def save(self):
         from pathlib import Path
+
         path, _ = QFileDialog.getSaveFileName(self, "Save script", "", "Python (*.py)")
         if path:
             try:

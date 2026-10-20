@@ -41,11 +41,24 @@ from slipsurface.project import (
 )
 
 TITLE_CSS = "color:#2a7ad0;font-size:16px;"
-INTERSLICE = [("half-sine", tr("Yarım sinüs")), ("constant", tr("Sabit (Spencer'e eşdeğer)")),
-              ("clipped-sine", tr("Kırpılmış sinüs")), ("trapezoidal", "Trapez")]
+INTERSLICE = [
+    ("half-sine", tr("Yarım sinüs")),
+    ("constant", tr("Sabit (Spencer'e eşdeğer)")),
+    ("clipped-sine", tr("Kırpılmış sinüs")),
+    ("trapezoidal", "Trapez"),
+]
 # Slide2 order of the method check boxes
-METHOD_ORDER = ["bishop", "corps1", "corps2", "gle", "janbu_simplified", "janbu_corrected",
-                "lowe_karafiath", "ordinary", "spencer"]
+METHOD_ORDER = [
+    "bishop",
+    "corps1",
+    "corps2",
+    "gle",
+    "janbu_simplified",
+    "janbu_corrected",
+    "lowe_karafiath",
+    "ordinary",
+    "spencer",
+]
 
 
 def _dspin(lo, hi, dec, step, val, suffix=""):
@@ -64,8 +77,11 @@ def _direction_pixmap(left: bool) -> QPixmap:
     pm.fill(Qt.transparent)
     p = QPainter(pm)
     p.setRenderHint(QPainter.Antialiasing)
-    pts = [(2, 22), (14, 22), (30, 8), (44, 8), (44, 22)] if left else \
-          [(2, 8), (16, 8), (32, 22), (44, 22), (44, 22)]
+    pts = (
+        [(2, 22), (14, 22), (30, 8), (44, 8), (44, 22)]
+        if left
+        else [(2, 8), (16, 8), (32, 22), (44, 22), (44, 22)]
+    )
     p.setPen(QPen(QColor("#555"), 1.5))
     p.setBrush(QColor("#c8c8c8"))
     p.drawPolygon(QPolygonF([QPointF(*q) for q in pts] + [QPointF(44, 26), QPointF(2, 26)]))
@@ -99,8 +115,13 @@ class ProjectSettingsDialog(QDialog):
         self.nav.addItems(self.PAGES)
         self.nav.setFixedWidth(160)
         self.stack = QStackedWidget()
-        for build in (self._page_general, self._page_methods, self._page_groundwater,
-                      self._page_seismic, self._page_advanced):
+        for build in (
+            self._page_general,
+            self._page_methods,
+            self._page_groundwater,
+            self._page_seismic,
+            self._page_advanced,
+        ):
             self.stack.addWidget(build())
         self.nav.currentRowChanged.connect(self.stack.setCurrentIndex)
         self.nav.setCurrentRow(page)
@@ -221,8 +242,14 @@ class ProjectSettingsDialog(QDialog):
         self.interslice = QComboBox()
         for k, label in INTERSLICE:
             self.interslice.addItem(label, k)
-        self.interslice.setCurrentIndex(max(0, [k for k, _ in INTERSLICE].index(m.interslice)
-                                            if m.interslice in dict(INTERSLICE) else 0))
+        self.interslice.setCurrentIndex(
+            max(
+                0,
+                [k for k, _ in INTERSLICE].index(m.interslice)
+                if m.interslice in dict(INTERSLICE)
+                else 0,
+            )
+        )
         self.f_start = _dspin(0, 1, 3, 0.05, m.f_start)
         self.f_end = _dspin(0, 1, 3, 0.05, m.f_end)
         il.addRow("Fonksiyon:", self.interslice)
@@ -277,14 +304,17 @@ class ProjectSettingsDialog(QDialog):
         cf.addRow("Doluluk:", self.crack_pct)
         lay.addWidget(cbox)
         self._crack_mode_changed()
-        note = QLabel("Su tablosu: u = Hu · γw · (YASS kotu − taban kotu); Hu ve suyun etkisi "
-                      "malzeme bazında Malzeme Özellikleri → Su Parametreleri'nden ayarlanır.\n"
-                      "Ru: u = Ru · σv (dilim tabanındaki toplam düşey gerilme).")
+        note = QLabel(
+            "Su tablosu: u = Hu · γw · (YASS kotu − taban kotu); Hu ve suyun etkisi "
+            "malzeme bazında Malzeme Özellikleri → Su Parametreleri'nden ayarlanır.\n"
+            "Ru: u = Ru · σv (dilim tabanındaki toplam düşey gerilme)."
+        )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
         lay.addWidget(note)
         self.gw_method.currentIndexChanged.connect(
-            lambda: self.ru.setEnabled(self.gw_method.currentData() == "ru"))
+            lambda: self.ru.setEnabled(self.gw_method.currentData() == "ru")
+        )
         self.ru.setEnabled(gw.method == "ru")
         lay.addStretch(1)
         return w
@@ -307,8 +337,10 @@ class ProjectSettingsDialog(QDialog):
         f.addRow(tr("Yatay katsayı kh:"), self.kh)
         f.addRow(tr("Düşey katsayı kv:"), self.kv)
         lay.addWidget(box)
-        note = QLabel("Yatay kuvvet kh·W göçme yönünde, dilim ağırlık merkezinde etkir. "
-                      "kv pozitif yukarı: düşey yük (1 − kv)·W.")
+        note = QLabel(
+            "Yatay kuvvet kh·W göçme yönünde, dilim ağırlık merkezinde etkir. "
+            "kv pozitif yukarı: düşey yük (1 − kv)·W."
+        )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
         lay.addWidget(note)
@@ -320,7 +352,9 @@ class ProjectSettingsDialog(QDialog):
         a = self.p.advanced
         box = QGroupBox(tr("Çözüm kontrolleri"))
         v = QVBoxLayout(box)
-        self.check_adm = QCheckBox(tr("mα < eşik ve negatif taban kayma direnci olan yüzeyleri reddet"))
+        self.check_adm = QCheckBox(
+            tr("mα < eşik ve negatif taban kayma direnci olan yüzeyleri reddet")
+        )
         self.check_adm.setChecked(a.check_admissibility)
         v.addWidget(self.check_adm)
         f = QFormLayout()
@@ -332,10 +366,12 @@ class ProjectSettingsDialog(QDialog):
         f.addRow(tr("Minimum kayma derinliği:"), self.min_depth)
         v.addLayout(f)
         lay.addWidget(box)
-        note = QLabel("mα kontrolü (Whitman & Bailey 1967) kapatılırsa veya eşiği düşürülürse, "
-                      "topukta dik negatif taban açılı yüzeylerde sayısal olarak güvenilmez, "
-                      "düşük FS değerleri bulunabilir. Arayüz kuvveti oranı, tekil (singular) "
-                      "çözümleri elemek için toplam ağırlığa göre bir üst sınır belirler.")
+        note = QLabel(
+            "mα kontrolü (Whitman & Bailey 1967) kapatılırsa veya eşiği düşürülürse, "
+            "topukta dik negatif taban açılı yüzeylerde sayısal olarak güvenilmez, "
+            "düşük FS değerleri bulunabilir. Arayüz kuvveti oranı, tekil (singular) "
+            "çözümleri elemek için toplam ağırlığa göre bir üst sınır belirler."
+        )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
         lay.addWidget(note)
@@ -388,7 +424,12 @@ class ProjectSettingsDialog(QDialog):
             wdg = self.stack.widget(0)
             self.stack.removeWidget(wdg)
             wdg.deleteLater()
-        for build in (self._page_general, self._page_methods, self._page_groundwater,
-                      self._page_seismic, self._page_advanced):
+        for build in (
+            self._page_general,
+            self._page_methods,
+            self._page_groundwater,
+            self._page_seismic,
+            self._page_advanced,
+        ):
             self.stack.addWidget(build())
         self.stack.setCurrentIndex(page)

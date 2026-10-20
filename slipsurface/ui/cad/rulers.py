@@ -57,8 +57,11 @@ class Ruler(QWidget):
         for k in range(k0, k1 + 1):
             v = k * minor
             is_major = abs(v / major - round(v / major)) < 1e-6
-            L = 10 if is_major else (6 if abs(v / (major / 2) - round(v / (major / 2))) < 1e-6
-                                     else 3)
+            L = (
+                10
+                if is_major
+                else (6 if abs(v / (major / 2) - round(v / (major / 2))) < 1e-6 else 3)
+            )
             p.setPen(QPen(self.palette().text().color(), 1))
             if self.vertical:
                 y = c.w2s(0, v).y()

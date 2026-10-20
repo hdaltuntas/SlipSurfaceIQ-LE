@@ -52,8 +52,12 @@ SUPPORT_KINDS = {
     "geosynthetic": "Geosentetik",
     "micro_pile": "Mikro kazık",
 }
-ANCHORAGES = {"none": "Yok", "face": "Şev yüzünde", "embedded": "Gömülü uçta",
-              "both": "Her iki uçta"}
+ANCHORAGES = {
+    "none": "Yok",
+    "face": "Şev yüzünde",
+    "embedded": "Gömülü uçta",
+    "both": "Her iki uçta",
+}
 
 
 @dataclass
@@ -62,7 +66,7 @@ class DistributedLoad:
     x2: float
     q1: float
     q2: float
-    orientation: str = "vertical"      # vertical | normal
+    orientation: str = "vertical"  # vertical | normal
 
     def q_at(self, x):
         if abs(self.x2 - self.x1) < 1e-12:
@@ -75,8 +79,8 @@ class DistributedLoad:
 class LineLoad:
     x: float
     y: float
-    magnitude: float                   # kN/m
-    angle: float = 270.0               # degrees CCW from +x
+    magnitude: float  # kN/m
+    angle: float = 270.0  # degrees CCW from +x
 
     @property
     def force(self) -> tuple[float, float]:
@@ -88,30 +92,30 @@ class LineLoad:
 class SupportType:
     name: str = "Ankraj 1"
     kind: str = "end_anchored"
-    spacing: float = 1.5               # out-of-plane spacing [m] (geotextile: 1)
-    tensile: float = 200.0             # kN
-    plate: float = 100.0               # kN (soil nail)
-    bond_strength: float = 50.0        # kN/m (tieback, soil nail)
-    bond_length: float = 4.0           # m (tieback)
-    pullout: float = 20.0              # kN/m per m (geotextile)
-    application: str = "active"        # active | passive
-    orientation: str = "parallel"      # parallel | tangent | perpendicular
+    spacing: float = 1.5  # out-of-plane spacing [m] (geotextile: 1)
+    tensile: float = 200.0  # kN
+    plate: float = 100.0  # kN (soil nail)
+    bond_strength: float = 50.0  # kN/m (tieback, soil nail)
+    bond_length: float = 4.0  # m (tieback)
+    pullout: float = 20.0  # kN/m per m (geotextile)
+    application: str = "active"  # active | passive
+    orientation: str = "parallel"  # parallel | tangent | perpendicular
     color: str = "#1f3d7a"
-    length: float = 12.0               # default length for automatically placed bolts [m]
+    length: float = 12.0  # default length for automatically placed bolts [m]
     # geosynthetic
-    coverage: float = 100.0            # strip coverage [%]
-    anchorage: str = "none"            # none | face | embedded | both
-    adhesion: float = 0.0              # interface adhesion [kPa]
-    interface_friction: float = 25.0   # interface friction angle delta [deg]
-    overburden_gamma: float = 19.0     # unit weight for the overburden stress [kN/m3]
+    coverage: float = 100.0  # strip coverage [%]
+    anchorage: str = "none"  # none | face | embedded | both
+    adhesion: float = 0.0  # interface adhesion [kPa]
+    interface_friction: float = 25.0  # interface friction angle delta [deg]
+    overburden_gamma: float = 19.0  # unit weight for the overburden stress [kN/m3]
     # micro pile
-    pile_shear: float = 100.0          # shear strength of one pile [kN]
+    pile_shear: float = 100.0  # shear strength of one pile [kN]
 
 
 @dataclass
 class Support:
-    a: tuple[float, float]             # head (slope face)
-    b: tuple[float, float]             # end (inside the slope)
+    a: tuple[float, float]  # head (slope face)
+    b: tuple[float, float]  # end (inside the slope)
     stype: SupportType
     label: str = ""
 
@@ -121,7 +125,7 @@ class SupportForce:
     index: int
     x: float
     y: float
-    T: float                           # kN/m (before the passive 1/F scaling)
+    T: float  # kN/m (before the passive 1/F scaling)
     fx: float
     fy: float
     passive: bool
@@ -141,13 +145,13 @@ class FacingType:
     """
 
     name: str = "Püskürtme beton"
-    thickness: float = 0.10            # m
-    gamma: float = 24.0                # kN/m3
-    tau: float = 400.0                 # kPa
+    thickness: float = 0.10  # m
+    gamma: float = 24.0  # kN/m3
+    tau: float = 400.0  # kPa
     mesh: str = "Q188"
-    mesh_as: float = 188.0             # mm2/m
-    mesh_fy: float = 500.0             # MPa
-    application: str = "passive"       # passive (T/F) | active
+    mesh_as: float = 188.0  # mm2/m
+    mesh_fy: float = 500.0  # MPa
+    application: str = "passive"  # passive (T/F) | active
     color: str = "#7f8c8d"
 
     @property
@@ -155,7 +159,7 @@ class FacingType:
         return self.tau * self.thickness + self.mesh_as * self.mesh_fy / 1000.0
 
     @property
-    def weight_per_m(self) -> float:   # per metre of slope length
+    def weight_per_m(self) -> float:  # per metre of slope length
         return self.gamma * self.thickness
 
 
@@ -197,7 +201,7 @@ def support_intersection(sup: Support, surf, x_exit: float, x_entry: float):
     ts = np.linspace(0.0, 1.0, 241)
     P = A[None, :] + ts[:, None] * (B - A)[None, :]
     with np.errstate(invalid="ignore"):
-        vals = P[:, 1] - surf.y(P[:, 0])             # vectorized
+        vals = P[:, 1] - surf.y(P[:, 0])  # vectorized
     ok = np.isfinite(vals[:-1]) & np.isfinite(vals[1:])
     idx = np.flatnonzero(ok & (vals[:-1] > 0) & (vals[1:] <= 0))
     if idx.size == 0:
@@ -228,8 +232,13 @@ def geosynthetic_pullout(st: SupportType, geom, p0, p1) -> float:
     return float(2.0 * st.coverage / 100.0 * shear.mean() * L)
 
 
-def support_capacity(st: SupportType, L_in: float, L_out: float,
-                     po_in: float | None = None, po_out: float | None = None) -> tuple[float, str]:
+def support_capacity(
+    st: SupportType,
+    L_in: float,
+    L_out: float,
+    po_in: float | None = None,
+    po_out: float | None = None,
+) -> tuple[float, str]:
     """Force [kN] and which component governs. `po_in` / `po_out` are the
     geosynthetic pullout resistances inside / outside the sliding mass."""
     if st.kind == "end_anchored":
@@ -238,8 +247,11 @@ def support_capacity(st: SupportType, L_in: float, L_out: float,
         bond = st.bond_strength * min(st.bond_length, L_out)
         return (st.tensile, "çekme kapasitesi") if st.tensile <= bond else (bond, "kök sıyrılma")
     if st.kind == "soil_nail":
-        cands = [(st.tensile, "çekme kapasitesi"), (st.bond_strength * L_out, "sıyrılma (dış)"),
-                 (st.plate + st.bond_strength * L_in, "plaka + sıyrılma (iç)")]
+        cands = [
+            (st.tensile, "çekme kapasitesi"),
+            (st.bond_strength * L_out, "sıyrılma (dış)"),
+            (st.plate + st.bond_strength * L_in, "plaka + sıyrılma (iç)"),
+        ]
         return min(cands, key=lambda c: c[0])
     if st.kind == "geotextile":
         po = st.pullout * min(L_in, L_out)
@@ -326,13 +338,13 @@ def slice_forces(loads: LoadSet, geom, surf, xl, xr, x_exit, x_entry, direction:
         if sup.stype.orientation == "perpendicular":
             d = (B - A) / np.hypot(*(B - A))
             u = np.array([-d[1], d[0]])
-            if u[0] * direction > 0:                 # pick the normal that opposes sliding
+            if u[0] * direction > 0:  # pick the normal that opposes sliding
                 u = -u
         elif sup.stype.orientation == "tangent":
             h = 1e-5
             slope = (surf.y(p[0] + h) - surf.y(p[0] - h)) / (2 * h)
             t = np.array([1.0, slope]) / np.hypot(1.0, slope)
-            u = -direction * t                     # opposes the sliding direction
+            u = -direction * t  # opposes the sliding direction
         else:
             u = (B - A) / np.hypot(*(B - A))
         i = slice_of(p[0])
@@ -340,8 +352,21 @@ def slice_forces(loads: LoadSet, geom, surf, xl, xr, x_exit, x_entry, direction:
             continue
         passive = sup.stype.application == "passive"
         add(i, p[0], p[1], T * u[0], T * u[1], passive)
-        info.append(SupportForce(k, float(p[0]), float(p[1]), T, T * u[0], T * u[1], passive,
-                                 L_in, L_out, gov, sup.label or f"Destek {k + 1}"))
+        info.append(
+            SupportForce(
+                k,
+                float(p[0]),
+                float(p[1]),
+                T,
+                T * u[0],
+                T * u[1],
+                passive,
+                L_in,
+                L_out,
+                gov,
+                sup.label or f"Destek {k + 1}",
+            )
+        )
 
     # shotcrete facing: weight on the faced surface + resistance where the slip
     # surface daylights through it (exit and/or entry point)
@@ -358,25 +383,41 @@ def slice_forces(loads: LoadSet, geom, surf, xl, xr, x_exit, x_entry, direction:
             ds = np.hypot(1.0, _ground_slope(geom, xs)) * dx
             for xk, dsk in zip(xs, ds, strict=False):
                 add(i, xk, float(geom.ground_y(xk)), 0.0, -ft.weight_per_m * dsk)
-        applied = False          # capacity mobilised once per facing: at the first
-        for x, i in ((x_exit, 0), (x_entry, n - 1)):   # end the slip surface daylights through
+        applied = False  # capacity mobilised once per facing: at the first
+        for x, i in ((x_exit, 0), (x_entry, n - 1)):  # end the slip surface daylights through
             if applied or not (lo - 1e-6 <= x <= hi + 1e-6):
                 continue
             y = float(geom.ground_y(x))
-            if abs(float(surf.y(x)) - y) > 1e-3:      # end is not on the ground (e.g. crack)
+            if abs(float(surf.y(x)) - y) > 1e-3:  # end is not on the ground (e.g. crack)
                 continue
             h = 1e-5
             slope = (surf.y(x + h) - surf.y(x - h)) / (2 * h)
             if not np.isfinite(slope):
-                slope = (surf.y(x + 2 * h) - surf.y(x)) / (2 * h) if i == 0 else \
-                        (surf.y(x) - surf.y(x - 2 * h)) / (2 * h)
+                slope = (
+                    (surf.y(x + 2 * h) - surf.y(x)) / (2 * h)
+                    if i == 0
+                    else (surf.y(x) - surf.y(x - 2 * h)) / (2 * h)
+                )
             t = np.array([1.0, slope]) / np.hypot(1.0, slope)
-            u = -direction * t                         # opposes sliding
+            u = -direction * t  # opposes sliding
             T = ft.capacity
             passive = ft.application == "passive"
             add(i, x, y, T * u[0], T * u[1], passive)
-            info.append(SupportForce(-1, x, y, T, T * u[0], T * u[1], passive, 0.0, 0.0,
-                                     "kaplama (τ·t + As·fy)", ft.name))
+            info.append(
+                SupportForce(
+                    -1,
+                    x,
+                    y,
+                    T,
+                    T * u[0],
+                    T * u[1],
+                    passive,
+                    0.0,
+                    0.0,
+                    "kaplama (τ·t + As·fy)",
+                    ft.name,
+                )
+            )
             applied = True
     return out, info
 
@@ -443,7 +484,7 @@ class TensionCrack:
         if hi - lo <= 1e-9:
             return None
         xs = np.linspace(lo, hi, 401)
-        h = surf.y(xs) - self.y(xs)              # > 0: slip surface inside the cracked zone
+        h = surf.y(xs) - self.y(xs)  # > 0: slip surface inside the cracked zone
         right = float(geom.ground_y(x_entry)) >= float(geom.ground_y(x_exit))
         ks = []
         for k in range(len(xs) - 1):
@@ -459,8 +500,13 @@ class TensionCrack:
         k = ks[-1] if right else ks[0]
         f = lambda x: float(surf.y(x) - self.y(x))  # noqa: E731
         try:
-            xc = brentq(f, xs[k], xs[k + 1], xtol=1e-10) if f(xs[k]) * f(xs[k + 1]) < 0 \
-                else xs[k + 1] if right else xs[k]
+            xc = (
+                brentq(f, xs[k], xs[k + 1], xtol=1e-10)
+                if f(xs[k]) * f(xs[k + 1]) < 0
+                else xs[k + 1]
+                if right
+                else xs[k]
+            )
         except ValueError:
             return None
         if right:

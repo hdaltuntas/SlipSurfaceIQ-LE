@@ -15,6 +15,17 @@ from slipsurface.materials.models import (
     Undrained,
 )
 
-__all__ = ["BartonBandis", "CNIRockMass", "HardeningSoil", "HoekBrown", "HoekBrownDirect",
-           "Material", "MohrCoulomb", "PowerCurve", "PowerLaw", "Sanisand", "Shansep",
-           "Undrained"]
+__all__ = [
+    "BartonBandis",
+    "CNIRockMass",
+    "HardeningSoil",
+    "HoekBrown",
+    "HoekBrownDirect",
+    "Material",
+    "MohrCoulomb",
+    "PowerCurve",
+    "PowerLaw",
+    "Sanisand",
+    "Shansep",
+    "Undrained",
+]

@@ -20,7 +20,7 @@ from slipsurface.project import EFFORT, Project
 class AnalysisResults:
     project: Project
     geometry: SlopeGeometry
-    results: dict[str, SearchResult] = field(default_factory=dict)   # method key -> result
+    results: dict[str, SearchResult] = field(default_factory=dict)  # method key -> result
     errors: dict[str, str] = field(default_factory=dict)
     elapsed: float = 0.0
     finished: str = ""
@@ -38,7 +38,7 @@ def extend_to_ground(geom: SlopeGeometry, pts) -> np.ndarray:
     """Extend a user polyline along its end segments until each end is above
     the ground (hand-drawn ends often stop a hair below the surface)."""
     pts = np.asarray(pts, dtype=float)
-    pts = pts[np.argsort(pts[:, 0], kind="stable")]   # by x only: same-x points keep order
+    pts = pts[np.argsort(pts[:, 0], kind="stable")]  # by x only: same-x points keep order
     span = geom.x_max - geom.x_min
     out = [p for p in pts]
     for end, nxt, limit in ((0, 1, geom.x_min), (-1, -2, geom.x_max)):
@@ -48,7 +48,7 @@ def extend_to_ground(geom: SlopeGeometry, pts) -> np.ndarray:
         d = p0 - p1
         if abs(d[0]) < 1e-12:
             continue
-        d = d / abs(d[0])                        # unit step in x, outward
+        d = d / abs(d[0])  # unit step in x, outward
         for step in np.linspace(0, span, 400)[1:]:
             q = p0 + d * step
             if (end == 0 and q[0] < limit) or (end == -1 and q[0] > limit):
@@ -67,21 +67,30 @@ def search_settings(p: Project, method: str) -> SearchSettings:
     pop, it = EFFORT.get(s.effort, EFFORT["normal"])
     return SearchSettings(
         method=method,
-        surface_type=(("spline" if s.noncircular_shape == "spline" else "polyline")
-                      if s.surface_type == "noncircular" else "circular"),
-        n_slices=p.methods.n_slices, popsize=pop, maxiter=it, seed=s.seed,
-        n_ctrl=s.n_ctrl, convex_only=s.convex_only,
+        surface_type=(
+            ("spline" if s.noncircular_shape == "spline" else "polyline")
+            if s.surface_type == "noncircular"
+            else "circular"
+        ),
+        n_slices=p.methods.n_slices,
+        popsize=pop,
+        maxiter=it,
+        seed=s.seed,
+        n_ctrl=s.n_ctrl,
+        convex_only=s.convex_only,
         check_admissibility=p.advanced.check_admissibility,
-        left_range=(float(s.left_range[0]), float(s.left_range[1]))
-        if s.left_range else None,
-        right_range=(float(s.right_range[0]), float(s.right_range[1]))
-        if s.right_range else None,
-        slice_opts=p.slice_options(), solver_kw=p.solver_kw())
+        left_range=(float(s.left_range[0]), float(s.left_range[1])) if s.left_range else None,
+        right_range=(float(s.right_range[0]), float(s.right_range[1])) if s.right_range else None,
+        slice_opts=p.slice_options(),
+        solver_kw=p.solver_kw(),
+    )
 
 
-def run_analysis(p: Project,
-                 progress: Callable[[int, int, str, int, float], bool | None] | None = None,
-                 status: dict | None = None) -> AnalysisResults:
+def run_analysis(
+    p: Project,
+    progress: Callable[[int, int, str, int, float], bool | None] | None = None,
+    status: dict | None = None,
+) -> AnalysisResults:
     """`progress(i, n, method, generation, best)` returning True cancels.
 
     `status` (optional) is updated in place with the search state of the
@@ -124,8 +133,10 @@ def run_analysis(p: Project,
         for i, m in enumerate(methods):
             stat.update(method=m, index=i, n_methods=n)
             if p.surfaces.surface_type == "noncircular" and m == "bishop":
-                out.errors[m] = ("Bishop yalnızca dairesel yüzeyler için geçerlidir; "
-                                 "dairesel olmayan aramada atlandı.")
+                out.errors[m] = (
+                    "Bishop yalnızca dairesel yüzeyler için geçerlidir; "
+                    "dairesel olmayan aramada atlandı."
+                )
                 stat["done"][m] = out.errors[m]
                 continue
 
@@ -150,70 +161,105 @@ def report_text(r: AnalysisResults, tr: Callable[[str], str] = lambda s: s) -> s
     """Plain-text analysis report (Info Viewer). `tr` translates the words that
     are embedded inside padded columns (the UI passes its translator)."""
     p = r.project
-    L = ["SlipSurfaceIQ LE — Analiz Raporu", "=" * 60,
-         f"Proje        : {p.summary.title}", f"Analiz       : {p.summary.analysis}",
-         f"Hazırlayan   : {p.summary.author}", f"Kurum        : {p.summary.company}",
-         f"Oluşturulma  : {p.summary.date_created}", f"Analiz zamanı: {r.finished} "
-         f"({r.elapsed:.1f} s)", ""]
+    L = [
+        "SlipSurfaceIQ LE — Analiz Raporu",
+        "=" * 60,
+        f"Proje        : {p.summary.title}",
+        f"Analiz       : {p.summary.analysis}",
+        f"Hazırlayan   : {p.summary.author}",
+        f"Kurum        : {p.summary.company}",
+        f"Oluşturulma  : {p.summary.date_created}",
+        f"Analiz zamanı: {r.finished} ({r.elapsed:.1f} s)",
+        "",
+    ]
     for c in p.summary.comments:
         if c:
             L.append(f"Not: {c}")
     g = p.general
-    L += ["Proje ayarları", "-" * 60,
-          "Birimler           : Metrik (kN, kPa, m)",
-          f"Göçme yönü         : "
-          f"{tr('Sağdan sola' if g.failure_direction == 'right_to_left' else 'Soldan sağa')}",
-          f"Dilim sayısı       : {p.methods.n_slices}",
-          f"Tolerans / maks. it: {p.methods.tolerance} / {p.methods.max_iter}",
-          f"Arayüz fonksiyonu  : {p.methods.interslice} (GLE)",
-          f"Yeraltı suyu       : {p.groundwater.method}, γw = {p.groundwater.gamma_w}",
-          f"Sismik             : kh = {p.seismic.kh}, kv = {p.seismic.kv}",
-          f"Yüzey tipi         : {p.surfaces.surface_type}", ""]
+    L += [
+        "Proje ayarları",
+        "-" * 60,
+        "Birimler           : Metrik (kN, kPa, m)",
+        f"Göçme yönü         : "
+        f"{tr('Sağdan sola' if g.failure_direction == 'right_to_left' else 'Soldan sağa')}",
+        f"Dilim sayısı       : {p.methods.n_slices}",
+        f"Tolerans / maks. it: {p.methods.tolerance} / {p.methods.max_iter}",
+        f"Arayüz fonksiyonu  : {p.methods.interslice} (GLE)",
+        f"Yeraltı suyu       : {p.groundwater.method}, γw = {p.groundwater.gamma_w}",
+        f"Sismik             : kh = {p.seismic.kh}, kv = {p.seismic.kv}",
+        f"Yüzey tipi         : {p.surfaces.surface_type}",
+        "",
+    ]
     L += ["Malzemeler", "-" * 60]
     from slipsurface.materials.catalog import model_name, parameter_text
+
     for m in p.materials:
         gs = m.gamma_sat if m.use_sat else m.gamma
-        L.append(f"{m.name:18s} {tr(model_name(m.model)):26s} γ={m.gamma:g}  γsat={gs:g}  "
-                 f"{parameter_text(m)}")
+        L.append(
+            f"{m.name:18s} {tr(model_name(m.model)):26s} γ={m.gamma:g}  γsat={gs:g}  "
+            f"{parameter_text(m)}"
+        )
     if p.tension_crack:
         xs = [q[0] for q in p.tension_crack]
-        L += ["", "Gerilme çatlağı", "-" * 60,
-              f"Çatlak çizgisi x = {min(xs):.2f} – {max(xs):.2f}, "
-              f"çatlak suyu: %{100 * p.groundwater.crack_water:.0f} dolu"]
+        L += [
+            "",
+            "Gerilme çatlağı",
+            "-" * 60,
+            f"Çatlak çizgisi x = {min(xs):.2f} – {max(xs):.2f}, "
+            f"çatlak suyu: %{100 * p.groundwater.crack_water:.0f} dolu",
+        ]
     if p.loads:
         L += ["", "Dış yükler", "-" * 60]
         for i, ld in enumerate(p.loads, 1):
             if ld["kind"] == "distributed":
                 (x1, _), (x2, _) = ld["points"]
                 yon = "düşey" if ld.get("orientation", "vertical") == "vertical" else "yüzeye dik"
-                L.append(f"{i:2d}. Yayılı yük  x = {x1:.2f} – {x2:.2f}  q = {ld['q'][0]:g} – "
-                         f"{ld['q'][1]:g} kPa ({yon})")
+                L.append(
+                    f"{i:2d}. Yayılı yük  x = {x1:.2f} – {x2:.2f}  q = {ld['q'][0]:g} – "
+                    f"{ld['q'][1]:g} kPa ({yon})"
+                )
             else:
                 x, y = ld["point"]
-                L.append(f"{i:2d}. Tekil yük   ({x:.2f}, {y:.2f})  P = {ld['magnitude']:g} kN/m, "
-                         f"açı {ld.get('angle', 270):g}°")
+                L.append(
+                    f"{i:2d}. Tekil yük   ({x:.2f}, {y:.2f})  P = {ld['magnitude']:g} kN/m, "
+                    f"açı {ld.get('angle', 270):g}°"
+                )
     if p.supports or p.support_patterns:
         from slipsurface.loads import SUPPORT_KINDS
+
         L += ["", "Destek tipleri", "-" * 60]
         for t in p.support_types:
-            L.append(f"{t.name:16s} {tr(SUPPORT_KINDS[t.kind]):30s} aralık {t.spacing:g} m  "
-                     f"çekme {t.tensile:g} kN  "
-                     f"{tr('pasif' if t.application == 'passive' else 'aktif')}")
+            L.append(
+                f"{t.name:16s} {tr(SUPPORT_KINDS[t.kind]):30s} aralık {t.spacing:g} m  "
+                f"çekme {t.tensile:g} kN  "
+                f"{tr('pasif' if t.application == 'passive' else 'aktif')}"
+            )
         L += ["", "Destekler", "-" * 60]
         for i, sp in enumerate(p.supports, 1):
-            L.append(f"{i:2d}. {sp['type']:16s} A=({sp['a'][0]:.2f}, {sp['a'][1]:.2f})  "
-                     f"B=({sp['b'][0]:.2f}, {sp['b'][1]:.2f})")
-    L += ["", "Sonuçlar (yöntem başına kritik yüzey)", "-" * 60,
-          f"{tr('Yöntem'):26s} {'FS':>7s}  {'λ':>7s}  {tr('çıkış x'):>8s}  "
-          f"{tr('giriş x'):>8s}  {tr('yüzey')}"]
+            L.append(
+                f"{i:2d}. {sp['type']:16s} A=({sp['a'][0]:.2f}, {sp['a'][1]:.2f})  "
+                f"B=({sp['b'][0]:.2f}, {sp['b'][1]:.2f})"
+            )
+    L += [
+        "",
+        "Sonuçlar (yöntem başına kritik yüzey)",
+        "-" * 60,
+        f"{tr('Yöntem'):26s} {'FS':>7s}  {'λ':>7s}  {tr('çıkış x'):>8s}  "
+        f"{tr('giriş x'):>8s}  {tr('yüzey')}",
+    ]
     for k, res in r.results.items():
         s = res.surface
         lam = f"{res.lem.lam:7.3f}" if res.lem.lam == res.lem.lam else "      –"
-        geo = (f"merkez ({cast(CircularSurface, s).xc:.2f}, "
-               f"{cast(CircularSurface, s).yc:.2f}), R={cast(CircularSurface, s).r:.2f}"
-               if hasattr(s, "r") else type(s).__name__)
-        L.append(f"{method_name(k):26s} {res.fos:7.3f}  {lam}  {res.slices.x_exit:8.2f}  "
-                 f"{res.slices.x_entry:8.2f}  {geo}")
+        geo = (
+            f"merkez ({cast(CircularSurface, s).xc:.2f}, "
+            f"{cast(CircularSurface, s).yc:.2f}), R={cast(CircularSurface, s).r:.2f}"
+            if hasattr(s, "r")
+            else type(s).__name__
+        )
+        L.append(
+            f"{method_name(k):26s} {res.fos:7.3f}  {lam}  {res.slices.x_exit:8.2f}  "
+            f"{res.slices.x_entry:8.2f}  {geo}"
+        )
     for k, e in r.errors.items():
         L.append(f"{method_name(k):26s}   –      ({e})")
     if p.tension_crack:
@@ -223,22 +269,30 @@ def report_text(r: AnalysisResults, tr: Callable[[str], str] = lambda s: s) -> s
             if ck is None:
                 L.append(f"{method_name(k):26s} kritik yüzey çatlak çizgisini kesmiyor")
             else:
-                L.append(f"{method_name(k):26s} x = {ck['x']:.2f}  derinlik = {ck['depth']:.2f} m  "
-                         f"su = {ck['hw']:.2f} m  itki V = {ck['Pw']:.2f} kN/m")
+                L.append(
+                    f"{method_name(k):26s} x = {ck['x']:.2f}  derinlik = {ck['depth']:.2f} m  "
+                    f"su = {ck['hw']:.2f} m  itki V = {ck['Pw']:.2f} kN/m"
+                )
     if p.facings:
         L += ["", "Kaplamalar (püskürtme beton + hasır çelik)", "-" * 60]
         for ft in p.facing_types:
-            L.append(f"{ft.name:18s} t = {ft.thickness:g} m  γ = {ft.gamma:g}  "
-                     f"τ = {ft.tau:g} kPa  hasır {ft.mesh} (As = {ft.mesh_as:g} mm²/m, "
-                     f"fy = {ft.mesh_fy:g} MPa)  kapasite = {ft.capacity:.1f} kN/m")
+            L.append(
+                f"{ft.name:18s} t = {ft.thickness:g} m  γ = {ft.gamma:g}  "
+                f"τ = {ft.tau:g} kPa  hasır {ft.mesh} (As = {ft.mesh_as:g} mm²/m, "
+                f"fy = {ft.mesh_fy:g} MPa)  kapasite = {ft.capacity:.1f} kN/m"
+            )
         for f in p.facings:
-            L.append(f"  {f['type']}: x = {min(f['x1'], f['x2']):.2f} – {max(f['x1'], f['x2']):.2f}")
+            L.append(
+                f"  {f['type']}: x = {min(f['x1'], f['x2']):.2f} – {max(f['x1'], f['x2']):.2f}"
+            )
     if p.support_patterns:
         L += ["", "Bulon paternleri", "-" * 60]
         for i, pt in enumerate(p.support_patterns, 1):
-            L.append(f"{i:2d}. {pt['type']}: x = {pt['p1'][0]:.2f} – {pt['p2'][0]:.2f}, aralık "
-                     f"{pt['spacing']:g} m, ilk {pt.get('offset', 0):g} m, eğim {pt.get('angle', 15):g}°, "
-                     f"boy {pt['length']:g} m")
+            L.append(
+                f"{i:2d}. {pt['type']}: x = {pt['p1'][0]:.2f} – {pt['p2'][0]:.2f}, aralık "
+                f"{pt['spacing']:g} m, ilk {pt.get('offset', 0):g} m, eğim {pt.get('angle', 15):g}°, "
+                f"boy {pt['length']:g} m"
+            )
     if p.supports or p.support_patterns or p.facings:
         L += ["", "Kritik yüzeylerde mobilize destek kuvvetleri [kN/m]", "-" * 60]
         for k, res in r.results.items():
@@ -246,9 +300,11 @@ def report_text(r: AnalysisResults, tr: Callable[[str], str] = lambda s: s) -> s
             if not sf:
                 L.append(f"{method_name(k):26s} kritik yüzeyi kesen destek / kaplama yok")
             for f in sf:
-                L.append(f"{method_name(k):26s} {f.label}: T = {f.T:8.2f}  "
-                         f"(L_iç = {f.L_in:.2f} m, L_dış = {f.L_out:.2f} m, {tr(f.governing)}, "
-                         f"{tr('pasif' if f.passive else 'aktif')})")
+                L.append(
+                    f"{method_name(k):26s} {f.label}: T = {f.T:8.2f}  "
+                    f"(L_iç = {f.L_in:.2f} m, L_dış = {f.L_out:.2f} m, {tr(f.governing)}, "
+                    f"{tr('pasif' if f.passive else 'aktif')})"
+                )
     gm = r.global_minimum()
     if gm:
         L += ["", f"Global minimum: {method_name(gm[0])} FS = {gm[1].fos:.3f}"]
