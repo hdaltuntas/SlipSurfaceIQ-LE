@@ -526,7 +526,7 @@ class Project:
     @classmethod
     def from_dict(cls, d: dict) -> Project:
         if d.get("format") != FORMAT:
-            raise ValueError("Bu dosya bir SlipSurface LE projesi değil.")
+            raise ValueError("Bu dosya bir SlipSurfaceIQ LE projesi değil.")
         ver = int(d.get("version", 0))
         if ver > VERSION:
             raise ValueError("Dosya daha yeni bir sürümle kaydedilmiş.")

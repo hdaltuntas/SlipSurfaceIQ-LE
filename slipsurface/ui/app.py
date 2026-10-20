@@ -55,9 +55,9 @@ def run(argv: list[str] | None = None, project_path: str | None = None,
         example: str | None = None, smoke: float | None = None) -> int:
     argv = list(argv if argv is not None else sys.argv)
     app = QApplication.instance() or QApplication(argv)
-    app.setApplicationName("SlipSurface LE")
+    app.setApplicationName("SlipSurfaceIQ LE")
     app.setApplicationVersion(__version__)
-    app.setOrganizationName("SlipSurface")
+    app.setOrganizationName("SlipSurface")  # settings storage key, kept for existing preferences
     app.setStyle("Fusion")
     from slipsurface.ui.preferences import apply_theme
     from slipsurface.ui.i18n import initialize

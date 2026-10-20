@@ -1,4 +1,4 @@
-"""SlipSurface LE Interpret — results window (opens separately, like Slide2 Interpret)."""
+"""SlipSurfaceIQ LE Interpret — results window (opens separately, like Slide2 Interpret)."""
 
 from __future__ import annotations
 
@@ -227,7 +227,7 @@ class InterpretWindow(QMainWindow):
         self.area.show_rulers(bool(self.project.display_opt("show_ruler")))
         name = self.path.name if self.path else tr("Kaydedilmemiş")
         mname = method_name(self.key) if self.key else "—"
-        self.setWindowTitle(tr(f"SlipSurface LE Yorumla {__version__} — {name} — "
+        self.setWindowTitle(tr(f"SlipSurfaceIQ LE Yorumla {__version__} — {name} — "
                             f"[{self.project.summary.title}] — {mname}"))
         r = self.results.results.get(self.key)
         if r is not None:

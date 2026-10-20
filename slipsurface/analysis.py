@@ -150,7 +150,7 @@ def report_text(r: AnalysisResults, tr: Callable[[str], str] = lambda s: s) -> s
     """Plain-text analysis report (Info Viewer). `tr` translates the words that
     are embedded inside padded columns (the UI passes its translator)."""
     p = r.project
-    L = ["SlipSurface LE — Analiz Raporu", "=" * 60,
+    L = ["SlipSurfaceIQ LE — Analiz Raporu", "=" * 60,
          f"Proje        : {p.summary.title}", f"Analiz       : {p.summary.analysis}",
          f"Hazırlayan   : {p.summary.author}", f"Kurum        : {p.summary.company}",
          f"Oluşturulma  : {p.summary.date_created}", f"Analiz zamanı: {r.finished} "

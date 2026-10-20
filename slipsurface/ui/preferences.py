@@ -100,7 +100,7 @@ def apply_theme(dark=None):
 
 
 TECHNOLOGIES = """
-<h3>SlipSurface LE 2026.0.0</h3>
+<h3>SlipSurfaceIQ LE 2026.0.0</h3>
 <p>2D Limit Equilibrium / Limit Denge</p>
 <p>© 2026 Hasan Deniz Altuntaş — GNU AGPL v3 or later. No warranty.</p>
 <table cellpadding="5">

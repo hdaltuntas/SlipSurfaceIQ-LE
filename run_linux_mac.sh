@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SlipSurface LE - Linux/macOS: sanal ortami kurar / gunceller ve programi baslatir.
+# SlipSurfaceIQ LE - Linux/macOS: sanal ortami kurar / gunceller ve programi baslatir.
 set -e
 cd "$(dirname "$0")"
 if [ ! -x .venv/bin/python ]; then
@@ -13,5 +13,5 @@ if ! cmp -s requirements.txt .venv/requirements.stamp; then
     .venv/bin/python -m pip install -r requirements.txt
     cp requirements.txt .venv/requirements.stamp
 fi
-.venv/bin/python -c "import slipsurface, os; print('SlipSurface LE', slipsurface.__version__, '-', os.path.dirname(slipsurface.__file__))"
+.venv/bin/python -c "import slipsurface, os; print('SlipSurfaceIQ LE', slipsurface.__version__, '-', os.path.dirname(slipsurface.__file__))"
 exec .venv/bin/python main.py "$@"

@@ -5,9 +5,9 @@ from slipsurface.textcat import Catalog
 PDF_EN = {
     # page decoration
     "Şev Stabilite Analiz Raporu": "Slope Stability Analysis Report",
-    "SLIPSURFACE LE  ·  2B LİMİT DENGE ANALİZİ": "SLIPSURFACE LE  ·  2D LIMIT EQUILIBRIUM ANALYSIS",
+    "SLIPSURFACEIQ LE  ·  2B LİMİT DENGE ANALİZİ": "SLIPSURFACEIQ LE  ·  2D LIMIT EQUILIBRIUM ANALYSIS",
     "Rapor No": "Report No.",
-    "SlipSurface LE {} ile üretilmiştir.": "Produced with SlipSurface LE {}.",
+    "SlipSurfaceIQ LE {} ile üretilmiştir.": "Produced with SlipSurfaceIQ LE {}.",
     "{} sayfa": "{} pages",
     "Hazırlayan": "Prepared by",
     "Sayfa": "Page",
@@ -237,8 +237,8 @@ PDF_EN = {
     "Çıkış / giriş x": "Exit / entry x",
     "Kritik daire": "Critical circle",
     "Kritik yüzey noktaları": "Critical surface points",
-    "Bu rapor SlipSurface LE {} ile otomatik olarak üretilmiştir. Sonuçlar girilen geometri, malzeme ve yükleme verilerine dayanır; mühendislik yargısıyla değerlendirilmesi ve doğrulanması kullanıcının sorumluluğundadır.":
-        "This report was generated automatically with SlipSurface LE {}. The results rely on the "
+    "Bu rapor SlipSurfaceIQ LE {} ile otomatik olarak üretilmiştir. Sonuçlar girilen geometri, malzeme ve yükleme verilerine dayanır; mühendislik yargısıyla değerlendirilmesi ve doğrulanması kullanıcının sorumluluğundadır.":
+        "This report was generated automatically with SlipSurfaceIQ LE {}. The results rely on the "
         "geometry, material and loading data entered; evaluating and verifying them with "
         "engineering judgement is the responsibility of the user.",
     # engine messages shown in the results table

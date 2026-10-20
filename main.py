@@ -1,4 +1,4 @@
-"""SlipSurface LE — start the desktop application.
+"""SlipSurfaceIQ LE — start the desktop application.
 
 Run from an IDE (PyCharm / VS Code / Spyder: open this file and press Run) or
 from a terminal:
@@ -57,7 +57,7 @@ def check_environment(verbose: bool = True) -> bool:
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
-    p = argparse.ArgumentParser(prog="SlipSurface LE",
+    p = argparse.ArgumentParser(prog="SlipSurfaceIQ LE",
                                 description="2D limit denge şev stabilite programı")
     p.add_argument("project", nargs="?", help="açılacak proje dosyası (.slp.json)")
     p.add_argument("--example", help="paketteki bir örneği aç (adı, --list-examples)")

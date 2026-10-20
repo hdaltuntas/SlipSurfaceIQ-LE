@@ -457,7 +457,7 @@ EXTRA = {
     "kullanıcı yüzeyi": "user surface",
     "{} yöntem için sonuç alınamadı. Gösterilen minimum yalnızca tamamlanan yöntemlere aittir.":
         "No result for {} method(s). The minimum shown covers the completed methods only.",
-    "SlipSurface LE Yorumla {} — {} — [{}] — {}": "SlipSurface LE Interpret {} — {} — [{}] — {}",
+    "SlipSurfaceIQ LE Yorumla {} — {} — [{}] — {}": "SlipSurfaceIQ LE Interpret {} — {} — [{}] — {}",
     "Dilim verisi — {}": "Slice data — {}",
     "Seçili yöntemlerle kritik yüzeyleri hesapla": "Compute the critical surfaces with the selected methods",
     "Sonuçları Yorumla penceresinde aç": "Open the results in the Interpret window",
@@ -577,7 +577,7 @@ EXTRA = {
     "Dilim sayısı en az 3 olmalı.": "The number of slices must be at least 3.",
     "Dış sınır tanımlı değil (Sınırlar → Dış Sınır Ekle).":
         "No external boundary defined (Boundaries → Add External Boundary).",
-    "Bu dosya bir SlipSurface LE projesi değil.": "This file is not a SlipSurface LE project.",
+    "Bu dosya bir SlipSurfaceIQ LE projesi değil.": "This file is not a SlipSurfaceIQ LE project.",
     "Dosya daha yeni bir sürümle kaydedilmiş.": "The file was saved by a newer version.",
     "{}: bilinmeyen malzeme modeli '{}' ({} olmalı).": "{}: unknown material model '{}' (must be {}).",
     "{}: birim hacim ağırlıklar pozitif olmalı.": "{}: unit weights must be positive.",
@@ -616,7 +616,7 @@ EXTRA = {
     "Pseudo-static / Psödo-statik kh=0.15": "Pseudo-static kh=0.15",
 
     # ------------------------------------------------- text report (Info Viewer)
-    "SlipSurface LE — Analiz Raporu": "SlipSurface LE — Analysis Report",
+    "SlipSurfaceIQ LE — Analiz Raporu": "SlipSurfaceIQ LE — Analysis Report",
     "Proje        : {}": "Project      : {}",
     "Analiz       : {}": "Analysis     : {}",
     "Hazırlayan   : {}": "Prepared by  : {}",

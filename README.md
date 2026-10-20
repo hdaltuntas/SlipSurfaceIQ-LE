@@ -1,4 +1,4 @@
-# SlipSurface LE (Python) — 2026.0.0
+# SlipSurfaceIQ LE (Python) — 2026.0.0
 
 2D Limit Denge (LEM) şev stabilite programı: Slide2 düzeninde native masaüstü
 **Modeler** + ayrı **Yorumla** penceresi, doğrulanmış hesap motoru.
@@ -278,7 +278,7 @@ tests/
 
 Copyright © 2026 Hasan Deniz Altuntaş.
 
-SlipSurface LE, [GNU Affero Genel Kamu Lisansı sürüm 3](LICENSE) (AGPL-3.0) veya (tercihinize göre)
+SlipSurfaceIQ LE, [GNU Affero Genel Kamu Lisansı sürüm 3](LICENSE) (AGPL-3.0) veya (tercihinize göre)
 daha sonraki bir sürümü altında dağıtılan özgür yazılımdır. Program **hiçbir garanti
 olmaksızın** sunulur; sonuçların mühendislik yargısıyla değerlendirilmesi ve
 doğrulanması kullanıcının sorumluluğundadır. Programı değiştirip bir ağ üzerinden

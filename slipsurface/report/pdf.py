@@ -247,7 +247,7 @@ class _Doc(BaseDocTemplate):
         c.rect(0, PAGE_H - 80 * mm, PAGE_W, 2 * mm, stroke=0, fill=1)
         c.setFillColor(colors.HexColor("#9fb4cc"))
         c.setFont(F_SEMI, 9)
-        c.drawString(MARGIN_L, PAGE_H - 16 * mm, T("SLIPSURFACE LE  ·  2B LİMİT DENGE ANALİZİ"))
+        c.drawString(MARGIN_L, PAGE_H - 16 * mm, T("SLIPSURFACEIQ LE  ·  2B LİMİT DENGE ANALİZİ"))
         if o.report_no:
             c.drawRightString(PAGE_W - MARGIN_R, PAGE_H - 16 * mm,
                               f"{T('Rapor No')}: {o.report_no}")
@@ -271,7 +271,7 @@ class _Doc(BaseDocTemplate):
         c.saveState()
         c.setFont(F_SEMI, 8)
         c.setFillColor(NAVY)
-        c.drawString(MARGIN_L, PAGE_H - 13 * mm, "SlipSurface LE  ·  " + o.title)
+        c.drawString(MARGIN_L, PAGE_H - 13 * mm, "SlipSurfaceIQ LE  ·  " + o.title)
         c.setFont(F_REG, 8)
         c.setFillColor(MUTED)
         proj = o.project if len(o.project) < 70 else o.project[:67] + "…"
@@ -286,7 +286,7 @@ class _Doc(BaseDocTemplate):
         c.saveState()
         c.setFont(F_REG, 7.5)
         c.setFillColor(MUTED)
-        c.drawString(MARGIN_L, 10 * mm, T(f"SlipSurface LE {__version__} ile üretilmiştir."))
+        c.drawString(MARGIN_L, 10 * mm, T(f"SlipSurfaceIQ LE {__version__} ile üretilmiştir."))
         c.drawRightString(PAGE_W - MARGIN_R, 10 * mm, T(f"{n} sayfa"))
         c.restoreState()
 
@@ -1016,7 +1016,7 @@ class _Builder:
 
     def closing(self) -> None:
         self.story.append(Spacer(1, 10))
-        self.para(f"Bu rapor SlipSurface LE {__version__} ile otomatik olarak üretilmiştir. "
+        self.para(f"Bu rapor SlipSurfaceIQ LE {__version__} ile otomatik olarak üretilmiştir. "
                   "Sonuçlar girilen geometri, malzeme ve yükleme verilerine dayanır; "
                   "mühendislik yargısıyla değerlendirilmesi ve doğrulanması kullanıcının "
                   "sorumluluğundadır.", "small")
@@ -1048,7 +1048,7 @@ class _Builder:
             self.coordinates(next(letters))
         self.closing()
         doc = _Doc(path, o, self.st, title=o.title, author=o.author,
-                   subject=o.project, creator=f"SlipSurface LE {__version__}")
+                   subject=o.project, creator=f"SlipSurfaceIQ LE {__version__}")
         story = [NextPageTemplate("cover")] + self.story
         # the cover template must be the first page template
         doc.multiBuild(story, canvasmaker=_NumberedCanvas)

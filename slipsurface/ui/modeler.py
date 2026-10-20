@@ -1,4 +1,4 @@
-"""SlipSurface LE Modeler — main window (Slide2-style layout).
+"""SlipSurfaceIQ LE Modeler — main window (Slide2-style layout).
 
   menu bar
   workflow bar   Geometri › Destek › Yükleme › Özellikler › Yüzeyler
@@ -65,7 +65,7 @@ from slipsurface.ui.statusbar import CadStatusBar
 from slipsurface.ui.worker import AnalysisWorker, start_worker
 from slipsurface.ui.workflow import WorkflowBar
 
-FILE_FILTER = "SlipSurface LE projesi (*.slp.json *.json)"
+FILE_FILTER = "SlipSurfaceIQ LE projesi (*.slp.json *.json)"
 STEPS = [tr("Geometri"), tr("Destek"), tr("Yükleme"), tr("Özellikler"), tr("Yüzeyler")]
 
 
@@ -547,7 +547,7 @@ class ModelerWindow(QMainWindow):
             return                                    # application is shutting down
         name = self.doc.path.name if self.doc.path else tr("Kaydedilmemiş")
         star = " *" if self.doc.dirty else ""
-        self.setWindowTitle(tr(f"SlipSurface LE {__version__} — [{name}{star}] — "
+        self.setWindowTitle(tr(f"SlipSurfaceIQ LE {__version__} — [{name}{star}] — "
                             f"{self.doc.project.summary.title}"))
 
     def _update_actions(self) -> None:
