@@ -3,7 +3,7 @@
 Run from an IDE (PyCharm / VS Code / Spyder: open this file and press Run) or
 from a terminal:
 
-    python main.py                                  # Modeler with the default example
+    python main.py                                  # Full-screen modeler, empty project
     python main.py examples/ankrajli_yarma.slp.json # open a project file
     python main.py --example "Katmanlı şev + YASS"  # open a bundled example
     python main.py --list-examples
@@ -26,7 +26,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 REQUIRED = {"PySide6": "PySide6", "numpy": "numpy", "scipy": "scipy", "shapely": "shapely",
-            "reportlab": "reportlab"}
+            "reportlab": "reportlab", "ezdxf": "ezdxf", "qtawesome": "QtAwesome"}
 MIN_PYTHON = (3, 10)
 
 

@@ -1,7 +1,64 @@
-# SlipSurface LE (Python) — 0.6.0
+# SlipSurface LE (Python) — 2026.0.0
 
 2D Limit Denge (LEM) şev stabilite programı: Slide2 düzeninde native masaüstü
 **Modeler** + ayrı **Yorumla** penceresi, doğrulanmış hesap motoru.
+
+## 2026.0.0
+
+- Sürüm düzeni: `yıl.ana.alt` (2026.0.0).
+- Uygulama tam ekran ve boş proje ile açılır. **F11** tam ekranı açar/kapatır.
+- **Görünüm → Dil / Language** ile Türkçe/İngilizce arayüz seçimi anında uygulanır.
+  Açık proje, geri alma geçmişi ve sonuçlar korunur. Tema tercihi de aynı menüdedir;
+  her iki tercih sonraki açılışlarda hatırlanır.
+- Genel araçlarda QtAwesome üzerinden açık kaynak Material Design Icons,
+  uygulama yazılarında Source Sans 3 kullanılır. Teknolojiler ve lisans bağlantıları
+  **Yardım → Hakkında** bölümündedir. Özel geoteknik simgeler uygulamanın vektör çizimleridir.
+- **Dosya → Örnekler** altında dokuz örnek bulunur: mevcut altı örneğe drenajsız kil,
+  doğrusal olmayan kuvvet yasası ve psödo-statik sismik analiz eklenmiştir.
+- Malzemeler: Mohr-Coulomb, Hoek-Brown, **Undrained/Tresca** (`UD`) ve
+  **Power-law envelope** (`PL`). UD toplam gerilme yaklaşımında `τ = su` kullanır.
+  PL için `τ = a·pa·(1 + max(σ′n, 0)/pa)^b`; `a ≥ 0`, `0 < b ≤ 1`, `pa > 0 kPa`.
+  Yeni modeller, proje kaydı, hesap motoru, malzeme etiketleri ve raporlara dahildir.
+
+### DXF
+
+**Dosya → DXF İçe Aktar / Dışa Aktar** üzerinden 2B geometri aktarılır.
+İçe aktarma mevcut modeli değiştirir; **Ctrl+Z** ile tamamı geri alınabilir.
+
+| Katman | İçerik |
+|---|---|
+| `SS_EXTERNAL` | Tek kapalı dış sınır; alternatif olarak `0` katmanında tek kapalı polyline |
+| `SS_MATERIAL` | Malzeme sınırları |
+| `SS_WATER` | Tek su tablası polyline |
+| `SS_CRACK` | Tek gerilme çatlağı polyline |
+| `SS_SURFACE` | Tek kullanıcı kayma yüzeyi |
+| `SS_SUPPORT` | Tekil desteklerin çizgileri (yalnızca dışa aktarma) |
+
+LINE, LWPOLYLINE, POLYLINE, ARC ve SPLINE okunur; eğriler 1 cm toleransla
+doğru parçalarına dönüştürülür. DXF birimleri metreye çevrilir; birimsiz çizimler
+uyarıyla metre kabul edilir. Z=0 dışındaki geometri reddedilir. Atlanan nesneler
+listelenir. DXF yalnızca geometri alışverişidir; malzeme dayanımları, yükler,
+destek kapasiteleri ve analiz sonuçları için `.slp.json` kullanın.
+
+### Python scripting
+
+**Araçlar → Python scripting**: `.py` dosyası açın veya editörde kod yazın,
+**Run / Apply** ile uygulayın. Kod `project` nesnesinin bir kopyasında çalışır;
+doğrulama başarılıysa değişiklikler tek bir geri alınabilir işlem olur.
+Hata halinde açık proje değişmez. Scriptler yerel Python yetkileriyle çalışır;
+yalnızca güvendiğiniz kodları çalıştırın.
+
+`project` üzerinde `external`, `material_boundaries`, `assignments`, `water_table`,
+`tension_crack`, `materials`, `support_types`, `supports`, `support_patterns`,
+`facing_types`, `facings`, `loads`, `seismic`, `methods`, `surfaces`, `annotations`
+ve diğer proje alanları kullanılabilir. `MaterialSpec`, `SupportType`, `FacingType`,
+`Project`, `empty_project` editörde hazırdır.
+
+Tüm geometri, yük, destek, kaplama ve malzeme tanımlarını gösteren çalışır örnek:
+[`examples/scripted_slope.py`](examples/scripted_slope.py).
+
+İngilizce seçeneği menüler ve temel diyalogları kapsar; bazı açıklama/hata metinleri
+ve mevcut PDF/metin raporları Türkçedir. Kullanıcının proje ve malzeme adları çevrilmez.
 
 ## Çalıştırma
 
@@ -29,7 +86,7 @@ Gereksinim: Python 3.10+ (önerilen 3.11–3.13).
 
 ### Komut satırı
 ```bash
-python main.py                                    # varsayılan örnekle açılır
+python main.py                                    # tam ekran, boş proje
 python main.py examples/ankrajli_yarma.slp.json   # proje dosyası
 python main.py --example "Katmanlı şev + YASS"    # paketteki örnek
 python main.py --list-examples

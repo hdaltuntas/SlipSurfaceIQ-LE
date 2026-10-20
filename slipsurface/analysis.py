@@ -159,6 +159,10 @@ def report_text(r: AnalysisResults) -> str:
         if m.model == "MC":
             L.append(f"{m.name:18s} Mohr-Coulomb  γ={m.gamma:g}  γsat={m.gamma_sat if m.use_sat else m.gamma:g}"
                      f"  c={m.c:g} kPa  φ={m.phi:g}°")
+        elif m.model == "UD":
+            L.append(f"{m.name:18s} Undrained γ={m.gamma:g} su={m.su:g} kPa (total stress)")
+        elif m.model == "PL":
+            L.append(f"{m.name:18s} Power law γ={m.gamma:g} a={m.coefficient:g} b={m.exponent:g} pa={m.reference_pressure:g} kPa")
         else:
             L.append(f"{m.name:18s} Hoek-Brown    γ={m.gamma:g}  σci={m.sigma_ci:g} kPa  "
                      f"GSI={m.gsi:g}  mi={m.mi:g}  D={m.d:g}")

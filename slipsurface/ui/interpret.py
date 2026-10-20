@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from slipsurface.ui.i18n import tr
+
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QAction, QActionGroup, QKeySequence
 from PySide6.QtWidgets import (
@@ -80,7 +82,7 @@ class InterpretWindow(QMainWindow):
         split.addWidget(self.viewer)
         split.addWidget(self.display_opts)
         split.setSizes([300, 500])
-        dock = QDockWidget("Sonuçlar", self)
+        dock = QDockWidget(tr("Sonuçlar"), self)
         dock.setWidget(split)
         dock.setTitleBarWidget(QWidget())
         dock.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
@@ -128,32 +130,32 @@ class InterpretWindow(QMainWindow):
         c = self.canvas
         A = self._act
         self.a_global = A("Global Minimum", self.show_global_min, "global_min")
-        self.a_all = A("Tüm Yüzeyler", self._toggle_all, "all_surfaces", None, True)
+        self.a_all = A(tr("Tüm Yüzeyler"), self._toggle_all, "all_surfaces", None, True)
         self.a_all.setChecked(bool(self.project.display_opt("show_all_surfaces")))
-        self.a_info = A("Bilgi Görüntüleyici…", self.info_viewer, "info", "F10")
+        self.a_info = A(tr("Bilgi Görüntüleyici…"), self.info_viewer, "info", "F10")
         self.a_slice = A("Dilim Verisi", lambda: c.set_tool(T.SliceQueryTool(c, self.slice_data)),
                          "slice_query", None, True)
         self.a_legend = A("Lejant", self._toggle_legend, "legend", None, True)
         self.a_legend.setChecked(bool(self.project.display_opt("show_legend")))
-        self.a_zoom_all = A("Tümünü Göster", c.zoom_extents, "zoom_all", "F2")
-        self.a_zoom_in = A("Yakınlaştır", lambda: c.zoom(1.25), "zoom_in")
-        self.a_zoom_out = A("Uzaklaştır", lambda: c.zoom(0.8), "zoom_out")
-        self.a_zoom_win = A("Pencereyle Zoom", lambda: c.set_tool(T.ZoomWindowTool(c)),
+        self.a_zoom_all = A(tr("Tümünü Göster"), c.zoom_extents, "zoom_all", "F2")
+        self.a_zoom_in = A(tr("Yakınlaştır"), lambda: c.zoom(1.25), "zoom_in")
+        self.a_zoom_out = A(tr("Uzaklaştır"), lambda: c.zoom(0.8), "zoom_out")
+        self.a_zoom_win = A(tr("Pencereyle Zoom"), lambda: c.set_tool(T.ZoomWindowTool(c)),
                             "zoom_window")
-        self.a_pan = A("Kaydır", lambda: c.set_tool(T.PanTool(c)), "pan")
-        self.a_select = A("Seç", c.select_tool, "select", "Esc")
-        self.a_measure = A("Ölç", lambda: c.set_tool(T.MeasureTool(c)), "measure")
-        self.a_export = A("Resmi Dışa Aktar…", self.export_image, "export")
-        self.a_report = A("PDF Rapor…", self.pdf_report, "report", "Ctrl+P")
+        self.a_pan = A(tr("Kaydır"), lambda: c.set_tool(T.PanTool(c)), "pan")
+        self.a_select = A(tr("Seç"), c.select_tool, "select", "Esc")
+        self.a_measure = A(tr("Ölç"), lambda: c.set_tool(T.MeasureTool(c)), "measure")
+        self.a_export = A(tr("Resmi Dışa Aktar…"), self.export_image, "export")
+        self.a_report = A(tr("PDF Rapor…"), self.pdf_report, "report", "Ctrl+P")
         self.a_report.setToolTip("Profesyonel PDF analiz raporu oluştur")
-        self.a_close = A("Kapat", self.close, None, QKeySequence.Close)
-        self.a_undo = self.doc.undo_stack.createUndoAction(self, "Geri al")
+        self.a_close = A(tr("Kapat"), self.close, None, QKeySequence.Close)
+        self.a_undo = self.doc.undo_stack.createUndoAction(self, tr("Geri al"))
         self.a_undo.setIcon(icon("undo"))
         self.a_undo.setShortcut(QKeySequence.Undo)
-        self.a_redo = self.doc.undo_stack.createRedoAction(self, "Yinele")
+        self.a_redo = self.doc.undo_stack.createRedoAction(self, tr("Yinele"))
         self.a_redo.setIcon(icon("redo"))
         self.a_redo.setShortcut(QKeySequence.Redo)
-        self.a_fs_legend = A("FS Lejantı", self._toggle_fs_legend, "legend", None, True)
+        self.a_fs_legend = A(tr("FS Lejantı"), self._toggle_fs_legend, "legend", None, True)
         self.a_fs_legend.setToolTip("Sağ altta seçili yöntemlerin güvenlik sayıları")
         self.a_fs_legend.setChecked(bool(self.project.display_opt("show_fs_legend")))
         self.annot_group = QActionGroup(self)
@@ -164,7 +166,7 @@ class InterpretWindow(QMainWindow):
             self.t_annots[kind] = a
         self.annot_group.setExclusive(False)
         c.tool_changed.connect(self._sync_annot_actions)
-        self.a_delete = A("Seçili Notu Sil", self._delete_selection, "delete", "Del")
+        self.a_delete = A(tr("Seçili Notu Sil"), self._delete_selection, "delete", "Del")
 
         self.method_combo = QComboBox()
         self.method_combo.setMinimumWidth(260)
@@ -175,7 +177,7 @@ class InterpretWindow(QMainWindow):
         self.method_combo.currentIndexChanged.connect(
             lambda i: self.set_method(self.method_combo.itemData(i)))
 
-        tb = QToolBar("Yorumla")
+        tb = QToolBar(tr("Yorumla"))
         tb.setIconSize(QSize(24, 24))
         tb.addWidget(self.method_combo)
         for a in (self.a_global, None, self.a_all, self.a_slice, self.a_legend, None,
@@ -184,7 +186,7 @@ class InterpretWindow(QMainWindow):
                   self.a_measure):
             tb.addSeparator() if a is None else tb.addAction(a)
         self.addToolBar(Qt.TopToolBarArea, tb)
-        nb = QToolBar("Notlar")
+        nb = QToolBar(tr("Notlar"))
         nb.setIconSize(QSize(24, 24))
         for a in (*self.t_annots.values(), None, self.a_undo, self.a_redo, self.a_delete):
             nb.addSeparator() if a is None else nb.addAction(a)
@@ -192,15 +194,15 @@ class InterpretWindow(QMainWindow):
         self.notes_bar = nb
 
         mb = self.menuBar()
-        m = mb.addMenu("&Dosya")
+        m = mb.addMenu(tr("&Dosya"))
         m.addAction(self.a_report)
         m.addAction(self.a_export)
         m.addSeparator()
         m.addAction(self.a_close)
-        m = mb.addMenu("Dü&zen")
+        m = mb.addMenu(tr("Dü&zen"))
         for a in (self.a_undo, self.a_redo, None, self.a_delete):
             m.addSeparator() if a is None else m.addAction(a)
-        m = mb.addMenu("&Görünüm")
+        m = mb.addMenu(tr("&Görünüm"))
         for a in (self.a_zoom_all, self.a_zoom_in, self.a_zoom_out, self.a_zoom_win, self.a_pan,
                   None, self.a_all, self.a_legend, self.a_fs_legend):
             m.addSeparator() if a is None else m.addAction(a)
@@ -211,8 +213,8 @@ class InterpretWindow(QMainWindow):
         m = mb.addMenu("&Sorgu")
         m.addAction(self.a_slice)
         m.addAction(self.a_measure)
-        m = mb.addMenu("&Araçlar")
-        am = m.addMenu(icon("annot_text"), "Not Ekle (Yazı / Şekil)")
+        m = mb.addMenu(tr("&Araçlar"))
+        am = m.addMenu(icon("annot_text"), tr("Not Ekle (Yazı / Şekil)"))
         for a in self.t_annots.values():
             am.addAction(a)
 
@@ -221,7 +223,7 @@ class InterpretWindow(QMainWindow):
         self.canvas.set_scene(self.project, self.results.geometry, self.results, self.key)
         self.viewer.refresh(self.project, self.path, self.results, self.key)
         self.area.show_rulers(bool(self.project.display_opt("show_ruler")))
-        name = self.path.name if self.path else "Kaydedilmemiş"
+        name = self.path.name if self.path else tr("Kaydedilmemiş")
         mname = method_name(self.key) if self.key else "—"
         self.setWindowTitle(f"SlipSurface LE Yorumla {__version__} — {name} — "
                             f"[{self.project.summary.title}] — {mname}")

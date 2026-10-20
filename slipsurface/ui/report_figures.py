@@ -36,6 +36,8 @@ def render_view(project, geometry, results=None, key=None, size=(1500, 760),
         p.display.update(display)
     w, h = size
     canvas = CadCanvas(editable=False)
+    from slipsurface.ui.app import light_palette
+    canvas.setPalette(light_palette())
     canvas.setAttribute(Qt.WA_DontShowOnScreen, True)
     canvas.resize(w, h)
     canvas.grid_on = bool(p.display.get("show_grid", True))
@@ -73,7 +75,7 @@ def render_view(project, geometry, results=None, key=None, size=(1500, 760),
 def _axes(p: QPainter, c: CadCanvas, ox: float, oy: float, w: float, h: float) -> None:
     x0, y1 = c.s2w(QPointF(0, 0))
     x1, y0 = c.s2w(QPointF(w, h))
-    font = QFont("Sans", 8)
+    font = QFont("Source Sans 3", 8)
     p.setFont(font)
     fm = QFontMetrics(font)
     ink, tick = QColor(60, 66, 76), QColor(120, 128, 140)
@@ -98,7 +100,7 @@ def _axes(p: QPainter, c: CadCanvas, ox: float, oy: float, w: float, h: float) -
         p.setPen(ink)
         t = f"{v:g}"
         p.drawText(QPointF(ox - 7 - fm.horizontalAdvance(t), Y + fm.ascent() / 2 - 1), t)
-    bold = QFont("Sans", 8, QFont.DemiBold)
+    bold = QFont("Source Sans 3", 8, QFont.DemiBold)
     p.setFont(bold)
     p.drawText(QPointF(ox + w / 2 - 12, oy + h + 33), "x [m]")
     p.save()

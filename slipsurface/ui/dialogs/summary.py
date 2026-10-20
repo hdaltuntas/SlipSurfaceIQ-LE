@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from slipsurface.ui.i18n import tr
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
@@ -19,18 +21,18 @@ from PySide6.QtWidgets import (
 from slipsurface.project import ProjectSummary
 from slipsurface.ui.icons import icon
 
-ROWS = [("title", "Proje başlığı"), ("analysis", "Analiz"), ("author", "Hazırlayan"),
-        ("company", "Kurum"), ("date_created", "Oluşturulma tarihi")] + \
+ROWS = [("title", tr("Proje başlığı")), ("analysis", "Analiz"), ("author", tr("Hazırlayan")),
+        ("company", "Kurum"), ("date_created", tr("Oluşturulma tarihi"))] + \
        [(f"comment{i}", f"Not {i + 1}") for i in range(5)]
 
 
 class ProjectSummaryDialog(QDialog):
     def __init__(self, summary: ProjectSummary, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Proje Özeti")
+        self.setWindowTitle(tr("Proje Özeti"))
         self.resize(560, 470)
         self.table = QTableWidget(len(ROWS), 2)
-        self.table.setHorizontalHeaderLabels(["Tür", "Açıklama"])
+        self.table.setHorizontalHeaderLabels([tr("Tür"), tr("Açıklama")])
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
@@ -51,7 +53,7 @@ class ProjectSummaryDialog(QDialog):
         copy_b.setIcon(icon("summary"))
         copy_b.setToolTip("Panoya kopyala")
         paste_b.setIcon(icon("coords"))
-        paste_b.setToolTip("Panodan yapıştır (satır satır)")
+        paste_b.setToolTip(tr("Panodan yapıştır (satır satır)"))
         copy_b.clicked.connect(self._copy)
         paste_b.clicked.connect(self._paste)
         top = QHBoxLayout()
@@ -59,12 +61,12 @@ class ProjectSummaryDialog(QDialog):
         top.addWidget(copy_b)
         top.addWidget(paste_b)
 
-        same = QCheckBox("Tüm senaryolarda aynı proje özeti")
+        same = QCheckBox(tr("Tüm senaryolarda aynı proje özeti"))
         same.setChecked(True)
         same.setEnabled(False)
         btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        btns.button(QDialogButtonBox.Ok).setText("Tamam")
-        btns.button(QDialogButtonBox.Cancel).setText("İptal")
+        btns.button(QDialogButtonBox.Ok).setText(tr("Tamam"))
+        btns.button(QDialogButtonBox.Cancel).setText(tr("İptal"))
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
         bottom = QHBoxLayout()

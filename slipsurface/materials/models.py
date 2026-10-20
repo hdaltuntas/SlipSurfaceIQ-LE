@@ -31,6 +31,7 @@ class Material:
 
     # True if strength depends on sigma_n (solver must iterate on N')
     nonlinear: bool = field(default=False, init=False, repr=False)
+    total_stress: bool = field(default=False, init=False, repr=False)
 
     def strength(self, sigma_n: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         raise NotImplementedError
@@ -98,3 +99,47 @@ class HoekBrown(Material):
         tan_phi = np.interp(sn, self._sn, np.gradient(self._tau, self._sn))
         c = self.tau(sn) - sn * tan_phi
         return np.maximum(c, 0.0), np.maximum(tan_phi, 0.0)
+
+
+@dataclass
+class Undrained(Material):
+    """Total-stress Tresca strength. Pore pressure must not be subtracted."""
+    su: float = 25.0
+
+    def __post_init__(self):
+        super().__post_init__()
+        if not np.isfinite(self.su) or self.su < 0:
+            raise ValueError("su must be finite and nonnegative")
+        self.use_water = False
+        self.total_stress = True
+
+    def strength(self, sigma_n):
+        sn = np.asarray(sigma_n, dtype=float)
+        return np.full_like(sn, self.su), np.zeros_like(sn)
+
+
+@dataclass
+class PowerLaw(Material):
+    """Concave envelope tau = a * pa * (1 + max(sigma',0)/pa)^b.
+
+    pa is a reference stress in kPa; a is dimensionless, 0 < b <= 1.
+    Returns the exact local tangent for the iterative LEM solver.
+    """
+    coefficient: float = 0.2
+    exponent: float = 0.5
+    reference_pressure: float = 100.0
+
+    def __post_init__(self):
+        super().__post_init__()
+        if (not np.isfinite([self.coefficient, self.exponent, self.reference_pressure]).all()
+                or self.coefficient < 0 or not 0 < self.exponent <= 1
+                or self.reference_pressure <= 0):
+            raise ValueError("a >= 0, 0 < b <= 1 and pa > 0 required")
+        self.nonlinear = True
+
+    def strength(self, sigma_n):
+        sn = np.maximum(np.asarray(sigma_n, dtype=float), 0)
+        x = 1 + sn / self.reference_pressure
+        slope = self.coefficient * self.exponent * x ** (self.exponent - 1)
+        tau = self.coefficient * self.reference_pressure * x ** self.exponent
+        return tau - sn * slope, slope

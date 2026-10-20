@@ -11,6 +11,8 @@ Coordinate entry (status-bar box) for drawing tools, AutoCAD style:
 
 from __future__ import annotations
 
+from slipsurface.ui.i18n import tr
+
 import math
 import re
 
@@ -257,12 +259,12 @@ class DrawTool(Tool):
     """Polyline / polygon drawing for boundaries, water table, user surface."""
 
     uses_snap = True
-    TITLES = {"external": "Dış sınır", "material": "Malzeme sınırı", "water": "YASS",
+    TITLES = {"external": tr("Dış sınır"), "material": tr("Malzeme sınırı"), "water": "YASS",
               "user": "Kullanıcı tanımlı kayma yüzeyi", "load_distributed": "Yayılı yük",
-              "load_line": "Tekil yük", "support": "Destek", "crack": "Gerilme çatlağı",
-              "facing": "Kaplama", "pattern": "Bulon paterni", "annot_text": "Yazı",
-              "annot_line": "Çizgi", "annot_arrow": "Ok", "annot_rect": "Dikdörtgen",
-              "annot_ellipse": "Elips"}
+              "load_line": "Tekil yük", "support": tr("Destek"), "crack": tr("Gerilme çatlağı"),
+              "facing": "Kaplama", "pattern": "Bulon paterni", "annot_text": tr("Yazı"),
+              "annot_line": tr("Çizgi"), "annot_arrow": tr("Ok"), "annot_rect": tr("Dikdörtgen"),
+              "annot_ellipse": tr("Elips")}
     MIN = {"load_distributed": 2, "load_line": 1, "support": 2, "facing": 2, "pattern": 2,
            "annot_text": 1, "annot_line": 2, "annot_arrow": 2, "annot_rect": 2,
            "annot_ellipse": 2}
@@ -529,7 +531,7 @@ class MeasureTool(Tool):
         p.setPen(QPen(QColor("#8e24aa"), 1.5, Qt.DashLine))
         p.drawLine(pa, pb)
         d = math.hypot(b[0] - self.a[0], b[1] - self.a[1])
-        p.setFont(QFont("Sans", 9, QFont.Bold))
+        p.setFont(QFont("Source Sans 3", 9, QFont.Bold))
         p.setPen(QColor("#8e24aa"))
         p.drawText((pa + pb) / 2 + QPointF(6, -6), f"{d:.3f} m")
 
@@ -620,7 +622,7 @@ class SlopeLimitsTool(Tool):
                 p.surfaces.left_range = L
                 p.surfaces.right_range = R
 
-            self.c.request_edit("Kayma sınırları", fn)
+            self.c.request_edit(tr("Kayma sınırları"), fn)
             self.c.select_tool()
             return
         self.hint = self._hint()

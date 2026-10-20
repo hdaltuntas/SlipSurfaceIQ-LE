@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from slipsurface.ui.i18n import tr
+
 import copy
 
 from PySide6.QtGui import QColor
@@ -49,8 +51,8 @@ def _spin(lo, hi, dec, val, suffix=""):
 
 def _buttons(dlg, ok=None):
     b = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-    b.button(QDialogButtonBox.Ok).setText("Tamam")
-    b.button(QDialogButtonBox.Cancel).setText("İptal")
+    b.button(QDialogButtonBox.Ok).setText(tr("Tamam"))
+    b.button(QDialogButtonBox.Cancel).setText(tr("İptal"))
     b.accepted.connect(ok or dlg.accept)
     b.rejected.connect(dlg.reject)
     return b
@@ -73,7 +75,7 @@ class FacingTypesDialog(QDialog):
         self.list = QListWidget()
         self.list.currentRowChanged.connect(self._select)
         bar = QHBoxLayout()
-        for txt, tip, slot in (("+", "Ekle", self._add), ("✕", "Sil", self._delete)):
+        for txt, tip, slot in (("+", tr("Ekle"), self._add), ("✕", tr("Sil"), self._delete)):
             b = QToolButton()
             b.setText(txt)
             b.setToolTip(tip)
@@ -100,7 +102,7 @@ class FacingTypesDialog(QDialog):
         self.mesh_as = _spin(0, 5000, 1, 188, " mm²/m")
         self.mesh_fy = _spin(0, 2000, 0, 500, " MPa")
         self.r_passive = QRadioButton("Pasif (T / F) — önerilen")
-        self.r_active = QRadioButton("Aktif")
+        self.r_active = QRadioButton(tr("Aktif"))
         g = QButtonGroup(self)
         g.addButton(self.r_passive)
         g.addButton(self.r_active)
@@ -108,8 +110,8 @@ class FacingTypesDialog(QDialog):
         self.capacity.setStyleSheet("font-weight:bold;color:#1b3a63;")
 
         form = QFormLayout()
-        form.addRow("Ad:", self.name)
-        form.addRow("Renk:", self.color)
+        form.addRow(tr("Ad:"), self.name)
+        form.addRow(tr("Renk:"), self.color)
         form.addRow("Püskürtme beton kalınlığı t:", self.thickness)
         form.addRow("Birim hacim ağırlık γ:", self.gamma)
         form.addRow("Beton kayma dayanımı τ:", self.tau)
@@ -275,8 +277,8 @@ class FacingEditDialog(QDialog):
         self.x2 = _spin(-1e6, 1e6, 3, f["x2"], " m")
         form = QFormLayout()
         form.addRow("Kaplama tipi:", self.type)
-        form.addRow("Başlangıç x₁:", self.x1)
-        form.addRow("Bitiş x₂:", self.x2)
+        form.addRow(tr("Başlangıç x₁:"), self.x1)
+        form.addRow(tr("Bitiş x₂:"), self.x2)
         lay = QVBoxLayout(self)
         lay.addLayout(form)
         lay.addWidget(_buttons(self))
@@ -309,8 +311,8 @@ class PatternDialog(QDialog):
         self.count.setStyleSheet("font-weight:bold;color:#1b3a63;")
         f = QFormLayout()
         f.addRow("Destek tipi:", self.type)
-        f.addRow("Başlangıç x₁:", self.x1)
-        f.addRow("Bitiş x₂:", self.x2)
+        f.addRow(tr("Başlangıç x₁:"), self.x1)
+        f.addRow(tr("Bitiş x₂:"), self.x2)
         f.addRow("Aralık (şev yüzü boyunca):", self.spacing)
         f.addRow("İlk bulon mesafesi:", self.offset)
         f.addRow("Eğim (yataydan aşağı):", self.angle)
@@ -356,8 +358,8 @@ class AnnotationDialog(QDialog):
     def __init__(self, ann: dict, parent=None) -> None:
         super().__init__(parent)
         kind = ann["kind"]
-        self.setWindowTitle({"text": "Yazı", "line": "Çizgi", "arrow": "Ok",
-                             "rect": "Dikdörtgen", "ellipse": "Elips"}[kind])
+        self.setWindowTitle({"text": tr("Yazı"), "line": tr("Çizgi"), "arrow": tr("Ok"),
+                             "rect": tr("Dikdörtgen"), "ellipse": tr("Elips")}[kind])
         self.ann = ann
         self.color = ann.get("color", "#c0392b")
         self.fill = ann.get("fill")
@@ -371,11 +373,11 @@ class AnnotationDialog(QDialog):
             self.size = QSpinBox()
             self.size.setRange(6, 72)
             self.size.setValue(int(ann.get("size", 10)))
-            self.bold = QCheckBox("Kalın")
+            self.bold = QCheckBox(tr("Kalın"))
             self.bold.setChecked(bool(ann.get("bold", False)))
             self.box = QCheckBox("Arka plan kutusu")
             self.box.setChecked(bool(ann.get("box", True)))
-            f.addRow("Metin:", self.text)
+            f.addRow(tr("Metin:"), self.text)
             f.addRow("Yazı boyutu (pt):", self.size)
             f.addRow(self.bold)
             f.addRow(self.box)
@@ -392,20 +394,20 @@ class AnnotationDialog(QDialog):
                 row.addWidget(self.fill_cb)
                 row.addWidget(self.fill_btn)
                 row.addStretch(1)
-                f.addRow("Dolgu:", row)
-        f.addRow("Renk:", self.color_btn)
+                f.addRow(tr("Dolgu:"), row)
+        f.addRow(tr("Renk:"), self.color_btn)
         lay = QVBoxLayout(self)
         lay.addLayout(f)
         lay.addWidget(_buttons(self))
 
     def _pick_color(self):
-        c = QColorDialog.getColor(QColor(self.color), self, "Renk")
+        c = QColorDialog.getColor(QColor(self.color), self, tr("Renk"))
         if c.isValid():
             self.color = c.name()
             self.color_btn.setIcon(color_icon(self.color, 18))
 
     def _pick_fill(self):
-        c = QColorDialog.getColor(QColor(self.fill or "#f6d65a"), self, "Dolgu rengi")
+        c = QColorDialog.getColor(QColor(self.fill or "#f6d65a"), self, tr("Dolgu rengi"))
         if c.isValid():
             self.fill = c.name()
             self.fill_btn.setIcon(color_icon(self.fill, 18))

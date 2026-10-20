@@ -59,7 +59,10 @@ def run(argv: list[str] | None = None, project_path: str | None = None,
     app.setApplicationVersion(__version__)
     app.setOrganizationName("SlipSurface")
     app.setStyle("Fusion")
-    app.setPalette(light_palette())
+    from slipsurface.ui.preferences import apply_theme
+    from slipsurface.ui.i18n import initialize
+    initialize()
+    apply_theme()
     app.setWindowIcon(icon("interpret"))
     _install_excepthook()
 
@@ -77,7 +80,7 @@ def run(argv: list[str] | None = None, project_path: str | None = None,
     win = ModelerWindow(EXAMPLES[example]() if example else None)
     if project_path:
         win.open_project(project_path)
-    win.show()
+    win.showFullScreen()
     if smoke:
         def _quit():
             win.doc.mark_clean()

@@ -3,6 +3,8 @@ Support edit."""
 
 from __future__ import annotations
 
+from slipsurface.ui.i18n import tr
+
 import copy
 
 from PySide6.QtGui import QColor
@@ -43,8 +45,8 @@ def _spin(lo, hi, dec, val, suffix=""):
 
 def _buttons(dlg, ok=None):
     b = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-    b.button(QDialogButtonBox.Ok).setText("Tamam")
-    b.button(QDialogButtonBox.Cancel).setText("İptal")
+    b.button(QDialogButtonBox.Ok).setText(tr("Tamam"))
+    b.button(QDialogButtonBox.Cancel).setText(tr("İptal"))
     b.accepted.connect(ok or dlg.accept)
     b.rejected.connect(dlg.reject)
     return b
@@ -54,15 +56,15 @@ def _buttons(dlg, ok=None):
 class DistributedLoadDialog(QDialog):
     def __init__(self, load: dict, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Yayılı Yük")
+        self.setWindowTitle(tr("Yayılı Yük"))
         (x1, _), (x2, _) = load["points"]
         q1, q2 = load["q"]
         self.x1 = _spin(-1e6, 1e6, 3, x1, " m")
         self.x2 = _spin(-1e6, 1e6, 3, x2, " m")
         self.q1 = _spin(-1e6, 1e6, 3, q1, " kPa")
         self.q2 = _spin(-1e6, 1e6, 3, q2, " kPa")
-        self.r_uniform = QRadioButton("Üniform (q1 = q2)")
-        self.r_tri = QRadioButton("Doğrusal değişen (üçgen / trapez)")
+        self.r_uniform = QRadioButton(tr("Üniform (q1 = q2)"))
+        self.r_tri = QRadioButton(tr("Doğrusal değişen (üçgen / trapez)"))
         grp = QButtonGroup(self)
         grp.addButton(self.r_uniform)
         grp.addButton(self.r_tri)
@@ -70,17 +72,17 @@ class DistributedLoadDialog(QDialog):
         self.r_uniform.toggled.connect(self._shape)
         self.q1.valueChanged.connect(self._shape)
         self.orient = QComboBox()
-        self.orient.addItem("Düşey (q, yatay metre başına)", "vertical")
-        self.orient.addItem("Yüzeye dik (q, sınır uzunluğu başına)", "normal")
+        self.orient.addItem(tr("Düşey (q, yatay metre başına)"), "vertical")
+        self.orient.addItem(tr("Yüzeye dik (q, sınır uzunluğu başına)"), "normal")
         self.orient.setCurrentIndex(0 if load.get("orientation", "vertical") == "vertical" else 1)
         f = QFormLayout()
-        f.addRow("Başlangıç x₁:", self.x1)
-        f.addRow("Bitiş x₂:", self.x2)
+        f.addRow(tr("Başlangıç x₁:"), self.x1)
+        f.addRow(tr("Bitiş x₂:"), self.x2)
         f.addRow(self.r_uniform)
         f.addRow(self.r_tri)
         f.addRow("Büyüklük q₁:", self.q1)
         f.addRow("Büyüklük q₂:", self.q2)
-        f.addRow("Yön:", self.orient)
+        f.addRow(tr("Yön:"), self.orient)
         note = QLabel("Pozitif q zemine doğru (basınç) etkir. Yük, x₁–x₂ arasında zemin "
                       "yüzeyine uygulanır.")
         note.setWordWrap(True)
@@ -109,15 +111,15 @@ class DistributedLoadDialog(QDialog):
 class LineLoadDialog(QDialog):
     def __init__(self, load: dict, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Tekil (Çizgisel) Yük")
+        self.setWindowTitle(tr("Tekil (Çizgisel) Yük"))
         x, y = load["point"]
         self.x = _spin(-1e6, 1e6, 3, x, " m")
         self.mag = _spin(-1e6, 1e6, 3, load.get("magnitude", 50.0), " kN/m")
         self.angle = _spin(-360, 360, 2, load.get("angle", 270.0), " °")
         f = QFormLayout()
         f.addRow("Konum x:", self.x)
-        f.addRow("Büyüklük P:", self.mag)
-        f.addRow("Kuvvet açısı:", self.angle)
+        f.addRow(tr("Büyüklük P:"), self.mag)
+        f.addRow(tr("Kuvvet açısı:"), self.angle)
         note = QLabel("Açı +x ekseninden saat yönünün tersine ölçülür: 270° = düşey aşağı, "
                       "180° = sola (sağdan sola göçmede itici). Nokta zemin yüzeyine oturtulur.")
         note.setWordWrap(True)
@@ -156,7 +158,7 @@ class SupportTypesDialog(QDialog):
 
     def __init__(self, types: list[SupportType], parent=None, select: str | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Destek Özelliklerini Tanımla")
+        self.setWindowTitle(tr("Destek Özelliklerini Tanımla"))
         self.resize(820, 560)
         self.types = [copy.deepcopy(t) for t in types]
         if not self.types:
@@ -169,8 +171,8 @@ class SupportTypesDialog(QDialog):
         self.list = QListWidget()
         self.list.currentRowChanged.connect(self._select)
         bar = QHBoxLayout()
-        for txt, tip, slot in (("+", "Destek tipi ekle", self._add), ("✕", "Sil", self._delete),
-                               ("⧉", "Kopyala", self._copy)):
+        for txt, tip, slot in (("+", "Destek tipi ekle", self._add), ("✕", tr("Sil"), self._delete),
+                               ("⧉", tr("Kopyala"), self._copy)):
             b = QToolButton()
             b.setText(txt)
             b.setToolTip(tip)
@@ -205,13 +207,13 @@ class SupportTypesDialog(QDialog):
             "pullout": _spin(0, 1e5, 2, 20, " kN/m/m"),
             "length": _spin(0.1, 200, 2, 12, " m"),
         }
-        self.labels = {"spacing": "Düzlem dışı aralık:", "tensile": "Çekme kapasitesi:",
-                       "plate": "Plaka kapasitesi:", "bond_strength": "Kök (yapışma) dayanımı:",
-                       "bond_length": "Kök boyu:", "pullout": "Sıyrılma dayanımı:",
-                       "length": "Varsayılan boy (otomatik yerleşim):"}
+        self.labels = {"spacing": tr("Düzlem dışı aralık:"), "tensile": tr("Çekme kapasitesi:"),
+                       "plate": "Plaka kapasitesi:", "bond_strength": tr("Kök (yapışma) dayanımı:"),
+                       "bond_length": tr("Kök boyu:"), "pullout": tr("Sıyrılma dayanımı:"),
+                       "length": tr("Varsayılan boy (otomatik yerleşim):")}
         form = QFormLayout()
-        form.addRow("Ad:", self.name)
-        form.addRow("Renk:", self.color)
+        form.addRow(tr("Ad:"), self.name)
+        form.addRow(tr("Renk:"), self.color)
         form.addRow("Destek tipi:", self.kind)
         self._rows = {}
         for k, sp in self.w.items():
@@ -220,10 +222,10 @@ class SupportTypesDialog(QDialog):
             self._rows[k] = lab
             sp.valueChanged.connect(self._store)
 
-        appl = QGroupBox("Kuvvet uygulama yöntemi")
+        appl = QGroupBox(tr("Kuvvet uygulama yöntemi"))
         al = QVBoxLayout(appl)
-        self.r_active = QRadioButton("Aktif — kuvvet itici kuvveti azaltır (F'ye bölünmez)")
-        self.r_passive = QRadioButton("Pasif — kuvvet direnç gibi mobilize olur (T / F)")
+        self.r_active = QRadioButton(tr("Aktif — kuvvet itici kuvveti azaltır (F'ye bölünmez)"))
+        self.r_passive = QRadioButton(tr("Pasif — kuvvet direnç gibi mobilize olur (T / F)"))
         g = QButtonGroup(self)
         g.addButton(self.r_active)
         g.addButton(self.r_passive)
@@ -231,11 +233,11 @@ class SupportTypesDialog(QDialog):
         al.addWidget(self.r_passive)
         self.r_active.toggled.connect(self._store)
         self.orient = QComboBox()
-        self.orient.addItem("Desteğe paralel", "parallel")
-        self.orient.addItem("Kayma yüzeyine teğet", "tangent")
+        self.orient.addItem(tr("Desteğe paralel"), "parallel")
+        self.orient.addItem(tr("Kayma yüzeyine teğet"), "tangent")
         self.orient.currentIndexChanged.connect(self._store)
         form2 = QFormLayout()
-        form2.addRow("Kuvvet doğrultusu:", self.orient)
+        form2.addRow(tr("Kuvvet doğrultusu:"), self.orient)
 
         right = QVBoxLayout()
         right.addWidget(self.title)
@@ -297,8 +299,8 @@ class SupportTypesDialog(QDialog):
             on = kind in kinds
             self.w[k].setEnabled(on)
             self._rows[k].setEnabled(on)
-        self._rows["tensile"].setText("Çekme dayanımı (kN/m):" if kind == "geotextile"
-                                      else "Çekme kapasitesi:")
+        self._rows["tensile"].setText(tr("Çekme dayanımı (kN/m):") if kind == "geotextile"
+                                      else tr("Çekme kapasitesi:"))
 
     def _kind_changed(self, *_):
         self._update_fields()
@@ -348,7 +350,7 @@ class SupportTypesDialog(QDialog):
         return f"{base} {i}"
 
     def _add(self):
-        self.types.append(SupportType(self._unique("Destek")))
+        self.types.append(SupportType(self._unique(tr("Destek"))))
         self._refresh()
         self.list.setCurrentRow(len(self.types) - 1)
 
@@ -379,7 +381,7 @@ class SupportTypesDialog(QDialog):
 class SupportEditDialog(QDialog):
     def __init__(self, sp: dict, type_names: list[str], parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Destek")
+        self.setWindowTitle(tr("Destek"))
         self.type = QComboBox()
         self.type.addItems(type_names)
         self.type.setCurrentText(sp["type"])
@@ -389,10 +391,10 @@ class SupportEditDialog(QDialog):
         self.by = _spin(-1e6, 1e6, 3, sp["b"][1], " m")
         f = QFormLayout()
         f.addRow("Destek tipi:", self.type)
-        f.addRow("Baş A — x:", self.ax)
-        f.addRow("Baş A — y:", self.ay)
-        f.addRow("Uç B — x:", self.bx)
-        f.addRow("Uç B — y:", self.by)
+        f.addRow(tr("Baş A — x:"), self.ax)
+        f.addRow(tr("Baş A — y:"), self.ay)
+        f.addRow(tr("Uç B — x:"), self.bx)
+        f.addRow(tr("Uç B — y:"), self.by)
         lay = QVBoxLayout(self)
         lay.addLayout(f)
         lay.addWidget(_buttons(self))
@@ -410,16 +412,16 @@ class CrackFromDepthDialog(QDialog):
     def __init__(self, x1: float, x2: float, z: float, water: float, zc_note: str = "",
                  parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Derinlikten Gerilme Çatlağı")
+        self.setWindowTitle(tr("Derinlikten Gerilme Çatlağı"))
         self.x1 = _spin(-1e6, 1e6, 3, x1, " m")
         self.x2 = _spin(-1e6, 1e6, 3, x2, " m")
         self.z = _spin(0.01, 1000, 3, z, " m")
         self.water = _spin(0, 100, 1, 100 * water, " %")
         f = QFormLayout()
-        f.addRow("Başlangıç x₁:", self.x1)
-        f.addRow("Bitiş x₂:", self.x2)
-        f.addRow("Çatlak derinliği z:", self.z)
-        f.addRow("Çatlaktaki su (doluluk):", self.water)
+        f.addRow(tr("Başlangıç x₁:"), self.x1)
+        f.addRow(tr("Bitiş x₂:"), self.x2)
+        f.addRow(tr("Çatlak derinliği z:"), self.z)
+        f.addRow(tr("Çatlaktaki su (doluluk):"), self.water)
         note = QLabel("Çatlak çizgisi x₁–x₂ arasında zemin yüzeyinin z kadar altına yerleştirilir. "
                       "Kayma yüzeyi bu çizgiyi kret tarafında kestiği yerde kesilir ve çatlak "
                       "yüzü düşey olarak zemine uzanır." + (f"\n{zc_note}" if zc_note else ""))

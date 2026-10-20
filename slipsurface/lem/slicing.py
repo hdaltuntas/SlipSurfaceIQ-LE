@@ -255,6 +255,10 @@ def make_slices(
         u = o.ru * W / b
     else:
         u = np.zeros_like(xm)
+    # Total-stress strengths (Tresca/su) use total normal forces under every
+    # groundwater mode, including a global Ru coefficient.
+    total_stress = np.array([m.total_stress for m in mats])[mat_idx]
+    u = np.where(total_stress, 0.0, u)
 
     # ------------------------------------------------ failure direction
     drive = np.sum(W * np.sin(alpha))

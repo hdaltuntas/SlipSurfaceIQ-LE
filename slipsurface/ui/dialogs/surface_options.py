@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from slipsurface.ui.i18n import tr
+
 from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
@@ -23,26 +25,26 @@ from PySide6.QtWidgets import (
 from slipsurface.project import EFFORT, Project, SurfaceSettings
 
 SEARCH = {
-    "circular": ("Otomatik iyileştirmeli arama (Diferansiyel Evrim + Nelder-Mead)", "auto_refine"),
-    "noncircular": ("Yol araması + optimizasyon (DE + Nelder-Mead)", "path_search"),
-    "user": ("— (kullanıcı tanımlı yüzey analiz edilir)", "none"),
+    "circular": (tr("Otomatik iyileştirmeli arama (Diferansiyel Evrim + Nelder-Mead)"), "auto_refine"),
+    "noncircular": (tr("Yol araması + optimizasyon (DE + Nelder-Mead)"), "path_search"),
+    "user": (tr("— (kullanıcı tanımlı yüzey analiz edilir)"), "none"),
 }
-EFFORT_LABELS = [("fast", "Hızlı"), ("normal", "Normal"), ("fine", "Hassas")]
+EFFORT_LABELS = [("fast", tr("Hızlı")), ("normal", "Normal"), ("fine", tr("Hassas"))]
 
 
 class SurfaceOptionsDialog(QDialog):
     def __init__(self, project: Project, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Yüzey Seçenekleri")
+        self.setWindowTitle(tr("Yüzey Seçenekleri"))
         self.resize(560, 470)
         s = project.surfaces
         self.p = project
 
         grid = QGridLayout()
-        grid.addWidget(QLabel("Yüzey tipi:"), 0, 0)
-        self.r_circ = QRadioButton("Dairesel")
+        grid.addWidget(QLabel(tr("Yüzey tipi:")), 0, 0)
+        self.r_circ = QRadioButton(tr("Dairesel"))
         self.r_non = QRadioButton("Dairesel olmayan (poligonal / B-spline)")
-        self.r_user = QRadioButton("Kullanıcı tanımlı")
+        self.r_user = QRadioButton(tr("Kullanıcı tanımlı"))
         self.type_group = QButtonGroup(self)
         for i, rb in enumerate((self.r_circ, self.r_non, self.r_user)):
             self.type_group.addButton(rb, i)
@@ -50,16 +52,16 @@ class SurfaceOptionsDialog(QDialog):
         {"circular": self.r_circ, "noncircular": self.r_non, "user": self.r_user}[
             s.surface_type].setChecked(True)
         if not s.user_surface:
-            self.r_user.setToolTip("Önce Yüzeyler → Kullanıcı Yüzeyi Çiz ile bir yüzey çizin.")
+            self.r_user.setToolTip(tr("Önce Yüzeyler → Kullanıcı Yüzeyi Çiz ile bir yüzey çizin."))
 
-        grid.addWidget(QLabel("Arama yöntemi:"), 3, 0)
+        grid.addWidget(QLabel(tr("Arama yöntemi:")), 3, 0)
         self.search = QComboBox()
         grid.addWidget(self.search, 3, 1)
-        self.opt_btn = QPushButton("▾  Seçenekler")
+        self.opt_btn = QPushButton(tr("▾  Seçenekler"))
         self.opt_btn.setCheckable(True)
         grid.addWidget(self.opt_btn, 3, 2)
 
-        self.opts = QGroupBox("Arama seçenekleri")
+        self.opts = QGroupBox(tr("Arama seçenekleri"))
         f = QFormLayout(self.opts)
         self.effort = QComboBox()
         for k, label in EFFORT_LABELS:
@@ -73,38 +75,38 @@ class SurfaceOptionsDialog(QDialog):
         self.n_ctrl.setRange(2, 10)
         self.n_ctrl.setValue(s.n_ctrl)
         self.shape = QComboBox()
-        self.shape.addItem("Poligonal — doğru parçaları (Slide2)", "polyline")
-        self.shape.addItem("Yumuşak eğri (B-spline)", "spline")
+        self.shape.addItem(tr("Poligonal — doğru parçaları (Slide2)"), "polyline")
+        self.shape.addItem(tr("Yumuşak eğri (B-spline)"), "spline")
         self.shape.setCurrentIndex(max(0, self.shape.findData(s.noncircular_shape)))
-        self.convex = QCheckBox("Yalnızca konveks yüzeyler")
+        self.convex = QCheckBox(tr("Yalnızca konveks yüzeyler"))
         self.convex.setChecked(s.convex_only)
-        f.addRow("Arama yoğunluğu:", self.effort)
+        f.addRow(tr("Arama yoğunluğu:"), self.effort)
         f.addRow("Rastgele tohum:", self.seed)
-        f.addRow("Dairesel olmayan yüzey biçimi:", self.shape)
-        f.addRow("Ara köşe / kontrol noktası sayısı:", self.n_ctrl)
+        f.addRow(tr("Dairesel olmayan yüzey biçimi:"), self.shape)
+        f.addRow(tr("Ara köşe / kontrol noktası sayısı:"), self.n_ctrl)
         f.addRow(self.convex)
         self.opts.setVisible(False)
         self.opt_btn.toggled.connect(self.opts.setVisible)
 
-        typeopts = QGroupBox("Yüzey tipi seçenekleri")
+        typeopts = QGroupBox(tr("Yüzey tipi seçenekleri"))
         tl = QVBoxLayout(typeopts)
-        comp = QCheckBox("Kompozit yüzeyler")
+        comp = QCheckBox(tr("Kompozit yüzeyler"))
         comp.setEnabled(False)
-        comp.setToolTip("Bu sürümde desteklenmiyor.")
+        comp.setToolTip(tr("Bu sürümde desteklenmiyor."))
         tl.addWidget(comp)
         weak = QComboBox()
-        weak.addItem("Otomatik durum üretimi")
+        weak.addItem(tr("Otomatik durum üretimi"))
         weak.setEnabled(False)
         wrow = QHBoxLayout()
-        wl = QLabel("Zayıf tabaka işleme:")
+        wl = QLabel(tr("Zayıf tabaka işleme:"))
         wl.setEnabled(False)
         wrow.addWidget(wl)
         wrow.addWidget(weak, 1)
         tl.addLayout(wrow)
 
-        lim = QGroupBox("Kayma sınırları (slope limits)")
+        lim = QGroupBox(tr("Kayma sınırları (slope limits)"))
         lf = QGridLayout(lim)
-        self.use_limits = QCheckBox("Kayma sınırlarını kullan")
+        self.use_limits = QCheckBox(tr("Kayma sınırlarını kullan"))
         self.use_limits.setChecked(bool(s.left_range or s.right_range))
         lf.addWidget(self.use_limits, 0, 0, 1, 4)
         g = project
@@ -113,11 +115,11 @@ class SurfaceOptionsDialog(QDialog):
         L = s.left_range or [x0, x0 + 0.35 * (x1 - x0)]
         R = s.right_range or [x0 + 0.5 * (x1 - x0), x1]
         self.l0, self.l1, self.r0, self.r1 = (self._x(v, x0, x1) for v in (*L, *R))
-        lf.addWidget(QLabel("Sol uç aralığı x:"), 1, 0)
+        lf.addWidget(QLabel(tr("Sol uç aralığı x:")), 1, 0)
         lf.addWidget(self.l0, 1, 1)
         lf.addWidget(QLabel("–"), 1, 2)
         lf.addWidget(self.l1, 1, 3)
-        lf.addWidget(QLabel("Sağ uç aralığı x:"), 2, 0)
+        lf.addWidget(QLabel(tr("Sağ uç aralığı x:")), 2, 0)
         lf.addWidget(self.r0, 2, 1)
         lf.addWidget(QLabel("–"), 2, 2)
         lf.addWidget(self.r1, 2, 3)
@@ -128,11 +130,11 @@ class SurfaceOptionsDialog(QDialog):
         self.error.setWordWrap(True)
         self.error.setStyleSheet("color:#b03a2e;")
         btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        btns.button(QDialogButtonBox.Ok).setText("Tamam")
-        btns.button(QDialogButtonBox.Cancel).setText("İptal")
+        btns.button(QDialogButtonBox.Ok).setText(tr("Tamam"))
+        btns.button(QDialogButtonBox.Cancel).setText(tr("İptal"))
         btns.accepted.connect(self._accept)
         btns.rejected.connect(self.reject)
-        defaults = QPushButton("Varsayılanlar…")
+        defaults = QPushButton(tr("Varsayılanlar…"))
         defaults.clicked.connect(self._defaults)
         bottom = QHBoxLayout()
         bottom.addWidget(defaults)

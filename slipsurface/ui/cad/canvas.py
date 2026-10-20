@@ -12,6 +12,8 @@ Keys:   Esc = cancel / select tool, Enter = finish, Backspace = undo point,
 
 from __future__ import annotations
 
+from slipsurface.ui.i18n import tr
+
 import math
 
 import numpy as np
@@ -411,9 +413,9 @@ class CadCanvas(QWidget):
         self.tool.context_menu(menu, ev.pos())
         if not menu.isEmpty():
             menu.addSeparator()
-        menu.addAction("Tümünü göster (F2)", self.zoom_extents)
-        menu.addAction("Yakınlaştır", lambda: self.zoom(1.25))
-        menu.addAction("Uzaklaştır", lambda: self.zoom(0.8))
+        menu.addAction(tr("Tümünü göster (F2)"), self.zoom_extents)
+        menu.addAction(tr("Yakınlaştır"), lambda: self.zoom(1.25))
+        menu.addAction(tr("Uzaklaştır"), lambda: self.zoom(0.8))
         menu.exec(ev.globalPos())
         self.update()
 
@@ -421,7 +423,7 @@ class CadCanvas(QWidget):
     def paintEvent(self, ev) -> None:
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
-        p.fillRect(self.rect(), QColor("white"))
+        p.fillRect(self.rect(), self.palette().base())
         if self.grid_on and self.display("show_grid"):
             self._paint_grid(p)
         self._paint_model(p)
@@ -447,8 +449,9 @@ class CadCanvas(QWidget):
             step = nice_step(step * 2)
         x0, y0, x1, y1 = self.visible_world()
         major = step * 5
-        pen_minor = QPen(QColor(232, 235, 240), 1)
-        pen_major = QPen(QColor(208, 214, 222), 1)
+        dark = self.palette().base().color().lightness() < 128
+        pen_minor = QPen(QColor("#29364a") if dark else QColor(232, 235, 240), 1)
+        pen_major = QPen(QColor("#384a62") if dark else QColor(208, 214, 222), 1)
         for (lo, hi, vertical) in ((x0, x1, True), (y0, y1, False)):
             k0 = math.floor(lo / step)
             k1 = math.ceil(hi / step)
@@ -564,7 +567,7 @@ class CadCanvas(QWidget):
             return
         g = self.geometry
         red = QColor("#c0392b")
-        p.setFont(QFont("Sans", 8))
+        p.setFont(QFont("Source Sans 3", 8))
         # distributed loads
         qmax = max([abs(q) for ld in pr.loads if ld["kind"] == "distributed" for q in ld["q"]]
                    or [1.0])
@@ -783,7 +786,7 @@ class CadCanvas(QWidget):
                 p.setPen(QPen(QColor("#1f5fd1"), 1))
                 p.setBrush(QColor(31, 95, 209, 110))
                 p.drawPolygon(QPolygonF([wtop, bot, QPointF(bot.x() + dx, bot.y())]))
-                p.setFont(QFont("Sans", 8))
+                p.setFont(QFont("Source Sans 3", 8))
                 p.setPen(QColor("#1f5fd1"))
                 p.drawText(QPointF(bot.x() + dx - (60 if dx < 0 else -4), bot.y() + 14),
                            f"V = {ck['Pw']:.1f} kN/m")
@@ -795,7 +798,7 @@ class CadCanvas(QWidget):
             p.setPen(QPen(QColor("#1f3d7a"), 1.5))
             p.setBrush(QColor("#ffd54a"))
             p.drawEllipse(q, 4, 4)
-            p.setFont(QFont("Sans", 8, QFont.Bold))
+            p.setFont(QFont("Source Sans 3", 8, QFont.Bold))
             p.setPen(QColor("#1f3d7a"))
             p.drawText(q + QPointF(6, 14), f"{f.T:.0f} kN/m")
         # critical surface
@@ -854,7 +857,7 @@ class CadCanvas(QWidget):
         mats = [m for m in self.project.materials if used is None or m.name in used]
         if not mats:
             return
-        f = QFont("Sans", 8)
+        f = QFont("Source Sans 3", 8)
         p.setFont(f)
         fm = QFontMetrics(f)
         row = fm.height() + 4
@@ -900,8 +903,8 @@ class CadCanvas(QWidget):
             if r.material not in best or r.polygon.area > best[r.material].area:
                 best[r.material] = r.polygon
         sz = int(self.display("label_size") or 8)
-        f = QFont("Sans", sz)
-        fb = QFont("Sans", sz, QFont.Bold)
+        f = QFont("Source Sans 3", sz)
+        fb = QFont("Source Sans 3", sz, QFont.Bold)
         fm, fmb = QFontMetrics(f), QFontMetrics(fb)
         for name, poly in best.items():
             spec = self.project.material(name)
@@ -911,6 +914,11 @@ class CadCanvas(QWidget):
             if mode == "full":
                 if spec.model == "MC":
                     lines.append(f"c = {spec.c:g} kPa,  φ = {spec.phi:g}°")
+                elif spec.model == "UD":
+                    lines.append(f"su = {spec.su:g} kPa (total stress)")
+                elif spec.model == "PL":
+                    lines.append(f"a = {spec.coefficient:g}, b = {spec.exponent:g}")
+                    lines.append(f"pa = {spec.reference_pressure:g} kPa")
                 else:
                     lines.append(f"σci = {spec.sigma_ci:g} kPa, GSI = {spec.gsi:g}")
                     lines.append(f"mi = {spec.mi:g},  D = {spec.d:g}")
@@ -956,7 +964,7 @@ class CadCanvas(QWidget):
             pts = [self.w2s(*q) for q in a["pts"]]
             kind = a["kind"]
             if kind == "text":
-                f = QFont("Sans", int(a.get("size", 10)))
+                f = QFont("Source Sans 3", int(a.get("size", 10)))
                 f.setBold(bool(a.get("bold", False)))
                 p.setFont(f)
                 fm = QFontMetrics(f)
@@ -1011,8 +1019,8 @@ class CadCanvas(QWidget):
         gm = res.global_minimum()
         rows = [(k, method_name(k), f"{r.fos:.3f}") for k, r in res.results.items()]
         rows += [(k, method_name(k), "–") for k in res.errors]
-        f = QFont("Sans", 8)
-        fb = QFont("Sans", 8, QFont.Bold)
+        f = QFont("Source Sans 3", 8)
+        fb = QFont("Source Sans 3", 8, QFont.Bold)
         fm = QFontMetrics(fb)
         rh = fm.height() + 3
         wn = max(fm.horizontalAdvance(n) for _, n, _ in rows) + 22
@@ -1069,7 +1077,7 @@ class CadCanvas(QWidget):
         label = {"end": "Uç nokta", "mid": "Orta nokta", "int": "Kesişim", "near": "En yakın",
                  "grid": "Izgara", "ortho": "Orto"}.get(kind)
         if label:
-            p.setFont(QFont("Sans", 8))
+            p.setFont(QFont("Source Sans 3", 8))
             p.setPen(QPen(SNAP_COLOR, 1))
             p.drawText(QPointF(s.x() + 9, s.y() + 16), label)
 

@@ -6,15 +6,17 @@ key = ("external", 0) | ("material", i) | ("water", 0) | ("user", 0)
 
 from __future__ import annotations
 
+from slipsurface.ui.i18n import tr
+
 from dataclasses import dataclass
 
 import numpy as np
 
 from slipsurface.project import Project
 
-LABELS = {"external": "Dış sınır", "material": "Malzeme sınırı", "water": "YASS",
-          "user": "Kullanıcı yüzeyi", "load": "Yük", "support": "Destek",
-          "crack": "Gerilme çatlağı", "pattern": "Bulon paterni", "facing": "Kaplama",
+LABELS = {"external": tr("Dış sınır"), "material": tr("Malzeme sınırı"), "water": "YASS",
+          "user": tr("Kullanıcı yüzeyi"), "load": "Yük", "support": tr("Destek"),
+          "crack": tr("Gerilme çatlağı"), "pattern": "Bulon paterni", "facing": "Kaplama",
           "annot": "Not"}
 MIN_POINTS = {"external": 3, "material": 2, "water": 2, "user": 2, "load": 1, "support": 2,
               "crack": 2, "pattern": 2, "facing": 2, "annot": 1}

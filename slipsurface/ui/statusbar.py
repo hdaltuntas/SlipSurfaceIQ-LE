@@ -3,6 +3,8 @@ SNAP / GRID / ORTHO / OSNAP toggles (AutoCAD keys F9 / F7 / F8 / F3)."""
 
 from __future__ import annotations
 
+from slipsurface.ui.i18n import tr
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QLabel, QLineEdit, QStatusBar, QToolButton
@@ -15,7 +17,7 @@ class CadStatusBar(QStatusBar):
     def __init__(self, canvas, parent=None, with_command: bool = True) -> None:
         super().__init__(parent)
         self.c = canvas
-        self.showMessage("Yardım için F1")
+        self.showMessage(tr("Yardım için F1"))
         self.coords = QLabel("x: —   y: —")
         self.coords.setMinimumWidth(190)
         self.addPermanentWidget(self.coords)
@@ -29,11 +31,11 @@ class CadStatusBar(QStatusBar):
             self.cmd.returnPressed.connect(self._command)
             self.addPermanentWidget(self.cmd)
         self.toggles = {}
-        for name, attr, key, tip in (("SNAP", "snap_on", "F9", "Izgara noktalarına yakala"),
-                                     ("GRID", "grid_on", "F7", "Izgarayı göster"),
-                                     ("ORTHO", "ortho_on", "F8", "Yatay/düşey kısıtla"),
+        for name, attr, key, tip in (("SNAP", "snap_on", "F9", tr("Izgara noktalarına yakala")),
+                                     ("GRID", "grid_on", "F7", tr("Izgarayı göster")),
+                                     ("ORTHO", "ortho_on", "F8", tr("Yatay/düşey kısıtla")),
                                      ("OSNAP", "osnap_on", "F3",
-                                      "Nesne yakalama: uç, orta nokta, kesişim, en yakın")):
+                                      tr("Nesne yakalama: uç, orta nokta, kesişim, en yakın"))):
             b = QToolButton()
             b.setText(name)
             b.setCheckable(True)

@@ -711,6 +711,15 @@ class _Builder:
                            "Malzeme parametreleri (genelleştirilmiş Hoek-Brown)",
                            ["c", "l", "r", "r", "r", "r", "r", "r", "l"], swatches=sw)
 
+            extra = [m for m in p.materials if m.model in ("UD", "PL")]
+            if extra:
+                rows = [[_e(m.name), m.model, _g(m.gamma),
+                         (f"su = {_g(m.su)} kPa; total stress" if m.model == "UD" else
+                          f"a = {_g(m.coefficient)}, b = {_g(m.exponent)}, pa = {_g(m.reference_pressure)} kPa")]
+                        for m in extra]
+                self.table(["Material", "Model", "γ [kN/m³]", "Strength parameters"], rows,
+                           [0.25, 0.12, 0.18, 0.45], "Additional strength models")
+
     # ----------------------------------------------------------- settings
     def settings(self) -> None:
         p = self.p

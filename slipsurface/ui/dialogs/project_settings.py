@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from slipsurface.ui.i18n import tr
+
 
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QColor, QPainter, QPen, QPixmap, QPolygonF
@@ -37,8 +39,8 @@ from slipsurface.project import (
 )
 
 TITLE_CSS = "color:#2a7ad0;font-size:16px;"
-INTERSLICE = [("half-sine", "Yarım sinüs"), ("constant", "Sabit (Spencer'e eşdeğer)"),
-              ("clipped-sine", "Kırpılmış sinüs"), ("trapezoidal", "Trapez")]
+INTERSLICE = [("half-sine", tr("Yarım sinüs")), ("constant", tr("Sabit (Spencer'e eşdeğer)")),
+              ("clipped-sine", tr("Kırpılmış sinüs")), ("trapezoidal", "Trapez")]
 # Slide2 order of the method check boxes
 METHOD_ORDER = ["bishop", "corps1", "corps2", "gle", "janbu_simplified", "janbu_corrected",
                 "lowe_karafiath", "ordinary", "spencer"]
@@ -83,11 +85,11 @@ def _direction_pixmap(left: bool) -> QPixmap:
 
 
 class ProjectSettingsDialog(QDialog):
-    PAGES = ["Genel", "Yöntemler", "Yeraltı Suyu", "Sismik", "Gelişmiş"]
+    PAGES = [tr("Genel"), tr("Yöntemler"), tr("Yeraltı Suyu"), tr("Sismik"), tr("Gelişmiş")]
 
     def __init__(self, project: Project, parent=None, page: int = 0) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Proje Ayarları")
+        self.setWindowTitle(tr("Proje Ayarları"))
         self.resize(760, 560)
         self.p = project.copy()
 
@@ -102,11 +104,11 @@ class ProjectSettingsDialog(QDialog):
         self.nav.setCurrentRow(page)
 
         btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        btns.button(QDialogButtonBox.Ok).setText("Tamam")
-        btns.button(QDialogButtonBox.Cancel).setText("İptal")
+        btns.button(QDialogButtonBox.Ok).setText(tr("Tamam"))
+        btns.button(QDialogButtonBox.Cancel).setText(tr("İptal"))
         btns.accepted.connect(self._accept)
         btns.rejected.connect(self.reject)
-        defaults = QPushButton("Varsayılanlar…")
+        defaults = QPushButton(tr("Varsayılanlar…"))
         defaults.clicked.connect(self._defaults)
 
         top = QHBoxLayout()
@@ -133,9 +135,9 @@ class ProjectSettingsDialog(QDialog):
         return w, lay
 
     def _page_general(self):
-        w, lay = self._page("Genel")
+        w, lay = self._page(tr("Genel"))
         g = self.p.general
-        units = QGroupBox("Ölçü birimleri")
+        units = QGroupBox(tr("Ölçü birimleri"))
         f = QFormLayout(units)
         self.units = QComboBox()
         self.units.addItem("Metrik (kN, kPa, m)", "metric")
@@ -143,10 +145,10 @@ class ProjectSettingsDialog(QDialog):
         lay.addWidget(units)
 
         row = QHBoxLayout()
-        dirbox = QGroupBox("Göçme yönü")
+        dirbox = QGroupBox(tr("Göçme yönü"))
         gl = QGridLayout(dirbox)
-        self.rtl = QRadioButton("Sağdan sola")
-        self.ltr = QRadioButton("Soldan sağa")
+        self.rtl = QRadioButton(tr("Sağdan sola"))
+        self.ltr = QRadioButton(tr("Soldan sağa"))
         self.dir_group = QButtonGroup(self)
         self.dir_group.addButton(self.rtl)
         self.dir_group.addButton(self.ltr)
@@ -158,10 +160,10 @@ class ProjectSettingsDialog(QDialog):
         gl.addWidget(i1, 0, 1)
         gl.addWidget(self.ltr, 1, 0)
         gl.addWidget(i2, 1, 1)
-        out = QGroupBox("Veri çıktısı")
+        out = QGroupBox(tr("Veri çıktısı"))
         ol = QVBoxLayout(out)
         self.out_std = QRadioButton("Standart")
-        self.out_max = QRadioButton("Maksimum (dilim tabloları raporda)")
+        self.out_max = QRadioButton(tr("Maksimum (dilim tabloları raporda)"))
         (self.out_std if g.data_output == "standard" else self.out_max).setChecked(True)
         ol.addWidget(self.out_std)
         ol.addWidget(self.out_max)
@@ -172,18 +174,18 @@ class ProjectSettingsDialog(QDialog):
         return w
 
     def _page_methods(self):
-        w, lay = self._page("Yöntemler")
+        w, lay = self._page(tr("Yöntemler"))
         m = self.p.methods
         row = QHBoxLayout()
         left = QVBoxLayout()
-        self.vertical = QRadioButton("Düşey dilimler")
+        self.vertical = QRadioButton(tr("Düşey dilimler"))
         self.vertical.setChecked(True)
-        sarma_ns = QRadioButton("Sarma düşey olmayan dilimler")
+        sarma_ns = QRadioButton(tr("Sarma düşey olmayan dilimler"))
         sarma_ns.setEnabled(False)
-        sarma_ns.setToolTip("Bu sürümde desteklenmiyor.")
+        sarma_ns.setToolTip(tr("Bu sürümde desteklenmiyor."))
         left.addWidget(self.vertical)
         left.addWidget(sarma_ns)
-        box = QGroupBox("Yöntemler")
+        box = QGroupBox(tr("Yöntemler"))
         bl = QVBoxLayout(box)
         self.method_checks: dict[str, QCheckBox] = {}
         for key in METHOD_ORDER:
@@ -193,13 +195,13 @@ class ProjectSettingsDialog(QDialog):
             bl.addWidget(cb)
         sarma = QCheckBox("Sarma")
         sarma.setEnabled(False)
-        sarma.setToolTip("Bu sürümde desteklenmiyor.")
+        sarma.setToolTip(tr("Bu sürümde desteklenmiyor."))
         bl.addWidget(sarma)
         left.addWidget(box)
         left.addStretch(1)
 
         right = QVBoxLayout()
-        conv = QGroupBox("Yakınsama seçenekleri")
+        conv = QGroupBox(tr("Yakınsama seçenekleri"))
         cf = QFormLayout(conv)
         self.n_slices = QSpinBox()
         self.n_slices.setRange(5, 500)
@@ -208,11 +210,11 @@ class ProjectSettingsDialog(QDialog):
         self.max_iter = QSpinBox()
         self.max_iter.setRange(5, 1000)
         self.max_iter.setValue(m.max_iter)
-        cf.addRow("Dilim sayısı:", self.n_slices)
+        cf.addRow(tr("Dilim sayısı:"), self.n_slices)
         cf.addRow("Tolerans:", self.tol)
         cf.addRow("Maksimum iterasyon:", self.max_iter)
         right.addWidget(conv)
-        inter = QGroupBox("Arayüz kuvvet fonksiyonu (GLE/Morgenstern-Price)")
+        inter = QGroupBox(tr("Arayüz kuvvet fonksiyonu (GLE/Morgenstern-Price)"))
         il = QFormLayout(inter)
         self.interslice = QComboBox()
         for k, label in INTERSLICE:
@@ -222,8 +224,8 @@ class ProjectSettingsDialog(QDialog):
         self.f_start = _dspin(0, 1, 3, 0.05, m.f_start)
         self.f_end = _dspin(0, 1, 3, 0.05, m.f_end)
         il.addRow("Fonksiyon:", self.interslice)
-        il.addRow("Başlangıç değeri:", self.f_start)
-        il.addRow("Bitiş değeri:", self.f_end)
+        il.addRow(tr("Başlangıç değeri:"), self.f_start)
+        il.addRow(tr("Bitiş değeri:"), self.f_end)
         self.inter_box = inter
         right.addWidget(inter)
         right.addStretch(1)
@@ -244,32 +246,32 @@ class ProjectSettingsDialog(QDialog):
         self.f_end.setEnabled(on and clipped)
 
     def _page_groundwater(self):
-        w, lay = self._page("Yeraltı Suyu")
+        w, lay = self._page(tr("Yeraltı Suyu"))
         gw = self.p.groundwater
-        box = QGroupBox("Boşluk suyu basıncı")
+        box = QGroupBox(tr("Boşluk suyu basıncı"))
         f = QFormLayout(box)
         self.gw_method = QComboBox()
         self.gw_method.addItem("Su tablosu (YASS)", "water_table")
-        self.gw_method.addItem("Ru katsayısı", "ru")
-        self.gw_method.addItem("Kuru (boşluk suyu yok)", "none")
+        self.gw_method.addItem(tr("Ru katsayısı"), "ru")
+        self.gw_method.addItem(tr("Kuru (boşluk suyu yok)"), "none")
         self.gw_method.setCurrentIndex(["water_table", "ru", "none"].index(gw.method))
         self.gamma_w = _dspin(1, 20, 3, 0.01, gw.gamma_w, " kN/m³")
         self.ru = _dspin(0, 1, 3, 0.05, gw.ru)
-        f.addRow("Yöntem:", self.gw_method)
-        f.addRow("Suyun birim hacim ağırlığı γw:", self.gamma_w)
+        f.addRow(tr("Yöntem:"), self.gw_method)
+        f.addRow(tr("Suyun birim hacim ağırlığı γw:"), self.gamma_w)
         f.addRow("Ru:", self.ru)
         lay.addWidget(box)
-        cbox = QGroupBox("Gerilme çatlağı suyu")
+        cbox = QGroupBox(tr("Gerilme çatlağı suyu"))
         cf = QFormLayout(cbox)
         self.crack_mode = QComboBox()
         self.crack_mode.addItem("Kuru", "dry")
         self.crack_mode.addItem("Dolu", "full")
-        self.crack_mode.addItem("Kısmen dolu (%)", "percent")
+        self.crack_mode.addItem(tr("Kısmen dolu (%)"), "percent")
         cw = gw.crack_water
         self.crack_mode.setCurrentIndex(0 if cw == 0 else 1 if cw == 1 else 2)
         self.crack_pct = _dspin(0, 100, 1, 5, 100 * cw, " %")
         self.crack_mode.currentIndexChanged.connect(self._crack_mode_changed)
-        cf.addRow("Çatlaktaki su:", self.crack_mode)
+        cf.addRow(tr("Çatlaktaki su:"), self.crack_mode)
         cf.addRow("Doluluk:", self.crack_pct)
         lay.addWidget(cbox)
         self._crack_mode_changed()
@@ -294,14 +296,14 @@ class ProjectSettingsDialog(QDialog):
             self.crack_pct.setValue(100)
 
     def _page_seismic(self):
-        w, lay = self._page("Sismik")
+        w, lay = self._page(tr("Sismik"))
         s = self.p.seismic
-        box = QGroupBox("Psödo-statik sismik yük katsayıları")
+        box = QGroupBox(tr("Psödo-statik sismik yük katsayıları"))
         f = QFormLayout(box)
         self.kh = _dspin(-1, 1, 4, 0.01, s.kh)
         self.kv = _dspin(-1, 1, 4, 0.01, s.kv)
-        f.addRow("Yatay katsayı kh:", self.kh)
-        f.addRow("Düşey katsayı kv:", self.kv)
+        f.addRow(tr("Yatay katsayı kh:"), self.kh)
+        f.addRow(tr("Düşey katsayı kv:"), self.kv)
         lay.addWidget(box)
         note = QLabel("Yatay kuvvet kh·W göçme yönünde, dilim ağırlık merkezinde etkir. "
                       "kv pozitif yukarı: düşey yük (1 − kv)·W.")
@@ -312,20 +314,20 @@ class ProjectSettingsDialog(QDialog):
         return w
 
     def _page_advanced(self):
-        w, lay = self._page("Gelişmiş")
+        w, lay = self._page(tr("Gelişmiş"))
         a = self.p.advanced
-        box = QGroupBox("Çözüm kontrolleri")
+        box = QGroupBox(tr("Çözüm kontrolleri"))
         v = QVBoxLayout(box)
-        self.check_adm = QCheckBox("mα < eşik ve negatif taban kayma direnci olan yüzeyleri reddet")
+        self.check_adm = QCheckBox(tr("mα < eşik ve negatif taban kayma direnci olan yüzeyleri reddet"))
         self.check_adm.setChecked(a.check_admissibility)
         v.addWidget(self.check_adm)
         f = QFormLayout()
         self.m_alpha_min = _dspin(0.05, 1.0, 2, 0.05, a.m_alpha_min)
         self.e_max_ratio = _dspin(1, 1000, 0, 5, a.e_max_ratio)
         self.min_depth = _dspin(0, 1000, 3, 0.5, a.min_depth, " m")
-        f.addRow("mα eşik değeri (varsayılan 0.2):", self.m_alpha_min)
-        f.addRow("Maksimum arayüz kuvveti oranı (E/W):", self.e_max_ratio)
-        f.addRow("Minimum kayma derinliği:", self.min_depth)
+        f.addRow(tr("mα eşik değeri (varsayılan 0.2):"), self.m_alpha_min)
+        f.addRow(tr("Maksimum arayüz kuvveti oranı (E/W):"), self.e_max_ratio)
+        f.addRow(tr("Minimum kayma derinliği:"), self.min_depth)
         v.addLayout(f)
         lay.addWidget(box)
         note = QLabel("mα kontrolü (Whitman & Bailey 1967) kapatılırsa veya eşiği düşürülürse, "
@@ -366,7 +368,7 @@ class ProjectSettingsDialog(QDialog):
     def _accept(self) -> None:
         p = self.collect()
         if not p.methods.methods:
-            self.error.setText("⚠ En az bir yöntem seçin.")
+            self.error.setText(tr("⚠ En az bir yöntem seçin."))
             self.nav.setCurrentRow(1)
             return
         self.result_project = p

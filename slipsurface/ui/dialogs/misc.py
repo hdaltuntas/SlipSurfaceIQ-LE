@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from slipsurface.ui.i18n import tr
+
 import numpy as np
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QGuiApplication
@@ -25,8 +27,8 @@ from PySide6.QtWidgets import (
 
 def _ok_cancel(dlg, ok_slot=None):
     btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-    btns.button(QDialogButtonBox.Ok).setText("Tamam")
-    btns.button(QDialogButtonBox.Cancel).setText("İptal")
+    btns.button(QDialogButtonBox.Ok).setText(tr("Tamam"))
+    btns.button(QDialogButtonBox.Cancel).setText(tr("İptal"))
     btns.accepted.connect(ok_slot or dlg.accept)
     btns.rejected.connect(dlg.reject)
     return btns
@@ -53,7 +55,7 @@ class CoordinatesDialog(QDialog):
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         for x, y in pts:
             self._append(x, y)
-        add, rem = QPushButton("Satır ekle"), QPushButton("Satır sil")
+        add, rem = QPushButton(tr("Satır ekle")), QPushButton(tr("Satır sil"))
         add.clicked.connect(self._add)
         rem.clicked.connect(self._remove)
         row = QHBoxLayout()
@@ -113,7 +115,7 @@ class CoordinatesDialog(QDialog):
 
 
 class InfoViewer(QDialog):
-    def __init__(self, text: str, parent=None, title: str = "Bilgi Görüntüleyici") -> None:
+    def __init__(self, text: str, parent=None, title: str = tr("Bilgi Görüntüleyici")) -> None:
         super().__init__(parent)
         self.setWindowTitle(title)
         self.resize(860, 620)
@@ -123,8 +125,8 @@ class InfoViewer(QDialog):
         f.setStyleHint(QFont.TypeWriter)
         f.setPointSize(9)
         self.edit.setFont(f)
-        copy_b, save_b, close_b = QPushButton("Kopyala"), QPushButton("Kaydet…"), \
-            QPushButton("Kapat")
+        copy_b, save_b, close_b = QPushButton(tr("Kopyala")), QPushButton(tr("Kaydet…")), \
+            QPushButton(tr("Kapat"))
         copy_b.clicked.connect(lambda: QGuiApplication.clipboard().setText(self.edit.toPlainText()))
         save_b.clicked.connect(self._save)
         close_b.clicked.connect(self.accept)
@@ -175,7 +177,7 @@ class SliceDataDialog(QDialog):
         self.resize(430, 420)
         rows = slice_rows(res, i)
         t = QTableWidget(len(rows), 2)
-        t.setHorizontalHeaderLabels(["Büyüklük", "Değer"])
+        t.setHorizontalHeaderLabels([tr("Büyüklük"), tr("Değer")])
         t.verticalHeader().setVisible(False)
         t.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         t.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
@@ -185,7 +187,7 @@ class SliceDataDialog(QDialog):
             it.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             t.setItem(r, 1, it)
         t.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        b = QPushButton("Kapat")
+        b = QPushButton(tr("Kapat"))
         b.clicked.connect(self.accept)
         lay = QVBoxLayout(self)
         lay.addWidget(t, 1)
@@ -195,14 +197,14 @@ class SliceDataDialog(QDialog):
 class GridSettingsDialog(QDialog):
     def __init__(self, spacing: float, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Izgara ve Yakalama Ayarları")
+        self.setWindowTitle(tr("Izgara ve Yakalama Ayarları"))
         self.spacing = QDoubleSpinBox()
         self.spacing.setRange(0.001, 1000)
         self.spacing.setDecimals(3)
         self.spacing.setValue(spacing)
         self.spacing.setSuffix(" m")
         f = QFormLayout()
-        f.addRow("Izgara / SNAP aralığı:", self.spacing)
+        f.addRow(tr("Izgara / SNAP aralığı:"), self.spacing)
         note = QLabel("SNAP açıkken noktalar bu aralıktaki ızgara noktalarına yakalanır.")
         note.setWordWrap(True)
         lay = QVBoxLayout(self)

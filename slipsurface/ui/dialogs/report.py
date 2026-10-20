@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from slipsurface.ui.i18n import tr
+
 import datetime as _dt
 from pathlib import Path
 
@@ -68,12 +70,12 @@ class ReportDialog(QDialog):
         f = QFormLayout(info)
         f.addRow("Rapor başlığı:", self.title)
         f.addRow("Proje:", self.project)
-        f.addRow("Analiz:", self.analysis)
-        f.addRow("Hazırlayan:", self.author)
+        f.addRow(tr("Analiz:"), self.analysis)
+        f.addRow(tr("Hazırlayan:"), self.author)
         f.addRow("Kontrol eden:", self.checker)
         f.addRow("Firma / kurum:", self.company)
         f.addRow("Rapor no:", self.report_no)
-        f.addRow("Tarih:", self.date)
+        f.addRow(tr("Tarih:"), self.date)
 
         ev = QGroupBox("Değerlendirme")
         el = QHBoxLayout(ev)
@@ -103,7 +105,7 @@ class ReportDialog(QDialog):
 
         b = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         b.button(QDialogButtonBox.Ok).setText("Raporu Oluştur…")
-        b.button(QDialogButtonBox.Cancel).setText("İptal")
+        b.button(QDialogButtonBox.Cancel).setText(tr("İptal"))
         b.accepted.connect(self.accept)
         b.rejected.connect(self.reject)
         lay = QVBoxLayout(self)

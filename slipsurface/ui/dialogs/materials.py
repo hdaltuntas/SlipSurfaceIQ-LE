@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from slipsurface.ui.i18n import tr
+
 import copy
 
 from PySide6.QtCore import Qt
@@ -31,16 +33,23 @@ from PySide6.QtWidgets import (
 
 from slipsurface.materials import HoekBrown
 from slipsurface.project import PALETTE, MaterialSpec
-from slipsurface.ui.icons import color_icon
+from slipsurface.ui.icons import color_icon, icon
 
 TITLE_CSS = "color:#2a7ad0;font-size:16px;"
 
 # (attribute, label, min, max, decimals)
-MC_ROWS = [("c", "Kohezyon c (kPa)", 0, 1e6, 3), ("phi", "İçsel sürtünme açısı φ (°)", 0, 89.9, 3)]
-HB_ROWS = [("sigma_ci", "Tek eksenli basınç dayanımı σci (kPa)", 1, 1e9, 1),
-           ("gsi", "GSI", 1, 100, 1), ("mi", "mi", 0.1, 100, 2), ("d", "Örselenme faktörü D", 0, 1, 2)]
+MC_ROWS = [("c", tr("Kohezyon c (kPa)"), 0, 1e6, 3), ("phi", tr("İçsel sürtünme açısı φ (°)"), 0, 89.9, 3)]
+HB_ROWS = [("sigma_ci", tr("Tek eksenli basınç dayanımı σci (kPa)"), 1, 1e9, 1),
+           ("gsi", "GSI", 1, 100, 1), ("mi", "mi", 0.1, 100, 2), ("d", tr("Örselenme faktörü D"), 0, 1, 2)]
 FORMULA = {"MC": "τ = c′ + σ′n · tan φ′",
            "HB": "σ1 = σ3 + σci (mb σ3/σci + s)^a   (genelleştirilmiş Hoek-Brown, 2002)"}
+
+
+UD_ROWS = [("su", "Undrained strength su (kPa)", 0, 1e6, 3)]
+PL_ROWS = [("coefficient", "a", 0, 100, 4), ("exponent", "b", 0.001, 1, 4),
+           ("reference_pressure", "pa (kPa)", 0.001, 1e6, 3)]
+FORMULA.update({"UD": "τ = su (total stress; water pressure disabled)",
+                "PL": "τ = a · pa · (1 + σ′n/pa)^b"})
 
 
 def _spin(lo, hi, dec, val):
@@ -56,7 +65,7 @@ def _spin(lo, hi, dec, val):
 class MaterialsDialog(QDialog):
     def __init__(self, materials: list[MaterialSpec], parent=None, select: str | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Malzeme Özelliklerini Tanımla")
+        self.setWindowTitle(tr("Malzeme Özelliklerini Tanımla"))
         self.resize(980, 700)
         self.mats = [copy.deepcopy(m) for m in materials] or [MaterialSpec()]
         self.renames: dict[str, str] = {}
@@ -68,14 +77,14 @@ class MaterialsDialog(QDialog):
         self.list = QListWidget()
         self.list.currentRowChanged.connect(self._select)
         tb = QHBoxLayout()
-        for name, tip, slot in (("add", "Malzeme ekle", self._add),
-                                ("delete", "Seçili malzemeyi sil", self._delete),
-                                ("up", "Yukarı taşı", lambda: self._move(-1)),
-                                ("down", "Aşağı taşı", lambda: self._move(1)),
-                                ("copy", "Kopyala", self._copy)):
+        for name, tip, slot in (("add", tr("Malzeme ekle"), self._add),
+                                ("delete", tr("Seçili malzemeyi sil"), self._delete),
+                                ("up", tr("Yukarı taşı"), lambda: self._move(-1)),
+                                ("down", tr("Aşağı taşı"), lambda: self._move(1)),
+                                ("copy", tr("Kopyala"), self._copy)):
             b = QToolButton()
             b.setToolTip(tip)
-            b.setText({"add": "+", "delete": "✕", "up": "▲", "down": "▼", "copy": "⧉"}[name])
+            b.setIcon(icon(name))
             b.setStyleSheet("QToolButton{font-size:14px;min-width:26px;}")
             b.clicked.connect(slot)
             tb.addWidget(b)
@@ -93,15 +102,15 @@ class MaterialsDialog(QDialog):
         self.color_btn.setFixedWidth(90)
         self.color_btn.clicked.connect(self._pick_color)
         self.gamma = _spin(0.1, 100, 3, 19)
-        self.use_sat = QCheckBox("Doygun birim hacim ağırlık (kN/m³):")
+        self.use_sat = QCheckBox(tr("Doygun birim hacim ağırlık (kN/m³):"))
         self.gamma_sat = _spin(0.1, 100, 3, 20)
         self.use_sat.toggled.connect(self.gamma_sat.setEnabled)
         grid = QGridLayout()
-        grid.addWidget(QLabel("Ad:"), 0, 0)
+        grid.addWidget(QLabel(tr("Ad:")), 0, 0)
         grid.addWidget(self.name, 0, 1)
-        grid.addWidget(QLabel("Dolgu:"), 0, 2)
+        grid.addWidget(QLabel(tr("Dolgu:")), 0, 2)
         grid.addWidget(self.color_btn, 0, 3)
-        grid.addWidget(QLabel("Birim hacim ağırlık (kN/m³):"), 1, 0)
+        grid.addWidget(QLabel(tr("Birim hacim ağırlık (kN/m³):")), 1, 0)
         grid.addWidget(self.gamma, 1, 1)
         grid.addWidget(self.use_sat, 1, 2)
         grid.addWidget(self.gamma_sat, 1, 3)
@@ -110,10 +119,12 @@ class MaterialsDialog(QDialog):
         strength = QWidget()
         sl = QVBoxLayout(strength)
         row = QHBoxLayout()
-        row.addWidget(QLabel("Göçme kriteri:"))
+        row.addWidget(QLabel(tr("Göçme kriteri:")))
         self.model = QComboBox()
         self.model.addItem("Mohr-Coulomb", "MC")
-        self.model.addItem("Genelleştirilmiş Hoek-Brown", "HB")
+        self.model.addItem(tr("Genelleştirilmiş Hoek-Brown"), "HB")
+        self.model.addItem("Undrained (Tresca)", "UD")
+        self.model.addItem("Power-law envelope", "PL")
         self.model.currentIndexChanged.connect(self._model_changed)
         row.addWidget(self.model, 1)
         self.formula = QLabel()
@@ -121,39 +132,36 @@ class MaterialsDialog(QDialog):
         row.addWidget(self.formula, 2)
         sl.addLayout(row)
         self.table = QTableWidget(0, 2)
-        self.table.setHorizontalHeaderLabels(["Özellik", "Değer"])
+        self.table.setHorizontalHeaderLabels([tr("Özellik"), tr("Değer")])
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self.table.horizontalHeader().setStyleSheet(
             "QHeaderView::section{background:#3a3a3a;color:white;font-weight:bold;}")
-        self.table.setStyleSheet("QTableWidget{background:#a8a8a8;}")
+
         sl.addWidget(self.table, 1)
         self.derived = QLabel()
-        self.derived.setStyleSheet("color:#333;")
         sl.addWidget(self.derived)
 
         # water tab
         water = QWidget()
         wl = QFormLayout(water)
-        self.use_water = QCheckBox("Su tablosu bu malzemeye etki eder")
+        self.use_water = QCheckBox(tr("Su tablosu bu malzemeye etki eder"))
         self.hu = _spin(0, 2, 3, 1.0)
         self.hu.setButtonSymbols(QDoubleSpinBox.UpDownArrows)
         wl.addRow(self.use_water)
-        wl.addRow("Hu (piyezometrik yükseklik katsayısı):", self.hu)
+        wl.addRow(tr("Hu (piyezometrik yükseklik katsayısı):"), self.hu)
         hint = QLabel("u = Hu · γw · h  (h: dilim tabanından su tablosuna düşey mesafe). "
                       "Hu = 1 hidrostatik; Hu < 1 akım nedeniyle azaltılmış basınç.")
         hint.setWordWrap(True)
-        hint.setStyleSheet("color:#555;")
         wl.addRow(hint)
 
         self.tabs = QTabWidget()
-        self.tabs.addTab(strength, "Dayanım")
-        self.tabs.addTab(water, "Su Parametreleri")
+        self.tabs.addTab(strength, tr("Dayanım"))
+        self.tabs.addTab(water, tr("Su Parametreleri"))
 
         note = QLabel("Not: Malzeme özellikleri tüm projede ortaktır. Bir malzeme silinirse, "
                       "ona atanmış bölgeler ilk malzemeye döner.")
-        note.setStyleSheet("color:#b00000;font-weight:bold;")
         note.setWordWrap(True)
 
         right = QVBoxLayout()
@@ -172,8 +180,8 @@ class MaterialsDialog(QDialog):
         self.error = QLabel("")
         self.error.setStyleSheet("color:#b03a2e;")
         btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        btns.button(QDialogButtonBox.Ok).setText("Tamam")
-        btns.button(QDialogButtonBox.Cancel).setText("İptal")
+        btns.button(QDialogButtonBox.Ok).setText(tr("Tamam"))
+        btns.button(QDialogButtonBox.Cancel).setText(tr("İptal"))
         btns.accepted.connect(self._accept)
         btns.rejected.connect(self.reject)
         lay = QVBoxLayout(self)
@@ -221,25 +229,25 @@ class MaterialsDialog(QDialog):
         self.use_sat.setChecked(m.use_sat)
         self.gamma_sat.setValue(m.gamma_sat)
         self.gamma_sat.setEnabled(m.use_sat)
-        self.model.setCurrentIndex(0 if m.model == "MC" else 1)
+        self.model.setCurrentIndex(self.model.findData(m.model))
         self.use_water.setChecked(m.use_water)
+        self.use_water.setEnabled(m.model != "UD")
+        self.hu.setEnabled(m.model != "UD")
         self.hu.setValue(m.hu)
         self._fill_table(m)
         self._loading = False
 
     def _fill_table(self, m: MaterialSpec) -> None:
-        rows = MC_ROWS if m.model == "MC" else HB_ROWS
+        rows = {"MC": MC_ROWS, "HB": HB_ROWS, "UD": UD_ROWS, "PL": PL_ROWS}[m.model]
         self.formula.setText(FORMULA[m.model])
         self.table.blockSignals(True)
         self.table.setRowCount(len(rows))
         for r, (attr, label, lo, hi, _dec) in enumerate(rows):
             it = QTableWidgetItem(label)
             it.setFlags(Qt.ItemIsEnabled)
-            it.setBackground(QColor("white"))
             self.table.setItem(r, 0, it)
             v = QTableWidgetItem(f"{getattr(m, attr):g}")
             v.setData(Qt.UserRole, (attr, lo, hi))
-            v.setBackground(QColor("white"))
             self.table.setItem(r, 1, v)
         self.table.blockSignals(False)
         self._update_derived(m)
@@ -303,13 +311,20 @@ class MaterialsDialog(QDialog):
             return
         m = self.mats[self.cur]
         m.model = self.model.currentData()
+        self._loading = True
+        if m.model == "UD":
+            m.use_water = False
+        self.use_water.setChecked(m.use_water)
+        self.use_water.setEnabled(m.model != "UD")
+        self.hu.setEnabled(m.model != "UD")
+        self._loading = False
         self._fill_table(m)
 
     def _pick_color(self) -> None:
         if self.cur < 0:
             return
         m = self.mats[self.cur]
-        c = QColorDialog.getColor(QColor(m.color), self, "Dolgu rengi")
+        c = QColorDialog.getColor(QColor(m.color), self, tr("Dolgu rengi"))
         if c.isValid():
             m.color = c.name()
             self.color_btn.setIcon(color_icon(m.color, 18))

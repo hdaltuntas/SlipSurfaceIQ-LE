@@ -219,7 +219,7 @@ def _draw(name: str, p: QPainter) -> None:
             p.drawLine(QPointF(6, y), QPointF(58, y))
         p.drawLine(QPointF(32, 8), QPointF(32, 56))
         p.setPen(_pen(BLUE, 2.5))
-        p.setFont(QFont("Sans", 9, QFont.Bold))
+        p.setFont(QFont("Source Sans 3", 9, QFont.Bold))
         p.drawText(QRectF(6, 8, 26, 12), Qt.AlignCenter, "x")
         p.drawText(QRectF(32, 8, 26, 12), Qt.AlignCenter, "y")
     elif name == "surface_options":
@@ -273,13 +273,13 @@ def _draw(name: str, p: QPainter) -> None:
         p.setBrush(YELLOW)
         p.drawPolygon(_poly((14, 10), (34, 10), (34, 54), (14, 46)))
         p.setPen(_pen(BLUE, 4))
-        p.setFont(QFont("Sans", 20, QFont.Bold))
+        p.setFont(QFont("Source Sans 3", 20, QFont.Bold))
         p.drawText(QRectF(34, 14, 28, 36), Qt.AlignCenter, "?")
     elif name == "global_min":
         p.setPen(_pen(GREEN, 3))
         p.setBrush(QColor("white"))
         p.drawRect(QRectF(4, 16, 56, 32))
-        p.setFont(QFont("Sans", 15, QFont.Bold))
+        p.setFont(QFont("Source Sans 3", 15, QFont.Bold))
         p.drawText(QRectF(4, 16, 56, 32), Qt.AlignCenter, "FS")
     elif name == "all_surfaces":
         p.setPen(_pen(INK, 2.5))
@@ -437,6 +437,22 @@ def _draw(name: str, p: QPainter) -> None:
 
 @cache
 def icon(name: str) -> QIcon:
+    import qtawesome as qta
+    names = {
+        "new": "file-plus-outline", "open": "folder-open-outline", "save": "content-save-outline",
+        "undo": "undo", "redo": "redo", "delete": "delete-outline", "copy": "content-copy",
+        "zoom_all": "fit-to-screen-outline", "zoom_in": "magnify-plus-outline",
+        "zoom_out": "magnify-minus-outline", "zoom_window": "selection-search", "pan": "hand-back-right-outline",
+        "settings": "tune-variant", "summary": "clipboard-text-outline", "compute": "play-circle-outline",
+        "interpret": "chart-line", "report": "file-pdf-box", "export": "export-variant",
+        "materials": "layers-outline", "surface_options": "vector-curve", "coords": "table-edit",
+        "select": "cursor-default-outline", "measure": "ruler", "grid": "grid",
+        "add": "plus", "up": "chevron-up", "down": "chevron-down",
+        "water": "waves", "support": "screw-machine-flat-top", "seismic": "waveform",
+    }
+    if name in names:
+        return qta.icon("mdi6." + names[name], color="#568cce", color_disabled="#8794a6")
+
     ic = QIcon()
     for size in (16, 24, 32, 48):
         pm = QPixmap(size, size)

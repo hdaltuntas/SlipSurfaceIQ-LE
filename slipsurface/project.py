@@ -52,6 +52,7 @@ from slipsurface.loads import (
     pattern_positions,
 )
 from slipsurface.materials import HoekBrown, Material, MohrCoulomb
+from slipsurface.materials.models import Undrained, PowerLaw
 
 FORMAT = "slipsurface-le"
 VERSION = 3
@@ -82,7 +83,7 @@ class ProjectSummary:
 @dataclass
 class MaterialSpec:
     name: str = "Zemin 1"
-    model: str = "MC"            # "MC" | "HB"
+    model: str = "MC"            # "MC" | "HB" | "UD" | "PL"
     gamma: float = 19.0
     gamma_sat: float = 20.0
     use_sat: bool = False        # Slide2: saturated unit weight checkbox
@@ -96,10 +97,20 @@ class MaterialSpec:
     hu: float = 1.0
     color: str = PALETTE[0]
 
+    su: float = 25.0
+    coefficient: float = 0.2
+    exponent: float = 0.5
+    reference_pressure: float = 100.0
+
     def to_material(self) -> Material:
         gs = self.gamma_sat if self.use_sat else self.gamma
         common: dict[str, Any] = dict(gamma=self.gamma, gamma_sat=gs,
                                       use_water=self.use_water, hu=self.hu)
+        if self.model == "UD":
+            return Undrained(self.name, su=self.su, **common)
+        if self.model == "PL":
+            return PowerLaw(self.name, coefficient=self.coefficient, exponent=self.exponent,
+                            reference_pressure=self.reference_pressure, **common)
         if self.model == "MC":
             return MohrCoulomb(self.name, c=self.c, phi=self.phi, **common)
         if self.model == "HB":
@@ -248,9 +259,11 @@ class Project:
         if len(set(names)) != len(names):
             raise ValueError("Malzeme adları benzersiz olmalı.")
         for m in self.materials:
-            if m.model not in ("MC", "HB"):
+            if m.model in ("UD", "PL"):
+                m.to_material()
+            if m.model not in ("MC", "HB", "UD", "PL"):
                 raise ValueError(f"{m.name}: bilinmeyen malzeme modeli '{m.model}' "
-                                 f"(MC veya HB olmalı).")
+                                 f"(MC, HB, UD veya PL olmalı).")
             if not m.name.strip():
                 raise ValueError("Malzeme adı boş olamaz.")
             if m.gamma <= 0 or m.gamma_sat <= 0:
@@ -647,3 +660,30 @@ EXAMPLES = {
     "Gerilme çatlaklı şev": cracked_example_project,
     "Zemin çivisi + püskürtme beton": nailed_shotcrete_project,
 }
+
+
+def undrained_example_project():
+    p = default_project()
+    p.summary.title = "Undrained clay / Drenajsız kil"
+    p.materials = [MaterialSpec(name="Clay", model="UD", gamma=18, su=35, use_water=False)]
+    p.groundwater.method = "none"
+    return p
+
+
+def power_law_example_project():
+    p = default_project()
+    p.summary.title = "Nonlinear power law / Doğrusal olmayan dayanım"
+    p.materials = [MaterialSpec(name="Power law", model="PL", coefficient=0.3, exponent=0.7)]
+    return p
+
+
+def seismic_example_project():
+    p = default_project()
+    p.summary.title = "Pseudo-static / Psödo-statik kh=0.15"
+    p.seismic.kh = 0.15
+    return p
+
+
+EXAMPLES.update({"Drenajsız kil / Undrained clay": undrained_example_project,
+                 "Power-law envelope": power_law_example_project,
+                 "Sismik / Seismic kh=0.15": seismic_example_project})

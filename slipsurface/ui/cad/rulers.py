@@ -32,7 +32,7 @@ class Ruler(QWidget):
 
     def paintEvent(self, ev) -> None:
         p = QPainter(self)
-        p.fillRect(self.rect(), QColor("#f4f5f7"))
+        p.fillRect(self.rect(), self.palette().window())
         p.setPen(QPen(QColor("#9aa3ad"), 1))
         if self.vertical:
             p.drawLine(self.width() - 1, 0, self.width() - 1, self.height())
@@ -41,7 +41,7 @@ class Ruler(QWidget):
         c = self.c
         if c.scale <= 0:
             return
-        f = QFont("Sans", 7)
+        f = QFont("Source Sans 3", 7)
         p.setFont(f)
         fm = QFontMetrics(f)
         major = nice_step(70 / c.scale)
@@ -59,7 +59,7 @@ class Ruler(QWidget):
             is_major = abs(v / major - round(v / major)) < 1e-6
             L = 10 if is_major else (6 if abs(v / (major / 2) - round(v / (major / 2))) < 1e-6
                                      else 3)
-            p.setPen(QPen(QColor("#4a5560"), 1))
+            p.setPen(QPen(self.palette().text().color(), 1))
             if self.vertical:
                 y = c.w2s(0, v).y()
                 p.drawLine(QPointF(self.width() - L, y), QPointF(self.width(), y))
