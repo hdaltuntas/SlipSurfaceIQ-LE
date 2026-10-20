@@ -1,5 +1,20 @@
-"""MaterialModule — strength models (Mohr-Coulomb, generalized Hoek-Brown)."""
+"""MaterialModule — strength models."""
 
-from slipsurface.materials.models import HoekBrown, Material, MohrCoulomb
+from slipsurface.materials.models import (
+    BartonBandis,
+    CNIRockMass,
+    HardeningSoil,
+    HoekBrown,
+    HoekBrownDirect,
+    Material,
+    MohrCoulomb,
+    PowerCurve,
+    PowerLaw,
+    Sanisand,
+    Shansep,
+    Undrained,
+)
 
-__all__ = ["HoekBrown", "Material", "MohrCoulomb"]
+__all__ = ["BartonBandis", "CNIRockMass", "HardeningSoil", "HoekBrown", "HoekBrownDirect",
+           "Material", "MohrCoulomb", "PowerCurve", "PowerLaw", "Sanisand", "Shansep",
+           "Undrained"]

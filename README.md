@@ -3,10 +3,48 @@
 2D Limit Denge (LEM) şev stabilite programı: Slide2 düzeninde native masaüstü
 **Modeler** + ayrı **Yorumla** penceresi, doğrulanmış hesap motoru.
 
+## Geri bildirim düzeltmeleri (2026.0.x)
+
+- **Ekran çözünürlüğü**: Modeler ve Yorumla pencereleri ilk açılışta ekranın kullanılabilir
+  alanını algılayıp o boyutta (ekranı kaplayan pencere) açılır; diyaloglar ekran
+  çözünürlüğüne göre ölçeklenir ve ekrandan taşmaz. **F11** tam ekranı açar/kapatır.
+- **Sonuç ekranı** (Slide2 düzeni): dairesel aramada denenen tüm dairelerin merkezlerinden
+  **kayma merkezi FS kontur haritası** (her hücrede o merkezdeki en düşük FS), sağ üstte
+  kademeli **FS lejantı** (0 … ≈6.4·FSmin+), kritik merkezde `FS = …` etiketi, merkeze
+  kesikli çizgiler ve kesikli kritik yüzey. Görüntü Seçenekleri'nden konturlar, dilimler,
+  kesikli çizgi ve tüm yüzeyler ayrı ayrı açılıp kapatılabilir.
+- **Notlar / şekiller**: sonuç ekranında (ve Modeler'da) yazı, çizgi, ok, dikdörtgen ve
+  elipsler şekline göre seçilir (çizgi/ok üzerine, dikdörtgen/elips içine tıklama),
+  model çizgilerinin önünde öncelikli seçilir; seçili notta tutamaçlar ve kesikli çerçeve
+  görünür; sağ tık menüsünde **Özellikler… / Notu sil** vardır.
+- **Hesaplama penceresi**: yöntem (i/n), aşama (dairesel ön arama, diferansiyel evrim,
+  Nelder-Mead, poligon köşe optimizasyonu, ara köşe ekleme), nesil, değerlendirilen /
+  geçerli / reddedilen yüzey sayısı, en düşük ve son FS, dilim sayısı, geçen ve tahmini
+  kalan süre ile zaman damgalı işlem günlüğü gösterilir.
+- **İngilizce arayüz**: durum çubuğu mesajları, çizim ipuçları, uyarılar, belge ağacı,
+  sağ tık menüleri, dilim verisi, Bilgi Görüntüleyici metin raporu ve **PDF raporu** dahil
+  seçilen dilde gösterilir. Kullanıcının girdiği proje, malzeme ve destek adları çevrilmez.
+- **Yeni malzeme modelleri** (Malzeme Özellikleri → Göçme kriteri):
+
+  | Kod | Model | Dayanım |
+  |---|---|---|
+  | `SH` | SHANSEP | `su = max(su,min; S·σ′v·OCR^m)` — σ′v dilim tabanında W/b − u (toplam gerilme) |
+  | `HS` | Hardening Soil | Göçme yüzeyi Mohr-Coulomb (c′, φ′); E50, Eoed, Eur, m, pref, Rf, ψ bilgi amaçlı saklanır |
+  | `SS` | SANISAND | `sin φ = 3Mb/(6+Mb)`, `Mb = M·exp(−nb·ψ)`, `ψ = e − (ec0 − λc(p′/pat)^ξ)`, p′ ≈ σ′n |
+  | `PC` | Power Curve (Slide2) | `τ = a(σ′n + d)^b + c` |
+  | `BB` | Barton-Bandis | `τ = σ′n tan(φr + JRCn log10(JCSn/σ′n))`, ölçek düzeltmesi (L0, Ln), φ ≤ 70° |
+  | `CN` | CNI Rock Mass | `τ = a·σc·((σn − T0)/σc)^n` (Cylwik vd. 2023, Slide2 değişkenleri), anlık φ ≤ 70° |
+  | `HBD` | Hoek-Brown (mb, s, a) | mb, s, a doğrudan girilir (GSI'dan türetilmez) |
+
+  Doğrusal olmayan modellerde çözücü σ′n iterasyonuyla anlık c, φ kullanır.
+- **Yeni destek modelleri**: **Mikro kazık** (kazık kesme dayanımı / aralık; kayma
+  yüzeyine teğet veya kazığa dik) ve **Geosentetik** (şerit kaplama oranı, ankraj: yok /
+  şev yüzünde / gömülü uçta / her iki uçta; sıyrılma `2·C·∫(adezyon + σv·tan δ)ds`,
+  σv = γ·derinlik). Enjeksiyonlu ankraj (grouted tieback) ve geotekstil önceden vardı.
+
 ## 2026.0.0
 
 - Sürüm düzeni: `yıl.ana.alt` (2026.0.0).
-- Uygulama tam ekran ve boş proje ile açılır. **F11** tam ekranı açar/kapatır.
 - **Görünüm → Dil / Language** ile Türkçe/İngilizce arayüz seçimi anında uygulanır.
   Açık proje, geri alma geçmişi ve sonuçlar korunur. Tema tercihi de aynı menüdedir;
   her iki tercih sonraki açılışlarda hatırlanır.
@@ -57,8 +95,8 @@ ve diğer proje alanları kullanılabilir. `MaterialSpec`, `SupportType`, `Facin
 Tüm geometri, yük, destek, kaplama ve malzeme tanımlarını gösteren çalışır örnek:
 [`examples/scripted_slope.py`](examples/scripted_slope.py).
 
-İngilizce seçeneği menüler ve temel diyalogları kapsar; bazı açıklama/hata metinleri
-ve mevcut PDF/metin raporları Türkçedir. Kullanıcının proje ve malzeme adları çevrilmez.
+İngilizce seçeneği arayüzü, uyarıları ve PDF/metin raporlarını kapsar. Kullanıcının
+proje ve malzeme adları çevrilmez.
 
 ## Çalıştırma
 
@@ -86,7 +124,7 @@ Gereksinim: Python 3.10+ (önerilen 3.11–3.13).
 
 ### Komut satırı
 ```bash
-python main.py                                    # tam ekran, boş proje
+python main.py                                    # ekran boyutunda, boş proje
 python main.py examples/ankrajli_yarma.slp.json   # proje dosyası
 python main.py --example "Katmanlı şev + YASS"    # paketteki örnek
 python main.py --list-examples
@@ -170,14 +208,17 @@ motorunun mypy kontrollerini çalıştırır.
 | Spencer | kuvvet + moment | her ikisi |
 | GLE / Morgenstern-Price (yarım sinüs, sabit, kırpılmış sinüs, trapez) | kuvvet + moment | her ikisi |
 
-- Malzeme: Mohr-Coulomb, genelleştirilmiş Hoek-Brown (anlık c, φ — σn′ iterasyonu)
+- Malzeme: Mohr-Coulomb, genelleştirilmiş Hoek-Brown, Hoek-Brown (mb, s, a), Undrained,
+  SHANSEP, Hardening Soil, SANISAND, Power-law, Power Curve, Barton-Bandis, CNI
+  (doğrusal olmayanlarda anlık c, φ — σn′ iterasyonu)
 - Boşluk suyu: YASS (malzeme bazında Hu ve aç/kapa), Ru katsayısı; γsat
 - Psödo-statik sismik: kh (göçme yönünde), kv (yukarı pozitif)
 - Gerilme çatlağı: çatlak çizgisi (çizilerek veya derinlikten, Rankine z_c önerisiyle);
   kayma yüzeyi çizgiyi kret tarafında kestiği yerde kesilir, düşey çatlak yüzü oluşur;
   çatlak suyu kuru / dolu / % → V = ½ γw hw², göçme yönünde, hw/3 yükseklikte
 - Dış yükler: yayılı (üniform / doğrusal değişen; düşey veya yüzeye dik), tekil (açılı)
-- Destekler: uç ankrajlı, enjeksiyonlu ankraj (tieback), zemin çivisi, geotekstil;
+- Destekler: uç ankrajlı, enjeksiyonlu ankraj (tieback), zemin çivisi, geotekstil,
+  geosentetik, mikro kazık;
   kuvvet = kapasite / sıyrılma (L_iç, L_dış), aralık; **aktif** (doğrudan) veya **pasif** (T/F);
   doğrultu desteğe paralel veya kayma yüzeyine teğet. Tüm yöntemlere dahil
   (Bishop/Fellenius moment, GLE/Spencer kuvvet + moment, kuvvet yöntemleri)

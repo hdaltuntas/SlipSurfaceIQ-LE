@@ -11,6 +11,8 @@
 
 from __future__ import annotations
 
+from slipsurface.ui.preferences import fit_to_screen
+
 from slipsurface.ui.i18n import tr
 
 import copy
@@ -26,7 +28,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QMessageBox,
-    QProgressDialog,
     QSplitter,
     QToolBar,
     QWidget,
@@ -71,7 +72,7 @@ STEPS = [tr("Geometri"), tr("Destek"), tr("Yükleme"), tr("Özellikler"), tr("Y�
 class ModelerWindow(QMainWindow):
     def __init__(self, project: Project | None = None) -> None:
         super().__init__()
-        self.resize(1500, 920)
+        fit_to_screen(self, 1500, 920)
         self.setIconSize(QSize(24, 24))
         self.doc = Document(project or empty_project())
         self.interpret_windows: list = []
@@ -321,7 +322,7 @@ class ModelerWindow(QMainWindow):
         full = m.addAction("Tam ekran / Full screen")
         full.setShortcut("F11")
         full.triggered.connect(
-            lambda: self.showNormal() if self.isFullScreen() else self.showFullScreen())
+            lambda: self.showMaximized() if self.isFullScreen() else self.showFullScreen())
         language = m.addMenu("Dil / Language")
         for code, label in (("tr", "Türkçe"), ("en", "English")):
             action = language.addAction(label)
@@ -546,8 +547,8 @@ class ModelerWindow(QMainWindow):
             return                                    # application is shutting down
         name = self.doc.path.name if self.doc.path else tr("Kaydedilmemiş")
         star = " *" if self.doc.dirty else ""
-        self.setWindowTitle(f"SlipSurface LE {__version__} — [{name}{star}] — "
-                            f"{self.doc.project.summary.title}")
+        self.setWindowTitle(tr(f"SlipSurface LE {__version__} — [{name}{star}] — "
+                            f"{self.doc.project.summary.title}"))
 
     def _update_actions(self) -> None:
         sel = self.canvas.selection
@@ -976,16 +977,14 @@ class ModelerWindow(QMainWindow):
             return
         n = len(p.methods.methods)
         self._cancel_requested = False
-        self.progress = QProgressDialog(tr("Hesaplanıyor…"), tr("İptal"), 0, n * 100, self)
-        self.progress.setWindowTitle(tr("Hesapla"))
-        self.progress.setWindowModality(Qt.WindowModal)
-        self.progress.setMinimumDuration(0)
-        self.progress.setMinimumWidth(420)
+        from slipsurface.ui.dialogs.compute import ComputeDialog
+        self.progress = ComputeDialog(n, p.summary.title, self)
         self.progress.canceled.connect(self._cancel_compute)
         self.progress.show()
         self._maxiter = max(1, {"fast": 50, "normal": 80, "fine": 150}.get(p.surfaces.effort, 80))
         self._worker = AnalysisWorker(p.copy())
         self._worker.progress.connect(self._on_progress)
+        self._worker.detail.connect(self._on_detail)
         self._worker.finished.connect(self._on_finished)
         self._worker.failed.connect(self._on_failed)
         self._worker.cancelled.connect(self._on_cancelled)
@@ -1000,10 +999,12 @@ class ModelerWindow(QMainWindow):
             return
         frac = 0.0 if gen <= 0 else min(abs(gen) / self._maxiter, 0.99)
         self.progress.setValue(int(100 * i + 100 * frac))
-        stage = " (ön arama)" if gen < 0 else ""
-        b = f"{best:.4f}" if best == best else "—"
-        self.progress.setLabelText(f"Yöntem {i + 1}/{n}: {method_name(m)}{stage}\n"
-                                   f"Nesil {abs(gen)}   en düşük FS {b}")
+
+    def _on_detail(self, status: dict) -> None:
+        if self._cancel_requested or self._close_pending:
+            return
+        if getattr(self, "progress", None) is not None:
+            self.progress.update_status(status)
 
     def _cancel_compute(self) -> None:
         self._cancel_requested = True
@@ -1014,7 +1015,7 @@ class ModelerWindow(QMainWindow):
     def _end_compute(self) -> None:
         if getattr(self, "progress", None) is not None:
             self.progress.canceled.disconnect()
-            self.progress.close()
+            self.progress.finish()
             self.progress = None
         self._update_actions()
 
@@ -1079,7 +1080,8 @@ class ModelerWindow(QMainWindow):
         w = InterpretWindow(self.last_results, self.doc.path,
                             annotations=self.doc.project.result_annotations,
                             on_annotations=self._result_annotations_changed)
-        w.show()
+        from slipsurface.ui.preferences import show_screen_sized
+        show_screen_sized(w)
         w.canvas.zoom_extents()
         self._prune_interpret_windows()
         self.interpret_windows.append(w)

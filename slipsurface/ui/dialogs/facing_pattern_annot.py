@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from slipsurface.ui.preferences import fit_to_screen
+
 from slipsurface.ui.i18n import tr
 
 import copy
@@ -65,7 +67,7 @@ class FacingTypesDialog(QDialog):
     def __init__(self, types: list[FacingType], parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Kaplama Tiplerini Tanımla — Püskürtme Beton + Hasır Çelik")
-        self.resize(820, 540)
+        fit_to_screen(self, 820, 540)
         self.types = [copy.deepcopy(t) for t in types] or [FacingType()]
         self.renames: dict[str, str] = {}
         self._orig = [t.name for t in self.types]
@@ -213,9 +215,9 @@ class FacingTypesDialog(QDialog):
         if self.cur < 0:
             return
         t = self.types[self.cur]
-        self.capacity.setText(f"T = τ·t + As·fy = {t.tau * t.thickness:.1f} + "
+        self.capacity.setText(tr(f"T = τ·t + As·fy = {t.tau * t.thickness:.1f} + "
                               f"{t.mesh_as * t.mesh_fy / 1000:.1f} = {t.capacity:.1f} kN/m   "
-                              f"·   ağırlık {t.weight_per_m:.2f} kN/m²")
+                              f"·   ağırlık {t.weight_per_m:.2f} kN/m²"))
 
     def _rename(self, text):
         t = self.types[self.cur]
@@ -250,7 +252,7 @@ class FacingTypesDialog(QDialog):
 
     def _delete(self):
         if len(self.types) <= 1:
-            self.error.setText("⚠ En az bir kaplama tipi kalmalı.")
+            self.error.setText(tr("⚠ En az bir kaplama tipi kalmalı."))
             return
         del self.types[self.cur]
         self._refresh()
@@ -259,7 +261,7 @@ class FacingTypesDialog(QDialog):
     def _accept(self):
         names = [t.name.strip() for t in self.types]
         if any(not n for n in names) or len(set(names)) != len(names):
-            self.error.setText("⚠ Adlar boş olamaz ve benzersiz olmalı.")
+            self.error.setText(tr("⚠ Adlar boş olamaz ve benzersiz olmalı."))
             return
         self.accept()
 

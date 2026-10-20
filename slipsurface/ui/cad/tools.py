@@ -142,9 +142,10 @@ class SelectTool(Tool):
             self.drag = (key, k, [list(q) for q in pts])
             self.drag_pts = [list(q) for q in pts]
             return
-        seg = c.pick_segment(ev.position())
-        ann = c.pick_annotation(ev.position()) if seg is None else None
-        c.selection = seg[0] if seg else ann
+        # notes are drawn on top of the model, so they are picked first
+        ann = c.pick_annotation(ev.position())
+        seg = c.pick_segment(ev.position()) if ann is None else None
+        c.selection = ann if ann is not None else (seg[0] if seg else None)
         c.sel_vertex = None
         c.selection_changed.emit(c.selection)
         if c.selection is not None and c.selection[0] == "annot" and c.editable:
@@ -186,9 +187,10 @@ class SelectTool(Tool):
 
     def double_click(self, ev) -> None:
         c = self.c
-        seg = c.pick_segment(ev.position())
         hit = c.pick_vertex(ev.position())
-        key = hit[0] if hit else (seg[0] if seg else c.pick_annotation(ev.position()))
+        ann = c.pick_annotation(ev.position())
+        seg = c.pick_segment(ev.position())
+        key = hit[0] if hit else (ann if ann is not None else (seg[0] if seg else None))
         if key is not None:
             c.entity_double_clicked.emit(key)
 
@@ -212,8 +214,17 @@ class SelectTool(Tool):
         if not c.editable:
             return
         hit = c.pick_vertex(QPointF(pos))
+        ann = c.pick_annotation(QPointF(pos))
         seg = c.pick_segment(QPointF(pos))
-        if hit is not None:
+        if ann is not None and (hit is None or hit[0] == ann):
+            c.selection, c.sel_vertex = ann, None
+            c.selection_changed.emit(ann)
+            menu.addAction(tr("Özellikler…"), lambda: c.entity_double_clicked.emit(ann))
+            menu.addAction(tr("Notu sil"),
+                           lambda: (c.request_edit(tr("Not sil"), lambda p: delete_entity(p, ann)),
+                                    setattr(c, "selection", None),
+                                    c.selection_changed.emit(None)))
+        elif hit is not None:
             key, k = hit
             menu.addAction("Köşeyi sil", lambda: _delete_vertex(c, key, k))
             menu.addAction("Koordinatları düzenle…", lambda: c.entity_double_clicked.emit(key))

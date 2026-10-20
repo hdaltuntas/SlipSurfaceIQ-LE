@@ -3,6 +3,8 @@ Support edit."""
 
 from __future__ import annotations
 
+from slipsurface.ui.preferences import fit_to_screen
+
 from slipsurface.ui.i18n import tr
 
 import copy
@@ -27,7 +29,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from slipsurface.loads import SUPPORT_KINDS, SupportType
+from slipsurface.loads import ANCHORAGES, SUPPORT_KINDS, SupportType
 from slipsurface.ui.icons import color_icon
 
 TITLE_CSS = "color:#2a7ad0;font-size:16px;"
@@ -143,13 +145,23 @@ FORMULAS = {
     "grouted_tieback": "T = min(çekme, kök dayanımı × min(kök boyu, L_dış))",
     "soil_nail": "T = min(çekme, kök dayanımı × L_dış, plaka + kök dayanımı × L_iç)",
     "geotextile": "T = min(çekme dayanımı, sıyrılma dayanımı × min(L_iç, L_dış))",
+    "geosynthetic": "T = min(C·çekme, P_iç, P_dış);  P = 2·C·∫(adezyon + σv·tan δ) ds,  "
+                    "σv = γ·derinlik (ankrajlı uçta sıyrılma yok)",
+    "micro_pile": "T = kazık kesme dayanımı / aralık  (kayma yüzeyini kestiği noktada)",
 }
 FIELDS = {   # which inputs apply to which kind
-    "spacing": {"end_anchored", "grouted_tieback", "soil_nail"},
+    "spacing": {"end_anchored", "grouted_tieback", "soil_nail", "micro_pile"},
+    "tensile": {"end_anchored", "grouted_tieback", "soil_nail", "geotextile", "geosynthetic"},
     "plate": {"soil_nail"},
     "bond_strength": {"grouted_tieback", "soil_nail"},
     "bond_length": {"grouted_tieback"},
     "pullout": {"geotextile"},
+    "coverage": {"geosynthetic"},
+    "anchorage": {"geosynthetic"},
+    "adhesion": {"geosynthetic"},
+    "interface_friction": {"geosynthetic"},
+    "overburden_gamma": {"geosynthetic"},
+    "pile_shear": {"micro_pile"},
 }
 
 
@@ -159,7 +171,7 @@ class SupportTypesDialog(QDialog):
     def __init__(self, types: list[SupportType], parent=None, select: str | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle(tr("Destek Özelliklerini Tanımla"))
-        self.resize(820, 560)
+        fit_to_screen(self, 820, 560)
         self.types = [copy.deepcopy(t) for t in types]
         if not self.types:
             self.types = [SupportType()]
@@ -192,7 +204,7 @@ class SupportTypesDialog(QDialog):
         self.color.clicked.connect(self._pick_color)
         self.kind = QComboBox()
         for k, v in SUPPORT_KINDS.items():
-            self.kind.addItem(v, k)
+            self.kind.addItem(tr(v), k)
         self.kind.currentIndexChanged.connect(self._kind_changed)
         self.formula = QLabel()
         self.formula.setStyleSheet("font-style:italic;color:#333;")
@@ -205,12 +217,25 @@ class SupportTypesDialog(QDialog):
             "bond_strength": _spin(0, 1e5, 2, 50, " kN/m"),
             "bond_length": _spin(0, 1000, 2, 4, " m"),
             "pullout": _spin(0, 1e5, 2, 20, " kN/m/m"),
+            "coverage": _spin(1, 100, 1, 100, " %"),
+            "adhesion": _spin(0, 1e5, 2, 0, " kPa"),
+            "interface_friction": _spin(0, 60, 2, 25, " °"),
+            "overburden_gamma": _spin(0, 50, 2, 19, " kN/m³"),
+            "pile_shear": _spin(0, 1e6, 2, 100, " kN"),
             "length": _spin(0.1, 200, 2, 12, " m"),
         }
         self.labels = {"spacing": tr("Düzlem dışı aralık:"), "tensile": tr("Çekme kapasitesi:"),
                        "plate": "Plaka kapasitesi:", "bond_strength": tr("Kök (yapışma) dayanımı:"),
                        "bond_length": tr("Kök boyu:"), "pullout": tr("Sıyrılma dayanımı:"),
+                       "coverage": tr("Şerit kaplama oranı:"), "adhesion": tr("Arayüz adezyonu:"),
+                       "interface_friction": tr("Arayüz sürtünme açısı δ:"),
+                       "overburden_gamma": tr("Örtü birim hacim ağırlığı:"),
+                       "pile_shear": tr("Kazık kesme dayanımı:"),
                        "length": tr("Varsayılan boy (otomatik yerleşim):")}
+        self.anchorage = QComboBox()
+        for k, v in ANCHORAGES.items():
+            self.anchorage.addItem(tr(v), k)
+        self.anchorage.currentIndexChanged.connect(self._store)
         form = QFormLayout()
         form.addRow(tr("Ad:"), self.name)
         form.addRow(tr("Renk:"), self.color)
@@ -221,6 +246,10 @@ class SupportTypesDialog(QDialog):
             form.addRow(lab, sp)
             self._rows[k] = lab
             sp.valueChanged.connect(self._store)
+        lab = QLabel(tr("Ankraj:"))
+        form.addRow(lab, self.anchorage)
+        self._rows["anchorage"] = lab
+        self.w_extra = {"anchorage": self.anchorage}
 
         appl = QGroupBox(tr("Kuvvet uygulama yöntemi"))
         al = QVBoxLayout(appl)
@@ -235,6 +264,7 @@ class SupportTypesDialog(QDialog):
         self.orient = QComboBox()
         self.orient.addItem(tr("Desteğe paralel"), "parallel")
         self.orient.addItem(tr("Kayma yüzeyine teğet"), "tangent")
+        self.orient.addItem(tr("Desteğe dik"), "perpendicular")
         self.orient.currentIndexChanged.connect(self._store)
         form2 = QFormLayout()
         form2.addRow(tr("Kuvvet doğrultusu:"), self.orient)
@@ -288,7 +318,8 @@ class SupportTypesDialog(QDialog):
         for k, sp in self.w.items():
             sp.setValue(getattr(t, k))
         (self.r_active if t.application == "active" else self.r_passive).setChecked(True)
-        self.orient.setCurrentIndex(0 if t.orientation == "parallel" else 1)
+        self.orient.setCurrentIndex(max(self.orient.findData(t.orientation), 0))
+        self.anchorage.setCurrentIndex(max(self.anchorage.findData(t.anchorage), 0))
         self._loading = False
         self._update_fields()
 
@@ -297,12 +328,17 @@ class SupportTypesDialog(QDialog):
         self.formula.setText(FORMULAS[kind])
         for k, kinds in FIELDS.items():
             on = kind in kinds
-            self.w[k].setEnabled(on)
-            self._rows[k].setEnabled(on)
-        self._rows["tensile"].setText(tr("Çekme dayanımı (kN/m):") if kind == "geotextile"
+            w = self.w.get(k) or self.w_extra[k]
+            w.setVisible(on)
+            self._rows[k].setVisible(on)
+        self._rows["tensile"].setText(tr("Çekme dayanımı (kN/m):")
+                                      if kind in ("geotextile", "geosynthetic")
                                       else tr("Çekme kapasitesi:"))
 
     def _kind_changed(self, *_):
+        if not self._loading and self.kind.currentData() == "micro_pile" \
+                and self.orient.currentData() == "parallel":
+            self.orient.setCurrentIndex(self.orient.findData("tangent"))
         self._update_fields()
         self._store()
 
@@ -313,8 +349,9 @@ class SupportTypesDialog(QDialog):
         t.kind = self.kind.currentData()
         for k, sp in self.w.items():
             setattr(t, k, sp.value())
-        if t.kind == "geotextile":
+        if t.kind in ("geotextile", "geosynthetic"):
             t.spacing = 1.0
+        t.anchorage = self.anchorage.currentData()
         t.application = "active" if self.r_active.isChecked() else "passive"
         t.orientation = self.orient.currentData()
 
@@ -363,8 +400,8 @@ class SupportTypesDialog(QDialog):
 
     def _delete(self):
         if len(self.types) <= 1:
-            self.error.setText("⚠ En az bir destek tipi kalmalı (destekleri silmek için "
-                               "çizimden silin).")
+            self.error.setText(tr("⚠ En az bir destek tipi kalmalı (destekleri silmek için "
+                               "çizimden silin)."))
             return
         del self.types[self.cur]
         self._refresh()
@@ -373,7 +410,7 @@ class SupportTypesDialog(QDialog):
     def _accept(self):
         names = [t.name.strip() for t in self.types]
         if any(not n for n in names) or len(set(names)) != len(names):
-            self.error.setText("⚠ Destek tipi adları boş olamaz ve benzersiz olmalı.")
+            self.error.setText(tr("⚠ Destek tipi adları boş olamaz ve benzersiz olmalı."))
             return
         self.accept()
 
@@ -437,7 +474,7 @@ class CrackFromDepthDialog(QDialog):
 
     def _accept(self):
         if self.x2.value() <= self.x1.value():
-            self.error.setText("⚠ x₂ > x₁ olmalı.")
+            self.error.setText(tr("⚠ x₂ > x₁ olmalı."))
             return
         self.accept()
 

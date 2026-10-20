@@ -34,6 +34,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
 from collections.abc import Callable
+from typing import cast
 
 import numpy as np
 from scipy.optimize import differential_evolution, minimize
@@ -176,6 +177,9 @@ class SearchResult:
     top: list[tuple[float, object]] = field(default_factory=list)
     message: str = ""
     method: str = "bishop"
+    # every admissible circle tried by the search: columns xc, yc, r, FoS
+    # (circular searches only; drawn as the slip-centre FS contour map)
+    centres: np.ndarray | None = None
 
 
 class SearchCancelled(RuntimeError):
@@ -198,9 +202,19 @@ def search(
     materials: dict[str, Material],
     settings: SearchSettings | None = None,
     progress: Callable[[int, float], bool | None] | None = None,
+    status: dict | None = None,
 ) -> SearchResult:
-    """Global minimum FoS. `progress(generation, best)` returning True cancels."""
+    """Global minimum FoS. `progress(generation, best)` returning True cancels.
+
+    `status`, if given, is updated in place while the search runs (for a
+    progress display): stage (presearch | evolution | polish | vertices |
+    refine | final), generation, maxiter, evaluated, valid, rejected, best,
+    current (last admissible FoS) and surface_type."""
     st = settings or SearchSettings()
+    stat = status if status is not None else {}
+    stat.update(stage="evolution", generation=0, maxiter=st.maxiter, evaluated=0, valid=0,
+                rejected=0, best=float("nan"), current=float("nan"),
+                surface_type=st.surface_type)
     if st.surface_type in ("spline", "polyline") and st.method == "bishop":
         raise ValueError("Simplified Bishop yalnızca dairesel yüzeyler için geçerlidir; "
                          "dairesel olmayan yüzeylerde Spencer veya GLE seçin.")
@@ -251,22 +265,27 @@ def search(
         nonlocal n_evals, best_seen
         check_cancel()
         n_evals += 1
+        stat["evaluated"] = n_evals
         res, s = run(surf)
-        if not res.ok:
-            return PENALTY
-        if st.check_admissibility and not res.admissible:
-            return PENALTY                   # numerically / physically unreliable
-        if not (L[0] - tol_x <= s.x_exit <= L[1] + tol_x and
+        if not res.ok or (st.check_admissibility and not res.admissible) or not (
+                L[0] - tol_x <= s.x_exit <= L[1] + tol_x and
                 R[0] - tol_x <= s.x_entry <= R[1] + tol_x):
-            return PENALTY                   # actual ends outside the slope limits
+            # no solution, numerically / physically unreliable, or the actual
+            # ends lie outside the slope limits
+            stat["rejected"] += 1
+            return PENALTY
         seen.append((res.fos, surf, (s.x_exit, s.x_entry)))
+        stat["valid"] += 1
+        stat["current"] = res.fos
         if not np.isfinite(best_seen) or res.fos < best_seen:
             best_seen = res.fos
+            stat["best"] = res.fos
         return res.fos
 
     def callback(xk, convergence=None):
         nonlocal gen
         gen += 1
+        stat["generation"] = gen
         if progress is not None:
             best = min((f for f, _, _ in seen), default=np.nan)
             if progress(gen, best):
@@ -275,7 +294,9 @@ def search(
     init = "sobol"
     popsize = st.popsize
     if st.surface_type in ("spline", "polyline"):
-        init, popsize = _seeded_population(geom, materials, st, bounds, progress)
+        stat["stage"] = "presearch"
+        init, popsize = _seeded_population(geom, materials, st, bounds, progress, stat)
+        stat.update(stage="evolution", generation=0, maxiter=st.maxiter, best=float("nan"))
 
     de = differential_evolution(
         evaluate, bounds, popsize=popsize, maxiter=st.maxiter, tol=st.tol,
@@ -284,6 +305,7 @@ def search(
     x_best, f_best = de.x, de.fun
 
     if st.polish and f_best < PENALTY:
+        stat["stage"] = "polish"
         lo = np.array([b[0] for b in bounds])
         hi = np.array([b[1] for b in bounds])
         nm = minimize(lambda p: evaluate(np.clip(p, lo, hi)), x_best, method="Nelder-Mead",
@@ -297,12 +319,20 @@ def search(
 
     surf = build(x_best)
     if st.surface_type == "polyline" and st.polish:
+        stat["stage"] = "vertices"
+        evaluate_surface.status = stat           # type: ignore[attr-defined]
         surf, f_best = _optimize_polyline(geom, surf, f_best, evaluate_surface, st)
+    stat["stage"] = "final"
     lem, slices = run(surf)
     check_cancel()
+    centres = None
+    if st.surface_type == "circular" and seen:
+        circles = [(cast(CircularSurface, sf), f) for f, sf, _ in seen]
+        centres = np.asarray([[c.xc, c.yc, c.r, f] for c, f in circles], dtype=np.float64)
     return SearchResult(surf, lem.fos, lem, slices, n_evals,
                         top=_distinct_top(seen, st.keep_top, geom),
-                        message=f"{gen} nesil, {n_evals} yüzey", method=st.method)
+                        message=f"{gen} nesil, {n_evals} yüzey", method=st.method,
+                        centres=centres)
 
 
 def _optimize_polyline(geom, surf: PolylineSurface, f_best: float, evaluate_surface, st):
@@ -341,7 +371,10 @@ def _optimize_polyline(geom, surf: PolylineSurface, f_best: float, evaluate_surf
             return unpack(res.x, n), float(res.fun)
         return None, f0
 
+    stat = getattr(evaluate_surface, "status", None)
+    stat = stat if stat is not None else {}
     best, fb = surf, f_best
+    stat["stage"] = "vertices"
     new, f = run_nm(best.pts, fb, 300 + 60 * len(best.pts))
     if new is not None:
         best, fb = new, f
@@ -350,13 +383,15 @@ def _optimize_polyline(geom, surf: PolylineSurface, f_best: float, evaluate_surf
     mid = 0.5 * (pts[:-1] + pts[1:])
     dense = np.empty((len(pts) + len(mid), 2))
     dense[0::2], dense[1::2] = pts, mid
+    stat["stage"] = "refine"
     new, f = run_nm(dense, fb, 300 + 60 * len(dense))
     if new is not None:
         best, fb = new, f
     return best, fb
 
 
-def _seeded_population(geom, materials, st: SearchSettings, bounds, progress):
+def _seeded_population(geom, materials, st: SearchSettings, bounds, progress,
+                       stat: dict | None = None):
     """Stage 1 for B-spline search: a quick circular search (Bishop) whose
     critical circle, fitted as a spline, seeds the DE population together
     with Sobol samples and perturbed copies of the seed."""
@@ -376,6 +411,8 @@ def _seeded_population(geom, materials, st: SearchSettings, bounds, progress):
     pop = qmc.scale(qmc.Sobol(dim, seed=st.seed).random_base2(m), lo, hi)
 
     def stage1_progress(gen, best):
+        if stat is not None:
+            stat.update(generation=gen, maxiter=circ_st.maxiter, best=best)
         return progress(-gen, best) if progress is not None else None
 
     try:

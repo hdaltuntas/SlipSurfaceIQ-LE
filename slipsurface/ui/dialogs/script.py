@@ -1,3 +1,4 @@
+from slipsurface.ui.preferences import fit_to_screen
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QLabel, QPlainTextEdit, QPushButton, QFileDialog, QHBoxLayout,
 )
@@ -9,7 +10,7 @@ class ScriptDialog(QDialog):
         super().__init__(parent)
         self.document = document
         self.setWindowTitle("Python scripting")
-        self.resize(960, 720)
+        fit_to_screen(self, 960, 720)
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel(
             "Python scripts run with your account permissions. Run trusted code only.\n"

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from slipsurface.ui.i18n import tr
+from slipsurface.ui.i18n import language, tr
 
 import datetime as _dt
 from pathlib import Path
@@ -57,7 +57,11 @@ class ReportDialog(QDialog):
         title = QLabel("Analiz Raporu (PDF)")
         title.setStyleSheet("color:#2a7ad0;font-size:16px;")
 
-        self.title = QLineEdit(st.value("report/title", "Şev Stabilite Analiz Raporu"))
+        default = tr("Şev Stabilite Analiz Raporu")
+        stored = st.value("report/title", default)
+        if stored in ("Şev Stabilite Analiz Raporu", "Slope Stability Analysis Report"):
+            stored = default                      # default title follows the language
+        self.title = QLineEdit(stored)
         self.project = QLineEdit(sm.title)
         self.analysis = QLineEdit(sm.analysis)
         self.author = QLineEdit(sm.author or st.value("report/author", ""))
@@ -65,7 +69,8 @@ class ReportDialog(QDialog):
         self.company = QLineEdit(sm.company or st.value("report/company", ""))
         self.report_no = QLineEdit()
         self.report_no.setPlaceholderText("örn. KGM-13-2026-041")
-        self.date = QLineEdit(_dt.date.today().strftime("%d.%m.%Y"))
+        self.date = QLineEdit(_dt.date.today().strftime(
+            "%Y-%m-%d" if language() == "en" else "%d.%m.%Y"))
         info = QGroupBox("Rapor bilgileri")
         f = QFormLayout(info)
         f.addRow("Rapor başlığı:", self.title)
@@ -118,12 +123,13 @@ class ReportDialog(QDialog):
 
     def options(self) -> ReportOptions:
         o = ReportOptions(
-            title=self.title.text().strip() or "Şev Stabilite Analiz Raporu",
+            title=self.title.text().strip() or tr("Şev Stabilite Analiz Raporu"),
             project=self.project.text().strip(), analysis=self.analysis.text().strip(),
             author=self.author.text().strip(), checker=self.checker.text().strip(),
             company=self.company.text().strip(), report_no=self.report_no.text().strip(),
             date=self.date.text().strip(),
-            target_fs=self.target.value() if self.use_target.isChecked() else None)
+            target_fs=self.target.value() if self.use_target.isChecked() else None,
+            language=language())
         for key, cb in self.checks.items():
             setattr(o, key, cb.isChecked())
         return o
@@ -153,7 +159,7 @@ def make_report(results, path, opts: ReportOptions, display_project=None) -> int
 def export_report(parent, results, display_project=None, model_path=None) -> str | None:
     """Report dialog → file dialog → PDF. Returns the written path."""
     if results is None or not results.results:
-        QMessageBox.warning(parent, "PDF Rapor", "Önce analizi çalıştırın (Hesapla, F5).")
+        QMessageBox.warning(parent, tr("PDF Rapor"), tr("Önce analizi çalıştırın (Hesapla, F5)."))
         return None
     dlg = ReportDialog(results.project, parent)
     if not dlg.exec():
@@ -161,9 +167,10 @@ def export_report(parent, results, display_project=None, model_path=None) -> str
     dlg.remember()
     opts = dlg.options()
     opts.model_file = Path(model_path).name if model_path else ""
-    stem = Path(model_path).name.split(".")[0] if model_path else "rapor"
-    start = str((Path(model_path).parent if model_path else Path.home()) / f"{stem}_rapor.pdf")
-    path, _ = QFileDialog.getSaveFileName(parent, "PDF raporu kaydet", start, "PDF (*.pdf)")
+    word = "report" if language() == "en" else "rapor"
+    stem = Path(model_path).name.split(".")[0] if model_path else word
+    start = str((Path(model_path).parent if model_path else Path.home()) / f"{stem}_{word}.pdf")
+    path, _ = QFileDialog.getSaveFileName(parent, tr("PDF raporu kaydet"), start, "PDF (*.pdf)")
     if not path:
         return None
     if not path.lower().endswith(".pdf"):
@@ -173,16 +180,16 @@ def export_report(parent, results, display_project=None, model_path=None) -> str
         n = make_report(results, path, opts, display_project)
     except PermissionError:
         QGuiApplication.restoreOverrideCursor()
-        QMessageBox.critical(parent, "PDF Rapor", f"Dosya yazılamadı (başka bir programda açık "
-                                                  f"olabilir):\n{path}")
+        QMessageBox.critical(parent, tr("PDF Rapor"),
+                             tr(f"Dosya yazılamadı (başka bir programda açık olabilir):\n{path}"))
         return None
     except Exception as exc:          # report must never crash the app
         QGuiApplication.restoreOverrideCursor()
-        QMessageBox.critical(parent, "PDF Rapor", f"Rapor oluşturulamadı:\n{exc}")
+        QMessageBox.critical(parent, tr("PDF Rapor"), tr(f"Rapor oluşturulamadı:\n{exc}"))
         return None
     QGuiApplication.restoreOverrideCursor()
     if hasattr(parent, "statusBar"):
-        parent.statusBar().showMessage(f"PDF rapor kaydedildi ({n} sayfa): {path}", 10000)
+        parent.statusBar().showMessage(tr(f"PDF rapor kaydedildi ({n} sayfa): {path}"), 10000)
     if dlg.open_after.isChecked():
         QDesktopServices.openUrl(QUrl.fromLocalFile(path))
     return path

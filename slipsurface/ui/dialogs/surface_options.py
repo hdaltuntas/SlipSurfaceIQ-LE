@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from slipsurface.ui.preferences import fit_to_screen
+
 from slipsurface.ui.i18n import tr
 
 from PySide6.QtWidgets import (
@@ -36,7 +38,7 @@ class SurfaceOptionsDialog(QDialog):
     def __init__(self, project: Project, parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle(tr("Yüzey Seçenekleri"))
-        self.resize(560, 470)
+        fit_to_screen(self, 560, 470)
         s = project.surfaces
         self.p = project
 
@@ -194,12 +196,12 @@ class SurfaceOptionsDialog(QDialog):
 
     def _accept(self) -> None:
         if self._type() == "user" and not self.p.surfaces.user_surface:
-            self.error.setText("⚠ Kullanıcı tanımlı yüzey yok. Önce Yüzeyler → Kullanıcı Yüzeyi "
-                               "Çiz ile çizin.")
+            self.error.setText(tr("⚠ Kullanıcı tanımlı yüzey yok. Önce Yüzeyler → Kullanıcı Yüzeyi "
+                               "Çiz ile çizin."))
             return
         if self._type() != "user" and self.use_limits.isChecked():
             if self.l1.value() <= self.l0.value() or self.r1.value() <= self.r0.value():
-                self.error.setText("⚠ Aralık bitişi başlangıçtan büyük olmalı.")
+                self.error.setText(tr("⚠ Aralık bitişi başlangıçtan büyük olmalı."))
                 return
             xs = [q[0] for q in self.p.external]
             if xs:
@@ -207,8 +209,8 @@ class SurfaceOptionsDialog(QDialog):
                 for start, end in ((self.l0.value(), self.l1.value()),
                                    (self.r0.value(), self.r1.value())):
                     if min(end, hi) <= max(start, lo):
-                        self.error.setText("⚠ Her uç aralığı modelin yatay sınırlarıyla "
-                                           f"kesişmeli ({lo:g} – {hi:g} m).")
+                        self.error.setText(tr("⚠ Her uç aralığı modelin yatay sınırlarıyla "
+                                           f"kesişmeli ({lo:g} – {hi:g} m)."))
                         return
         self.accept()
 

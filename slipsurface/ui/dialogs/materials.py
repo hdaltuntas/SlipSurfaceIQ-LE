@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from slipsurface.ui.preferences import fit_to_screen
+
 from slipsurface.ui.i18n import tr
 
 import copy
@@ -32,24 +34,17 @@ from PySide6.QtWidgets import (
 )
 
 from slipsurface.materials import HoekBrown
+from slipsurface.materials.catalog import MODELS
 from slipsurface.project import PALETTE, MaterialSpec
 from slipsurface.ui.icons import color_icon, icon
 
 TITLE_CSS = "color:#2a7ad0;font-size:16px;"
 
-# (attribute, label, min, max, decimals)
-MC_ROWS = [("c", tr("Kohezyon c (kPa)"), 0, 1e6, 3), ("phi", tr("İçsel sürtünme açısı φ (°)"), 0, 89.9, 3)]
-HB_ROWS = [("sigma_ci", tr("Tek eksenli basınç dayanımı σci (kPa)"), 1, 1e9, 1),
-           ("gsi", "GSI", 1, 100, 1), ("mi", "mi", 0.1, 100, 2), ("d", tr("Örselenme faktörü D"), 0, 1, 2)]
-FORMULA = {"MC": "τ = c′ + σ′n · tan φ′",
-           "HB": "σ1 = σ3 + σci (mb σ3/σci + s)^a   (genelleştirilmiş Hoek-Brown, 2002)"}
-
-
-UD_ROWS = [("su", "Undrained strength su (kPa)", 0, 1e6, 3)]
-PL_ROWS = [("coefficient", "a", 0, 100, 4), ("exponent", "b", 0.001, 1, 4),
-           ("reference_pressure", "pa (kPa)", 0.001, 1e6, 3)]
-FORMULA.update({"UD": "τ = su (total stress; water pressure disabled)",
-                "PL": "τ = a · pa · (1 + σ′n/pa)^b"})
+# (attribute, label, min, max, decimals) per model, from the shared catalogue
+ROWS = {k: [(a, tr(lab), lo, hi, dec) for a, lab, lo, hi, dec in info.rows]
+        for k, info in MODELS.items()}
+FORMULA = {k: info.formula for k, info in MODELS.items()}
+MC_ROWS, HB_ROWS = ROWS["MC"], ROWS["HB"]
 
 
 def _spin(lo, hi, dec, val):
@@ -66,7 +61,7 @@ class MaterialsDialog(QDialog):
     def __init__(self, materials: list[MaterialSpec], parent=None, select: str | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle(tr("Malzeme Özelliklerini Tanımla"))
-        self.resize(980, 700)
+        fit_to_screen(self, 980, 700)
         self.mats = [copy.deepcopy(m) for m in materials] or [MaterialSpec()]
         self.renames: dict[str, str] = {}
         self._orig_names = [m.name for m in self.mats]
@@ -121,10 +116,8 @@ class MaterialsDialog(QDialog):
         row = QHBoxLayout()
         row.addWidget(QLabel(tr("Göçme kriteri:")))
         self.model = QComboBox()
-        self.model.addItem("Mohr-Coulomb", "MC")
-        self.model.addItem(tr("Genelleştirilmiş Hoek-Brown"), "HB")
-        self.model.addItem("Undrained (Tresca)", "UD")
-        self.model.addItem("Power-law envelope", "PL")
+        for key, info in MODELS.items():
+            self.model.addItem(tr(info.name), key)
         self.model.currentIndexChanged.connect(self._model_changed)
         row.addWidget(self.model, 1)
         self.formula = QLabel()
@@ -238,8 +231,9 @@ class MaterialsDialog(QDialog):
         self._loading = False
 
     def _fill_table(self, m: MaterialSpec) -> None:
-        rows = {"MC": MC_ROWS, "HB": HB_ROWS, "UD": UD_ROWS, "PL": PL_ROWS}[m.model]
+        rows = ROWS[m.model]
         self.formula.setText(FORMULA[m.model])
+        self.formula.setToolTip(tr(MODELS[m.model].note))
         self.table.blockSignals(True)
         self.table.setRowCount(len(rows))
         for r, (attr, label, lo, hi, _dec) in enumerate(rows):
@@ -257,12 +251,19 @@ class MaterialsDialog(QDialog):
             try:
                 hb = HoekBrown(m.name, gamma=m.gamma, sigma_ci=m.sigma_ci, gsi=m.gsi, mi=m.mi,
                                d=m.d)
-                self.derived.setText(f"Türetilen: mb = {hb.mb:.4f}   s = {hb.s:.5f}   "
-                                     f"a = {hb.a:.4f}")
+                self.derived.setText(tr(f"{tr('Türetilen')}: mb = {hb.mb:.4f}   s = {hb.s:.5f}   "
+                                     f"a = {hb.a:.4f}"))
+            except ValueError:
+                self.derived.setText("")
+        elif m.model == "BB":
+            try:
+                bb = m.to_material()
+                self.derived.setText(tr(f"JRCn = {bb.jrc_n:.3f}   JCSn = {bb.jcs_n:.1f} kPa"))
             except ValueError:
                 self.derived.setText("")
         else:
-            self.derived.setText("")
+            self.derived.setText(tr(MODELS[m.model].note))
+        self.derived.setWordWrap(True)
 
     def _store(self, *_) -> None:
         if self._loading or self.cur < 0:
@@ -280,11 +281,11 @@ class MaterialsDialog(QDialog):
             try:
                 v = float(item.text().replace(",", "."))
             except ValueError:
-                self.error.setText(f"⚠ '{self.table.item(r, 0).text()}' sayısal olmalı.")
+                self.error.setText(tr(f"⚠ '{self.table.item(r, 0).text()}' sayısal olmalı."))
                 continue
             if not lo <= v <= hi:
-                self.error.setText(f"⚠ '{self.table.item(r, 0).text()}' {lo:g} – {hi:g} "
-                                   f"aralığında olmalı.")
+                self.error.setText(tr(f"⚠ '{self.table.item(r, 0).text()}' {lo:g} – {hi:g} "
+                                   f"aralığında olmalı."))
                 continue
             setattr(m, attr, v)
         self._update_derived(m)
@@ -314,6 +315,8 @@ class MaterialsDialog(QDialog):
         self._loading = True
         if m.model == "UD":
             m.use_water = False
+        elif m.model == "SH":
+            m.use_water = True               # σ′v needs the water table
         self.use_water.setChecked(m.use_water)
         self.use_water.setEnabled(m.model != "UD")
         self.hu.setEnabled(m.model != "UD")
@@ -357,7 +360,7 @@ class MaterialsDialog(QDialog):
 
     def _delete(self) -> None:
         if self.cur < 0 or len(self.mats) <= 1:
-            self.error.setText("⚠ En az bir malzeme kalmalı.")
+            self.error.setText(tr("⚠ En az bir malzeme kalmalı."))
             return
         del self.mats[self.cur]
         self._refresh_list()
@@ -374,10 +377,10 @@ class MaterialsDialog(QDialog):
     def _accept(self) -> None:
         names = self._names()
         if any(not n.strip() for n in names):
-            self.error.setText("⚠ Malzeme adı boş olamaz.")
+            self.error.setText(tr("⚠ Malzeme adı boş olamaz."))
             return
         if len(set(names)) != len(names):
-            self.error.setText("⚠ Malzeme adları benzersiz olmalı.")
+            self.error.setText(tr("⚠ Malzeme adları benzersiz olmalı."))
             return
         if self.error.text():
             return

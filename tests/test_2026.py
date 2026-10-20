@@ -180,4 +180,9 @@ def test_new_models_in_pdf(tmp_path, model, expected):
     path = tmp_path / "new-model.pdf"
     build_pdf(results, path)
     text = "\n".join(page.extract_text() for page in PdfReader(path).pages)
-    assert "Additional strength models" in text and expected in text
+    assert "diğer dayanım modelleri" in text and expected in text
+    from slipsurface.report import ReportOptions
+    build_pdf(results, path, ReportOptions(language="en"))
+    text = "\n".join(page.extract_text() for page in PdfReader(path).pages)
+    assert "other strength models" in text and expected in text
+    assert "Analysis Results" in text and "Analiz Sonuçları" not in text

@@ -51,8 +51,21 @@ from slipsurface.loads import (
     bolt_at,
     pattern_positions,
 )
-from slipsurface.materials import HoekBrown, Material, MohrCoulomb
-from slipsurface.materials.models import Undrained, PowerLaw
+from slipsurface.materials import (
+    BartonBandis,
+    CNIRockMass,
+    HardeningSoil,
+    HoekBrown,
+    HoekBrownDirect,
+    Material,
+    MohrCoulomb,
+    PowerCurve,
+    PowerLaw,
+    Sanisand,
+    Shansep,
+    Undrained,
+)
+from slipsurface.materials.catalog import MODELS
 
 FORMAT = "slipsurface-le"
 VERSION = 3
@@ -83,7 +96,7 @@ class ProjectSummary:
 @dataclass
 class MaterialSpec:
     name: str = "Zemin 1"
-    model: str = "MC"            # "MC" | "HB" | "UD" | "PL"
+    model: str = "MC"            # key of slipsurface.materials.catalog.MODELS
     gamma: float = 19.0
     gamma_sat: float = 20.0
     use_sat: bool = False        # Slide2: saturated unit weight checkbox
@@ -101,6 +114,47 @@ class MaterialSpec:
     coefficient: float = 0.2
     exponent: float = 0.5
     reference_pressure: float = 100.0
+    # SHANSEP
+    shansep_s: float = 0.22
+    shansep_m: float = 0.8
+    ocr: float = 1.0
+    shansep_su_min: float = 0.0
+    # Hardening Soil (failure envelope c, phi above)
+    hs_psi: float = 0.0
+    hs_e50: float = 30_000.0
+    hs_eoed: float = 30_000.0
+    hs_eur: float = 90_000.0
+    hs_m: float = 0.5
+    hs_pref: float = 100.0
+    hs_rf: float = 0.9
+    # SANISAND (Toyoura sand defaults, Dafalias & Manzari 2004)
+    ss_m: float = 1.25
+    ss_e: float = 0.75
+    ss_ec0: float = 0.934
+    ss_lambda: float = 0.019
+    ss_xi: float = 0.7
+    ss_nb: float = 1.1
+    ss_pat: float = 101.3
+    # Power Curve
+    pc_a: float = 1.5
+    pc_b: float = 0.8
+    pc_c: float = 0.0
+    pc_d: float = 0.0
+    # Barton-Bandis
+    bb_phir: float = 25.0
+    bb_jrc: float = 10.0
+    bb_jcs: float = 50_000.0
+    bb_l0: float = 0.1
+    bb_ln: float = 0.1
+    # CNI rock mass
+    cni_sigma_c: float = 10_000.0
+    cni_a: float = 0.6
+    cni_n: float = 0.75
+    cni_t: float = 100.0
+    # Hoek-Brown with direct mb, s, a
+    hb_mb: float = 1.0
+    hb_s: float = 0.001
+    hb_a: float = 0.5
 
     def to_material(self) -> Material:
         gs = self.gamma_sat if self.use_sat else self.gamma
@@ -116,6 +170,29 @@ class MaterialSpec:
         if self.model == "HB":
             return HoekBrown(self.name, sigma_ci=self.sigma_ci, gsi=self.gsi, mi=self.mi,
                              d=self.d, **common)
+        if self.model == "HBD":
+            return HoekBrownDirect(self.name, sigma_ci=self.sigma_ci, mb_in=self.hb_mb,
+                                   s_in=self.hb_s, a_in=self.hb_a, **common)
+        if self.model == "SH":
+            return Shansep(self.name, s_ratio=self.shansep_s, m_exp=self.shansep_m,
+                           ocr=self.ocr, su_min=self.shansep_su_min, **common)
+        if self.model == "HS":
+            return HardeningSoil(self.name, c=self.c, phi=self.phi, psi=self.hs_psi,
+                                 e50_ref=self.hs_e50, eoed_ref=self.hs_eoed, eur_ref=self.hs_eur,
+                                 m_power=self.hs_m, p_ref=self.hs_pref, rf=self.hs_rf, **common)
+        if self.model == "SS":
+            return Sanisand(self.name, m_c=self.ss_m, void_ratio=self.ss_e, e_c0=self.ss_ec0,
+                            lambda_c=self.ss_lambda, xi=self.ss_xi, n_b=self.ss_nb,
+                            p_at=self.ss_pat, **common)
+        if self.model == "PC":
+            return PowerCurve(self.name, pc_a=self.pc_a, pc_b=self.pc_b, pc_c=self.pc_c,
+                              pc_d=self.pc_d, **common)
+        if self.model == "BB":
+            return BartonBandis(self.name, phi_r=self.bb_phir, jrc=self.bb_jrc, jcs=self.bb_jcs,
+                                l0=self.bb_l0, ln=self.bb_ln, **common)
+        if self.model == "CN":
+            return CNIRockMass(self.name, sigma_cm=self.cni_sigma_c, cni_a=self.cni_a,
+                               cni_n=self.cni_n, tensile=self.cni_t, **common)
         raise ValueError(f"Bilinmeyen malzeme modeli: {self.model}")
 
 
@@ -186,11 +263,13 @@ DEFAULT_DISPLAY = {
     "show_grid": True,
     "fill_materials": True,
     "show_slope_limits": True,
-    "show_slices": True,
+    "show_slices": False,
     "slice_fill_color": "#f6d65a",
     "show_lines_to_center": True,
     "show_fs_text": True,
-    "show_all_surfaces": True,
+    "show_all_surfaces": False,
+    "show_fs_contours": True,        # slip-centre FS contour map (circular searches)
+    "critical_dashed": True,         # critical surface as a dashed line
     "show_legend": True,
     "show_fs_legend": True,
     "material_labels": "none",       # none | name | full
@@ -259,11 +338,14 @@ class Project:
         if len(set(names)) != len(names):
             raise ValueError("Malzeme adları benzersiz olmalı.")
         for m in self.materials:
-            if m.model in ("UD", "PL"):
-                m.to_material()
-            if m.model not in ("MC", "HB", "UD", "PL"):
+            if m.model not in MODELS:
                 raise ValueError(f"{m.name}: bilinmeyen malzeme modeli '{m.model}' "
-                                 f"(MC, HB, UD veya PL olmalı).")
+                                 f"({', '.join(MODELS)} olmalı).")
+            if m.model not in ("MC", "HB"):        # MC/HB give the messages below
+                try:
+                    m.to_material()
+                except ValueError as exc:
+                    raise ValueError(f"{m.name}: {exc}") from None
             if not m.name.strip():
                 raise ValueError("Malzeme adı boş olamaz.")
             if m.gamma <= 0 or m.gamma_sat <= 0:

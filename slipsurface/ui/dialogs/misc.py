@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from slipsurface.ui.preferences import fit_to_screen
+
+from slipsurface.lem.bishop import slice_strength
+
 from slipsurface.ui.i18n import tr
 
 import numpy as np
@@ -47,7 +51,7 @@ class CoordinatesDialog(QDialog):
     def __init__(self, title: str, pts, parent=None, min_points: int = 2) -> None:
         super().__init__(parent)
         self.setWindowTitle(f"Koordinatlar — {title}")
-        self.resize(380, 460)
+        fit_to_screen(self, 380, 460)
         self.min_points = min_points
         self.table = QTableWidget(0, 2)
         self.table.setHorizontalHeaderLabels(["x [m]", "y [m]"])
@@ -106,10 +110,10 @@ class CoordinatesDialog(QDialog):
         try:
             pts = self.points()
         except ValueError as exc:
-            self.error.setText(f"⚠ {exc}")
+            self.error.setText(tr(f"⚠ {exc}"))
             return
         if len(pts) < self.min_points:
-            self.error.setText(f"⚠ En az {self.min_points} nokta gerekli.")
+            self.error.setText(tr(f"⚠ En az {self.min_points} nokta gerekli."))
             return
         self.accept()
 
@@ -118,7 +122,7 @@ class InfoViewer(QDialog):
     def __init__(self, text: str, parent=None, title: str = tr("Bilgi Görüntüleyici")) -> None:
         super().__init__(parent)
         self.setWindowTitle(title)
-        self.resize(860, 620)
+        fit_to_screen(self, 860, 620)
         self.edit = QPlainTextEdit(text)
         self.edit.setReadOnly(True)
         f = QFont("Monospace")
@@ -150,7 +154,7 @@ class InfoViewer(QDialog):
 def slice_rows(res, i: int) -> list[tuple[str, str]]:
     s = res.slices
     mat = s.materials[s.mat_idx[i]]
-    c, tp = mat.strength(np.array([max(s.W[i] / s.b[i] - s.u[i], 0.0)]))
+    c, tp = (np.array([v]) for v in slice_strength(s, i))
     rows = [
         ("Dilim no", f"{i + 1} / {s.n}"),
         ("Taban malzemesi", mat.name),
@@ -174,7 +178,7 @@ class SliceDataDialog(QDialog):
     def __init__(self, res, i: int, method: str, parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle(f"Dilim Verisi — {method}")
-        self.resize(430, 420)
+        fit_to_screen(self, 430, 420)
         rows = slice_rows(res, i)
         t = QTableWidget(len(rows), 2)
         t.setHorizontalHeaderLabels([tr("Büyüklük"), tr("Değer")])
@@ -182,7 +186,7 @@ class SliceDataDialog(QDialog):
         t.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         t.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         for r, (k, v) in enumerate(rows):
-            t.setItem(r, 0, QTableWidgetItem(k))
+            t.setItem(r, 0, QTableWidgetItem(tr(k)))
             it = QTableWidgetItem(v)
             it.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             t.setItem(r, 1, it)

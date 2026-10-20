@@ -22,6 +22,38 @@ def interface_font():
     return QFont(family, 10)
 
 
+DESIGN_SIZE = (1920, 1080)        # logical resolution the window sizes were designed for
+
+
+def available_geometry(widget=None):
+    """Usable area (without taskbar / dock) of the widget's screen or the primary one."""
+    app = QApplication.instance()
+    screen = (widget.screen() if widget is not None else None) or app.primaryScreen()
+    return screen.availableGeometry()
+
+
+def fit_to_screen(widget, width: int, height: int, center: bool = True) -> None:
+    """Size a window / dialog for the detected screen resolution: designed sizes
+    scale with the screen (relative to 1920 x 1080) and never exceed 95 % of
+    the available area."""
+    avail = available_geometry(widget)
+    scale = min(avail.width() / DESIGN_SIZE[0], avail.height() / DESIGN_SIZE[1])
+    scale = min(max(scale, 0.6), 1.6)
+    w = min(int(width * scale), int(avail.width() * 0.95))
+    h = min(int(height * scale), int(avail.height() * 0.95))
+    widget.resize(max(w, 200), max(h, 150))
+    if center:
+        frame = widget.frameGeometry()
+        frame.moveCenter(avail.center())
+        widget.move(frame.topLeft())
+
+
+def show_screen_sized(window) -> None:
+    """Open a main window covering the whole usable screen (maximized)."""
+    window.setGeometry(available_geometry(window))
+    window.showMaximized()
+
+
 def apply_theme(dark=None):
     app = QApplication.instance()
     if dark is None:

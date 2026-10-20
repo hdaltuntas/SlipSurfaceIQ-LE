@@ -21,8 +21,24 @@ def initialize():
 
 
 def tr(text):
+    if not isinstance(text, str) or not text:
+        return text
     source = REVERSE.get(text, text)
-    return EN.get(source, source) if _language == "en" else source
+    return _english(source) if _language == "en" else source
+
+
+def trf(template, *args):
+    """Translate a template with positional {} fields, then format it."""
+    return tr(template).format(*args)
+
+
+def language():
+    return _language
+
+
+def _english(source):
+    """English text for a Turkish source string (see slipsurface.textcat)."""
+    return _CATALOG.translate(source)
 
 
 def set_language(language):
@@ -488,4 +504,12 @@ EN = {'&Dosya': '&File',
                                                                                                                     'first '
                                                                                                                     'material.'}
 
-REVERSE = {value: key for key, value in EN.items()}
+from slipsurface.ui.translations_en import EXTRA  # noqa: E402
+
+EN.update(EXTRA)
+REVERSE = {value: key for key, value in EN.items() if "{}" not in key}
+
+
+from slipsurface.textcat import Catalog  # noqa: E402
+
+_CATALOG = Catalog(EN)

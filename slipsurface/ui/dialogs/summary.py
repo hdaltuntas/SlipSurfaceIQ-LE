@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from slipsurface.ui.preferences import fit_to_screen
+
 from slipsurface.ui.i18n import tr
 
 from PySide6.QtCore import Qt
@@ -30,7 +32,7 @@ class ProjectSummaryDialog(QDialog):
     def __init__(self, summary: ProjectSummary, parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle(tr("Proje Özeti"))
-        self.resize(560, 470)
+        fit_to_screen(self, 560, 470)
         self.table = QTableWidget(len(ROWS), 2)
         self.table.setHorizontalHeaderLabels([tr("Tür"), tr("Açıklama")])
         self.table.verticalHeader().setVisible(False)

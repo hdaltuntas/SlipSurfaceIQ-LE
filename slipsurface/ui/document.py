@@ -72,7 +72,8 @@ class Document(QObject):
             return False
         self.project = p
         self._rebuild()
-        self.undo_stack.push(_Snapshot(self, text, before, after))
+        from slipsurface.ui.i18n import tr
+        self.undo_stack.push(_Snapshot(self, tr(text), before, after))
         self.changed.emit()
         return True
 

@@ -24,8 +24,17 @@ L_out = |IB| (in stable ground). Force per metre = T / spacing.
   grouted_tieback  T = min(tensile, bond * min(bond_length, L_out))
   soil_nail        T = min(tensile, bond * L_out, plate + bond * L_in)
   geotextile       T = min(tensile, pullout * min(L_in, L_out))
-Direction: "parallel" to the support (A -> B), or "tangent" to the slip
-surface (opposing the sliding direction). Applied at I.
+  geosynthetic     Slide2 style, per metre width with strip coverage C:
+                   pullout on one side = 2 C int (adhesion + sigma_v tan delta) ds,
+                   sigma_v = gamma_ob * depth below the ground; anchorage
+                     none     T = min(C tensile, P_in, P_out)
+                     face     T = min(C tensile, P_out)   (anchored at the slope face)
+                     embedded T = min(C tensile, P_in)    (embedded end anchored)
+                     both     T = C tensile
+  micro_pile       T = pile shear strength (the pile resists by shear)
+Direction: "parallel" to the support (A -> B), "tangent" to the slip
+surface (opposing the sliding direction) or "perpendicular" to the support
+(micro-piles; the side that opposes sliding). Applied at I.
 """
 
 from __future__ import annotations
@@ -40,7 +49,11 @@ SUPPORT_KINDS = {
     "grouted_tieback": "Enjeksiyonlu ankraj (tieback)",
     "soil_nail": "Zemin çivisi",
     "geotextile": "Geotekstil",
+    "geosynthetic": "Geosentetik",
+    "micro_pile": "Mikro kazık",
 }
+ANCHORAGES = {"none": "Yok", "face": "Şev yüzünde", "embedded": "Gömülü uçta",
+              "both": "Her iki uçta"}
 
 
 @dataclass
@@ -82,9 +95,17 @@ class SupportType:
     bond_length: float = 4.0           # m (tieback)
     pullout: float = 20.0              # kN/m per m (geotextile)
     application: str = "active"        # active | passive
-    orientation: str = "parallel"      # parallel | tangent
+    orientation: str = "parallel"      # parallel | tangent | perpendicular
     color: str = "#1f3d7a"
     length: float = 12.0               # default length for automatically placed bolts [m]
+    # geosynthetic
+    coverage: float = 100.0            # strip coverage [%]
+    anchorage: str = "none"            # none | face | embedded | both
+    adhesion: float = 0.0              # interface adhesion [kPa]
+    interface_friction: float = 25.0   # interface friction angle delta [deg]
+    overburden_gamma: float = 19.0     # unit weight for the overburden stress [kN/m3]
+    # micro pile
+    pile_shear: float = 100.0          # shear strength of one pile [kN]
 
 
 @dataclass
@@ -194,8 +215,23 @@ def support_intersection(sup: Support, surf, x_exit: float, x_entry: float):
     return None
 
 
-def support_capacity(st: SupportType, L_in: float, L_out: float) -> tuple[float, str]:
-    """Force [kN] and which component governs."""
+def geosynthetic_pullout(st: SupportType, geom, p0, p1) -> float:
+    """Pullout resistance [kN/m] of the geosynthetic segment p0 -> p1 (both faces)."""
+    p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
+    L = float(np.hypot(*(p1 - p0)))
+    if L <= 0:
+        return 0.0
+    t = (np.arange(20) + 0.5) / 20
+    pts = p0[None, :] + t[:, None] * (p1 - p0)[None, :]
+    depth = np.maximum(np.asarray(geom.ground_y(pts[:, 0]), float) - pts[:, 1], 0.0)
+    shear = st.adhesion + st.overburden_gamma * depth * np.tan(np.radians(st.interface_friction))
+    return float(2.0 * st.coverage / 100.0 * shear.mean() * L)
+
+
+def support_capacity(st: SupportType, L_in: float, L_out: float,
+                     po_in: float | None = None, po_out: float | None = None) -> tuple[float, str]:
+    """Force [kN] and which component governs. `po_in` / `po_out` are the
+    geosynthetic pullout resistances inside / outside the sliding mass."""
     if st.kind == "end_anchored":
         return st.tensile, "çekme kapasitesi"
     if st.kind == "grouted_tieback":
@@ -208,6 +244,15 @@ def support_capacity(st: SupportType, L_in: float, L_out: float) -> tuple[float,
     if st.kind == "geotextile":
         po = st.pullout * min(L_in, L_out)
         return (st.tensile, "çekme dayanımı") if st.tensile <= po else (po, "sıyrılma")
+    if st.kind == "geosynthetic":
+        cands = [(st.coverage / 100.0 * st.tensile, "çekme dayanımı")]
+        if st.anchorage in ("none", "embedded"):
+            cands.append((po_in if po_in is not None else np.inf, "sıyrılma (iç)"))
+        if st.anchorage in ("none", "face"):
+            cands.append((po_out if po_out is not None else np.inf, "sıyrılma (dış)"))
+        return min(cands, key=lambda c: c[0])
+    if st.kind == "micro_pile":
+        return st.pile_shear, "kazık kesme dayanımı"
     raise ValueError(f"unknown support kind {st.kind}")
 
 
@@ -271,9 +316,19 @@ def slice_forces(loads: LoadSet, geom, surf, xl, xr, x_exit, x_entry, direction:
             continue
         A, B = np.asarray(sup.a, float), np.asarray(sup.b, float)
         L_in, L_out = float(np.hypot(*(p - A))), float(np.hypot(*(B - p)))
-        T, gov = support_capacity(sup.stype, L_in, L_out)
-        T = max(T, 0.0) / max(sup.stype.spacing, 1e-9)
-        if sup.stype.orientation == "tangent":
+        po_in = po_out = None
+        if sup.stype.kind == "geosynthetic":
+            po_in = geosynthetic_pullout(sup.stype, geom, A, p)
+            po_out = geosynthetic_pullout(sup.stype, geom, p, B)
+        T, gov = support_capacity(sup.stype, L_in, L_out, po_in, po_out)
+        spacing = 1.0 if sup.stype.kind == "geosynthetic" else sup.stype.spacing
+        T = max(T, 0.0) / max(spacing, 1e-9)
+        if sup.stype.orientation == "perpendicular":
+            d = (B - A) / np.hypot(*(B - A))
+            u = np.array([-d[1], d[0]])
+            if u[0] * direction > 0:                 # pick the normal that opposes sliding
+                u = -u
+        elif sup.stype.orientation == "tangent":
             h = 1e-5
             slope = (surf.y(p[0] + h) - surf.y(p[0] - h)) / (2 * h)
             t = np.array([1.0, slope]) / np.hypot(1.0, slope)

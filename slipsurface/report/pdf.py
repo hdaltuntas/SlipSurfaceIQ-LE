@@ -15,6 +15,8 @@ also be produced (without figures) from scripts and tests.
 
 from __future__ import annotations
 
+from slipsurface.lem.bishop import slice_strength
+
 import datetime as _dt
 import io
 import logging
@@ -56,6 +58,16 @@ FONT_DIR = Path(__file__).parent / "fonts"
 F_REG, F_BOLD, F_SEMI, F_IT = "SS3", "SS3-Bold", "SS3-SemiBold", "SS3-Italic"
 _fonts_ok = False
 log = logging.getLogger(__name__)
+
+_LANG = "tr"            # report language, set by build_pdf from ReportOptions.language
+
+
+def T(text: str) -> str:
+    """Report text in the report language (Turkish source -> English catalogue)."""
+    if _LANG != "en":
+        return text
+    from slipsurface.report.translations_en import CATALOG
+    return CATALOG.translate(text)
 
 
 def _register_fonts() -> None:
@@ -120,6 +132,7 @@ class ReportOptions:
     slice_table: bool = True
     coordinates: bool = False
     model_file: str = ""
+    language: str = "tr"               # "tr" | "en"
 
 
 @dataclass
@@ -169,7 +182,7 @@ def _styles() -> dict[str, ParagraphStyle]:
 
 
 def _p(text, style) -> Paragraph:
-    return Paragraph(text, style)
+    return Paragraph(T(text), style)
 
 
 def _e(s) -> str:
@@ -234,13 +247,15 @@ class _Doc(BaseDocTemplate):
         c.rect(0, PAGE_H - 80 * mm, PAGE_W, 2 * mm, stroke=0, fill=1)
         c.setFillColor(colors.HexColor("#9fb4cc"))
         c.setFont(F_SEMI, 9)
-        c.drawString(MARGIN_L, PAGE_H - 16 * mm, "SLIPSURFACE LE  ·  2B LİMİT DENGE ANALİZİ")
+        c.drawString(MARGIN_L, PAGE_H - 16 * mm, T("SLIPSURFACE LE  ·  2B LİMİT DENGE ANALİZİ"))
         if o.report_no:
-            c.drawRightString(PAGE_W - MARGIN_R, PAGE_H - 16 * mm, f"Rapor No: {o.report_no}")
+            c.drawRightString(PAGE_W - MARGIN_R, PAGE_H - 16 * mm,
+                              f"{T('Rapor No')}: {o.report_no}")
         c.setFillColor(colors.white)
         c.setFont(F_BOLD, 25)
         y = PAGE_H - 36 * mm
-        for line in _wrap(_tr_upper(o.title), F_BOLD, 25, FRAME_W)[:2]:
+        title = _tr_upper(o.title) if _LANG == "tr" else str(o.title).upper()
+        for line in _wrap(title, F_BOLD, 25, FRAME_W)[:2]:
             c.drawString(MARGIN_L, y, line)
             y -= 10 * mm
         c.setFont(F_REG, 13)
@@ -271,8 +286,8 @@ class _Doc(BaseDocTemplate):
         c.saveState()
         c.setFont(F_REG, 7.5)
         c.setFillColor(MUTED)
-        c.drawString(MARGIN_L, 10 * mm, f"SlipSurface LE {__version__} ile üretilmiştir.")
-        c.drawRightString(PAGE_W - MARGIN_R, 10 * mm, f"{n} sayfa")
+        c.drawString(MARGIN_L, 10 * mm, T(f"SlipSurface LE {__version__} ile üretilmiştir."))
+        c.drawRightString(PAGE_W - MARGIN_R, 10 * mm, T(f"{n} sayfa"))
         c.restoreState()
 
     def _footer_body(self, c, n):
@@ -283,12 +298,13 @@ class _Doc(BaseDocTemplate):
         c.line(MARGIN_L, 14 * mm, PAGE_W - MARGIN_R, 14 * mm)
         c.setFont(F_REG, 7.5)
         c.setFillColor(MUTED)
-        left = "  ·  ".join(x for x in (o.company, o.author and f"Hazırlayan: {o.author}") if x)
+        left = "  ·  ".join(x for x in (o.company, o.author and f"{T('Hazırlayan')}: {o.author}")
+                            if x)
         c.drawString(MARGIN_L, 10 * mm, left)
         c.drawCentredString(PAGE_W / 2, 10 * mm, o.date)
         c.setFont(F_SEMI, 8)
         c.setFillColor(NAVY)
-        c.drawRightString(PAGE_W - MARGIN_R, 10 * mm, f"Sayfa {c.getPageNumber()} / {n}")
+        c.drawRightString(PAGE_W - MARGIN_R, 10 * mm, f"{T('Sayfa')} {c.getPageNumber()} / {n}")
         c.restoreState()
 
     # --------------------------------------------------------------- TOC
@@ -336,7 +352,7 @@ class _Builder:
     def h1(self, text: str) -> None:
         self.sec += 1
         self.sub = 0
-        para = _p(f"{self.sec}&nbsp;&nbsp;&nbsp;{_e(text)}", self.st["h1"])
+        para = _p(f"{self.sec}&nbsp;&nbsp;&nbsp;{_e(T(text))}", self.st["h1"])
         para.toc_level = 0
         self.story.append(CondPageBreak(60 * mm))
         self.story.append(para)
@@ -344,13 +360,13 @@ class _Builder:
 
     def h2(self, text: str) -> None:
         self.sub += 1
-        para = _p(f"{self.sec}.{self.sub}&nbsp;&nbsp;{_e(text)}", self.st["h2"])
+        para = _p(f"{self.sec}.{self.sub}&nbsp;&nbsp;{_e(T(text))}", self.st["h2"])
         para.toc_level = 1
         self.story.append(CondPageBreak(40 * mm))
         self.story.append(para)
 
     def appendix(self, letter: str, text: str) -> None:
-        para = _p(f"Ek {letter}&nbsp;&nbsp;&nbsp;{_e(text)}", self.st["h1"])
+        para = _p(f"{T('Ek')} {letter}&nbsp;&nbsp;&nbsp;{_e(T(text))}", self.st["h1"])
         para.toc_level = 0
         self.story.append(PageBreak())
         self.story.append(para)
@@ -375,7 +391,7 @@ class _Builder:
         for i, row in enumerate(rows):
             cells = []
             for j, (v, a) in enumerate(zip(row, align, strict=False)):
-                txt = v if isinstance(v, str) else str(v)
+                txt = T(v if isinstance(v, str) else str(v))
                 if bold_rows and i in bold_rows:
                     txt = f"<b>{txt}</b>"
                 if row_colors and (i, j) in row_colors:
@@ -407,7 +423,8 @@ class _Builder:
             self.n_tab += 1
             # caption keeps with the table (keepWithNext); headings chain onto it.
             # No KeepTogether here: platypus cannot chain keepWithNext into one.
-            self.story += [_p(f"Tablo {self.n_tab} – {_e(caption)}", self.st["tcaption"]), t]
+            self.story += [_p(f"{T('Tablo')} {self.n_tab} – {_e(T(caption))}",
+                              self.st["tcaption"]), t]
         else:
             self.story.append(t)
         self.story.append(Spacer(1, 8))
@@ -429,7 +446,8 @@ class _Builder:
         t.setStyle(TableStyle(style))
         if caption:
             self.n_tab += 1
-            self.story += [_p(f"Tablo {self.n_tab} – {_e(caption)}", self.st["tcaption"]), t]
+            self.story += [_p(f"{T('Tablo')} {self.n_tab} – {_e(T(caption))}",
+                              self.st["tcaption"]), t]
         else:
             self.story.append(t)
         self.story.append(Spacer(1, 8))
@@ -452,7 +470,8 @@ class _Builder:
                                    ("TOPPADDING", (0, 0), (-1, -1), 3),
                                    ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
         frame.keepWithNext = 1
-        self.story += [frame, _p(f"Şekil {self.n_fig} – {_e(caption)}", self.st["caption"])]
+        self.story += [frame, _p(f"{T('Şekil')} {self.n_fig} – {_e(T(caption))}",
+                                 self.st["caption"])]
 
     # ------------------------------------------------------- evaluation
     def status(self, fs: float):
@@ -486,7 +505,7 @@ class _Builder:
         if gm:
             k, res = gm
             label, col = self.status(res.fos)
-            tgt = (f"Hedef FS = {o.target_fs:.2f}  ·  <b>{label}</b>"
+            tgt = (f"{T('Hedef FS')} = {o.target_fs:.2f}  ·  <b>{T(label)}</b>"
                    if o.target_fs is not None else "Hedef FS tanımlanmadı")
             card_rows = [[_p("KRİTİK GÜVENLİK SAYISI", st["card_label"])],
                          [_p(f"FS = {res.fos:.3f}", st["card_value"])],
@@ -541,47 +560,49 @@ class _Builder:
         self.h1("Özet")
         gm = r.global_minimum()
         p = self.p
-        kind = {"circular": "dairesel", "noncircular": "dairesel olmayan ("
-                + ("B-spline" if p.surfaces.noncircular_shape == "spline" else "poligonal")
-                + ")",
-                "user": "kullanıcı tanımlı"}[p.surfaces.surface_type]
+        shape = "B-spline" if p.surfaces.noncircular_shape == "spline" else T("poligonal")
+        kind = {"circular": T("dairesel"),
+                "noncircular": f"{T('dairesel olmayan')} ({shape})",
+                "user": T("kullanıcı tanımlı")}[p.surfaces.surface_type]
         n = len(r.results)
-        txt = (f"Bu raporda <b>{_e(o.project or p.summary.title)}</b> şevinin 2B limit denge "
-               f"analizi sunulmaktadır. Analizde {n} yöntem kullanılmış, kritik kayma yüzeyi "
-               f"{kind} yüzey araması ile belirlenmiştir.")
+        txt = T("Bu raporda <b>{}</b> şevinin 2B limit denge analizi sunulmaktadır. Analizde {} "
+                "yöntem kullanılmış, kritik kayma yüzeyi {} yüzey araması ile "
+                "belirlenmiştir.").format(_e(o.project or p.summary.title), n, kind)
         if gm:
             k, res = gm
-            txt += (f" En düşük güvenlik sayısı <b>{_e(method_name(k))}</b> yöntemiyle "
-                    f"<b>FS = {res.fos:.3f}</b> olarak bulunmuştur")
+            txt += T(" En düşük güvenlik sayısı <b>{}</b> yöntemiyle <b>FS = {}</b> olarak "
+                     "bulunmuştur").format(_e(method_name(k)), f"{res.fos:.3f}")
             if o.target_fs is not None:
                 label, col = self.status(res.fos)
-                cmp = "üzerindedir" if res.fos >= o.target_fs else "altındadır"
-                txt += (f"; bu değer hedef güvenlik sayısı FS = {o.target_fs:.2f} değerinin "
-                        f"{cmp} (<font color='{col.hexval()}'><b>{label}</b></font>).")
+                cmp = T("üzerindedir" if res.fos >= o.target_fs else "altındadır")
+                txt += T("; bu değer hedef güvenlik sayısı FS = {} değerinin {} "
+                         "(<font color='{}'><b>{}</b></font>).").format(
+                    f"{o.target_fs:.2f}", cmp, col.hexval(), T(label))
             else:
                 txt += "."
             fs = [x.fos for x in r.results.values() if np.isfinite(x.fos)]
             if len(fs) > 1:
-                txt += (f" Yöntemler arasında FS {min(fs):.3f} – {max(fs):.3f} aralığında "
-                        f"değişmektedir (fark %{100 * (max(fs) - min(fs)) / min(fs):.1f}).")
+                txt += T(" Yöntemler arasında FS {} – {} aralığında değişmektedir "
+                         "(fark %{}).").format(f"{min(fs):.3f}", f"{max(fs):.3f}",
+                                               f"{100 * (max(fs) - min(fs)) / min(fs):.1f}")
         extras = []
         if p.loads:
-            extras.append(f"{len(p.loads)} dış yük")
+            extras.append(T("{} dış yük").format(len(p.loads)))
         nsup = len(p.supports) + sum(len(_pattern_xs(p, pt, r.geometry))
                                      for pt in p.support_patterns)
         if nsup:
-            extras.append(f"{nsup} destek elemanı")
+            extras.append(T("{} destek elemanı").format(nsup))
         if p.facings:
-            extras.append("püskürtme beton + hasır çelik kaplama")
+            extras.append(T("püskürtme beton + hasır çelik kaplama"))
         if p.tension_crack:
-            extras.append("gerilme çatlağı")
+            extras.append(T("gerilme çatlağı"))
         if p.seismic.kh or p.seismic.kv:
-            extras.append(f"psödo-statik deprem yükü (kh = {p.seismic.kh:g})")
+            extras.append(T("psödo-statik deprem yükü (kh = {})").format(f"{p.seismic.kh:g}"))
         if p.groundwater.method == "water_table" and p.water_table:
-            extras.append("yeraltı suyu tablası")
+            extras.append(T("yeraltı suyu tablası"))
         if extras:
-            txt += " Modelde " + ", ".join(extras) + " dikkate alınmıştır."
-        self.para(txt)
+            txt += T(" Modelde {} dikkate alınmıştır.").format(", ".join(extras))
+        self.story.append(Paragraph(txt, self.st["body"]))
         self.story.append(Spacer(1, 6))
         if r.results:
             self.results_table(caption="Yöntemlere göre kritik güvenlik sayıları")
@@ -607,7 +628,7 @@ class _Builder:
                 bold.add(i)
         for k, e in r.errors.items():
             rows.append([_e(method_name(k)), "—", "—", "—", "—", "—", "—", "—",
-                         _e(e[:40])])
+                         _e(T(e)[:40])])
         widths = [0.21, 0.07, 0.07, 0.1, 0.1, 0.15, 0.07, 0.1, 0.13]
         align = ["l", "r", "r", "r", "r", "r", "r", "r", "c"]
         if not any(hasattr(res.surface, "r") for res in r.results.values()):
@@ -636,7 +657,7 @@ class _Builder:
         vmax = max([f for _, f in res] + ([tgt] if tgt else [])) * 1.15
         vmax = max(vmax, 0.5)
         sx = (W - left - right) / vmax
-        d.add(String(0, H - 12, "Güvenlik sayısı karşılaştırması", fontName=F_SEMI,
+        d.add(String(0, H - 12, T("Güvenlik sayısı karşılaştırması"), fontName=F_SEMI,
                      fontSize=9, fillColor=NAVY))
         step = _nice_step(vmax / 5)
         v = 0.0
@@ -666,7 +687,7 @@ class _Builder:
             x = left + tgt * sx
             d.add(Line(x, bottom - 2, x, H - top + 4, strokeColor=BAD, strokeWidth=1.1,
                        strokeDashArray=[4, 2]))
-            d.add(String(x + 3, H - top + 2, f"Hedef FS = {tgt:.2f}", fontName=F_SEMI,
+            d.add(String(x + 3, H - top + 2, f"{T('Hedef FS')} = {tgt:.2f}", fontName=F_SEMI,
                          fontSize=7.5, fillColor=BAD))
         return d
 
@@ -675,11 +696,11 @@ class _Builder:
         p, o = self.p, self.o
         self.h1("Model ve Geometri")
         g = self.r.geometry
-        self.para(f"Model {len(g.regions)} bölge ve {len(p.materials)} malzemeden "
-                  f"oluşmaktadır. Dış sınır {len(p.external)} köşelidir; model x = "
-                  f"{g.x_min:.2f} – {g.x_max:.2f} m aralığındadır. "
-                  + ("Yeraltı suyu tablası tanımlıdır. " if p.water_table else "")
-                  + ("Gerilme çatlağı sınırı tanımlıdır." if p.tension_crack else ""))
+        self.para(T(f"Model {len(g.regions)} bölge ve {len(p.materials)} malzemeden "
+                    f"oluşmaktadır. Dış sınır {len(p.external)} köşelidir; model x = "
+                    f"{g.x_min:.2f} – {g.x_max:.2f} m aralığındadır.")
+                  + (" " + T("Yeraltı suyu tablası tanımlıdır.") if p.water_table else "")
+                  + (" " + T("Gerilme çatlağı sınırı tanımlıdır.") if p.tension_crack else ""))
         self.story.append(Spacer(1, 4))
         self.figure(self.figs.model, "Analiz modeli: geometri, malzemeler, yükler ve destekler")
         if o.materials:
@@ -711,14 +732,20 @@ class _Builder:
                            "Malzeme parametreleri (genelleştirilmiş Hoek-Brown)",
                            ["c", "l", "r", "r", "r", "r", "r", "r", "l"], swatches=sw)
 
-            extra = [m for m in p.materials if m.model in ("UD", "PL")]
+            extra = [m for m in p.materials if m.model not in ("MC", "HB")]
             if extra:
-                rows = [[_e(m.name), m.model, _g(m.gamma),
-                         (f"su = {_g(m.su)} kPa; total stress" if m.model == "UD" else
-                          f"a = {_g(m.coefficient)}, b = {_g(m.exponent)}, pa = {_g(m.reference_pressure)} kPa")]
-                        for m in extra]
-                self.table(["Material", "Model", "γ [kN/m³]", "Strength parameters"], rows,
-                           [0.25, 0.12, 0.18, 0.45], "Additional strength models")
+                from slipsurface.materials.catalog import model_name, parameter_text
+                rows, sw = [], {}
+                for i, m in enumerate(extra):
+                    sw[i] = m.color
+                    rows.append(["", _e(m.name), _e(model_name(m.model)), _g(m.gamma),
+                                 _g(m.gamma_sat) if m.use_sat else "—",
+                                 _e(parameter_text(m)), _water(m)])
+                self.table(["", "Malzeme", "Model", "γ [kN/m³]", "γ<sub>sat</sub>",
+                            "Dayanım parametreleri", "Su"], rows,
+                           [0.04, 0.16, 0.16, 0.09, 0.08, 0.33, 0.14],
+                           "Malzeme parametreleri (diğer dayanım modelleri)",
+                           ["c", "l", "l", "r", "r", "l", "l"], swatches=sw)
 
     # ----------------------------------------------------------- settings
     def settings(self) -> None:
@@ -735,31 +762,31 @@ class _Builder:
             lim.append(f"sağ uç x = {s.right_range[0]:.2f} – {s.right_range[1]:.2f}")
         from slipsurface.project import EFFORT
         pop, it = EFFORT.get(s.effort, EFFORT["normal"])
-        shape = ("B-spline, kontrol noktası" if s.noncircular_shape == "spline"
-                 else "poligonal, ara köşe")
-        surf_txt = {"circular": "Dairesel", "noncircular":
-                    f"Dairesel olmayan ({shape} sayısı {s.n_ctrl}"
-                    + (", konveks" if s.convex_only else "") + ")",
-                    "user": "Kullanıcı tanımlı yüzey"}[s.surface_type]
+        shape = T("B-spline, kontrol noktası sayısı {}" if s.noncircular_shape == "spline"
+                  else "poligonal, ara köşe sayısı {}").format(s.n_ctrl)
+        surf_txt = {"circular": T("Dairesel"),
+                    "noncircular": f"{T('Dairesel olmayan')} ({shape}"
+                    + (", " + T("konveks") if s.convex_only else "") + ")",
+                    "user": T("Kullanıcı tanımlı yüzey")}[s.surface_type]
         inter = {"half-sine": "yarım sinüs", "constant": "sabit", "clipped-sine":
                  "kırpılmış sinüs", "trapezoidal": "trapez"}.get(p.methods.interslice,
                                                                 p.methods.interslice)
         rows = [
             ("Yöntemler", ", ".join(_e(method_name(k)) for k in p.methods.methods)),
             ("Birim sistemi", "Metrik — kN, kPa, m"),
-            ("Göçme yönü", "Sağdan sola" if p.general.failure_direction == "right_to_left"
-             else "Soldan sağa"),
+            ("Göçme yönü", T("Sağdan sola") if p.general.failure_direction == "right_to_left"
+             else T("Soldan sağa")),
             ("Dilim sayısı", str(p.methods.n_slices)),
             ("Tolerans / maks. iterasyon", f"{p.methods.tolerance:g} / {p.methods.max_iter}"),
-            ("GLE ara-dilim fonksiyonu", inter),
+            ("GLE ara-dilim fonksiyonu", T(inter)),
             ("Kayma yüzeyi", surf_txt),
             ("Arama", f"Diferansiyel evrim + Nelder-Mead (popülasyon {pop}, en çok {it} nesil, "
                       f"çekirdek {s.seed})"),
-            ("Kayma sınırları", "; ".join(lim) if lim else "Tüm model"),
+            ("Kayma sınırları", "; ".join(T(x) for x in lim) if lim else "Tüm model"),
             ("Minimum kayan kütle derinliği", f"{p.advanced.min_depth:g} m"),
             ("Kabul edilebilirlik kontrolü", "Açık (mα &lt; 0.2 ve negatif taban kayma "
              "direnci reddedilir)" if p.advanced.check_admissibility else "Kapalı"),
-            ("Boşluk suyu basıncı", gwt + f", γ<sub>w</sub> = {gw.gamma_w:g} kN/m³"),
+            ("Boşluk suyu basıncı", T(gwt) + f", γ<sub>w</sub> = {gw.gamma_w:g} kN/m³"),
             ("Sismik katsayılar", f"k<sub>h</sub> = {p.seismic.kh:g}, "
                                   f"k<sub>v</sub> = {p.seismic.kv:g}"),
         ]
@@ -802,14 +829,21 @@ class _Builder:
                 sw[i] = t.color
                 kind = t.kind
                 bond = (f"{t.bond_strength:g}" if kind in ("grouted_tieback", "soil_nail")
-                        else (f"{t.pullout:g}" if kind == "geotextile" else "—"))
-                rows.append(["", _e(t.name), SUPPORT_KINDS[kind],
-                             _g(t.spacing) if kind != "geotextile" else "—", _g(t.tensile),
+                        else (f"{t.pullout:g}" if kind == "geotextile" else
+                              (f"a={t.adhesion:g}, δ={t.interface_friction:g}°"
+                               if kind == "geosynthetic" else "—")))
+                strength = (_g(t.pile_shear) + " " + T("(kesme)") if kind == "micro_pile" else
+                            _g(t.tensile) + (f" ×{t.coverage:g}%" if kind == "geosynthetic"
+                                             and t.coverage != 100 else ""))
+                rows.append(["", _e(t.name), T(SUPPORT_KINDS[kind]),
+                             _g(t.spacing) if kind not in ("geotextile", "geosynthetic") else "—",
+                             strength,
                              _g(t.plate) if kind == "soil_nail" else "—", bond,
                              _g(t.bond_length) if kind == "grouted_tieback" else "—",
                              "pasif" if t.application == "passive" else "aktif",
-                             "paralel" if t.orientation == "parallel" else "teğet"])
-            self.table(["", "Ad", "Tip", "Aralık [m]", "Çekme [kN]", "Plaka [kN]",
+                             {"parallel": "paralel", "tangent": "teğet",
+                              "perpendicular": "dik"}.get(t.orientation, t.orientation)])
+            self.table(["", "Ad", "Tip", "Aralık [m]", "Kapasite [kN]", "Plaka [kN]",
                         "Kök [kN/m]", "Kök boyu [m]", "Uygulama", "Doğrultu"], rows,
                        [0.035, 0.14, 0.2, 0.08, 0.09, 0.08, 0.09, 0.09, 0.09, 0.095],
                        "Destek tipleri", ["c", "l", "l", "r", "r", "r", "r", "r", "c", "c"],
@@ -882,8 +916,8 @@ class _Builder:
             self.h2("Kritik kayma yüzeyi (global minimum)")
             k, res = gm
             self.figure(self.figs.global_min,
-                        f"{method_name(k)} — FS = {res.fos:.3f}; dilimler, en düşük "
-                        f"yüzeyler ve FS lejantı", max_h=125 * mm)
+                        f"{method_name(k)} — FS = {res.fos:.3f}; "
+                        + T("kayma merkezi FS konturları ve kritik yüzey"), max_h=125 * mm)
         if o.method_figures and len(self.figs.methods) > 0:
             self.h2("Yöntemlere göre kritik yüzeyler")
             for k, png in self.figs.methods.items():
@@ -930,7 +964,7 @@ class _Builder:
             return
         k, res = gm
         s = res.slices
-        self.appendix(letter, f"Dilim Verileri — {method_name(k)}")
+        self.appendix(letter, f"{T('Dilim Verileri')} — {method_name(k)}")
         self.para(f"Global minimum kayma yüzeyinin ({method_name(k)}, FS = {res.fos:.3f}) "
                   f"{s.n} dilimine ait veriler. α: taban açısı (göçme yönünde pozitif), "
                   "c, φ: tabanda kullanılan dayanım parametreleri (Hoek-Brown için "
@@ -938,7 +972,7 @@ class _Builder:
         rows = []
         for i in range(s.n):
             mat = s.materials[s.mat_idx[i]]
-            c, tp = mat.strength(np.array([max(s.W[i] / s.b[i] - s.u[i], 0.0)]))
+            c, tp = (np.array([v]) for v in slice_strength(s, i))
             rows.append([str(i + 1), f"{0.5 * (s.xl[i] + s.xr[i]):.2f}", f"{s.b[i]:.3f}",
                          f"{s.y_base[i]:.2f}", f"{s.y_top[i] - s.y_base[i]:.2f}",
                          f"{np.degrees(s.alpha[i]) * (-s.direction):.1f}", f"{s.l[i]:.3f}",
@@ -947,7 +981,7 @@ class _Builder:
         self.table(["No", "x<sub>orta</sub> [m]", "b [m]", "y<sub>taban</sub> [m]", "h [m]",
                     "α [°]", "l [m]", "W [kN/m]", "u [kPa]", "c [kPa]", "φ [°]", "Malzeme"],
                    rows, [0.05, 0.08, 0.07, 0.08, 0.07, 0.07, 0.07, 0.09, 0.08, 0.08, 0.07,
-                          0.19], f"Dilim verileri ({method_name(k)})",
+                          0.19], f"{T('Dilim verileri')} ({method_name(k)})",
                    ["c", "r", "r", "r", "r", "r", "r", "r", "r", "r", "r", "l"], compact=True)
 
     def coordinates(self, letter: str) -> None:
@@ -961,7 +995,7 @@ class _Builder:
                        ["c", "r", "r"])
         block("Dış sınır", p.external)
         for i, b in enumerate(p.material_boundaries, 1):
-            block(f"Malzeme sınırı {i}", b)
+            block(f"{T('Malzeme sınırı')} {i}", b)
         if p.water_table:
             block("Yeraltı suyu tablası", p.water_table)
         if p.tension_crack:
@@ -975,10 +1009,10 @@ class _Builder:
                                ("Yarıçap", f"{s.r:.3f} m"),
                                ("Çıkış / giriş x", f"{res.slices.x_exit:.3f} / "
                                                    f"{res.slices.x_entry:.3f} m")],
-                              f"Kritik daire ({method_name(k)})")
+                              f"{T('Kritik daire')} ({method_name(k)})")
             else:
                 pts = s.points(res.slices.x_exit, res.slices.x_entry, 25)
-                block(f"Kritik yüzey noktaları ({method_name(k)})", pts)
+                block(f"{T('Kritik yüzey noktaları')} ({method_name(k)})", pts)
 
     def closing(self) -> None:
         self.story.append(Spacer(1, 10))
@@ -1078,6 +1112,12 @@ def build_pdf(results, path, opts: ReportOptions | None = None,
     if not opts.company:
         opts.company = p.summary.company
     if not opts.date:
-        opts.date = _dt.date.today().strftime("%d.%m.%Y")
-    b = _Builder(results, opts, figs)
-    return b.build(Path(path))
+        opts.date = _dt.date.today().strftime("%d.%m.%Y" if opts.language != "en"
+                                              else "%Y-%m-%d")
+    global _LANG
+    _LANG = opts.language if opts.language in ("tr", "en") else "tr"
+    try:
+        b = _Builder(results, opts, figs)
+        return b.build(Path(path))
+    finally:
+        _LANG = "tr"

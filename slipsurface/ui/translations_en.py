@@ -1,0 +1,674 @@
+"""Additional English catalogue entries (Turkish source -> English).
+
+Keys may contain positional ``{}`` fields: such an entry is a template that
+matches a whole dynamic message (status text, warning, tree item, report line);
+the captured values are translated recursively and inserted in order.
+"""
+
+EXTRA = {
+    # ------------------------------------------------------------ notes
+    "Yazı Ekle": "Add Text",
+    "Çizgi Ekle": "Add Line",
+    "Ok Ekle": "Add Arrow",
+    "Dikdörtgen Ekle": "Add Rectangle",
+    "Elips Ekle": "Add Ellipse",
+    "Not": "Note",
+    "Not {}": "Note {}",
+    "Not ekle": "Add note",
+    "Not sil": "Delete note",
+    "Notu sil": "Delete note",
+    "Not düzenle": "Edit note",
+    "Notu taşı": "Move note",
+    "Notlar": "Notes",
+    "Sonuç notları": "Result notes",
+    "Yazı boyutu (pt):": "Font size (pt):",
+    "Çizgi kalınlığı:": "Line width:",
+    "Dolgu": "Fill",
+    "Arka plan kutusu": "Background box",
+    "[HATA] Örnek bulunamadı: {}. Seçenekler: {}": "[ERROR] Example not found: {}. Options: {}",
+
+    # ------------------------------------------------------------ canvas
+    "Güvenlik sayısı (FS)": "Factor of safety (FS)",
+    "Uç nokta": "Endpoint",
+    "Orta nokta": "Midpoint",
+    "Kesişim": "Intersection",
+    "En yakın": "Nearest",
+    "Izgara": "Grid",
+    "Orto": "Ortho",
+    "Yük": "Load",
+    "Kaplama": "Facing",
+    "Bulon paterni": "Bolt pattern",
+    "{} en az {} nokta içermeli.": "{} must contain at least {} points.",
+    "{} noktaları soldan sağa (x artan) sıralı olmalı.":
+        "{} points must be ordered from left to right (increasing x).",
+    "Dış sınır": "External boundary",
+    "Malzeme sınırı": "Material boundary",
+    "Kullanıcı yüzeyi": "User surface",
+    "Gerilme çatlağı": "Tension crack",
+
+    # ------------------------------------------------------------- tools
+    "Seç: köşeyi sürükleyerek taşıyın, çift tıklayarak koordinatları düzenleyin, Delete ile silin.":
+        "Select: drag a vertex to move it, double-click to edit coordinates, Delete to remove.",
+    "Köşe ekle: bir sınır çizgisinin üzerine tıklayın.": "Add vertex: click on a boundary line.",
+    "Köşe sil: silinecek köşeye tıklayın.": "Delete vertex: click the vertex to delete.",
+    "Özellik ata: malzemeyi araç çubuğundan seçin, sonra bölgelerin içine tıklayın.":
+        "Assign properties: choose the material in the toolbar, then click inside the regions.",
+    "Ölç: iki nokta tıklayın (uzaklık, Δx, Δy, açı).":
+        "Measure: click two points (distance, Δx, Δy, angle).",
+    "Pencereyle zoom: yakınlaştırılacak alanı sürükleyerek seçin.":
+        "Zoom window: drag over the area to zoom into.",
+    "Kaydır: sol tuşla sürükleyin (orta tuş her araçta kaydırır).":
+        "Pan: drag with the left button (the middle button pans in every tool).",
+    "Dilim verisi: kayan kütle içindeki bir dilime tıklayın.":
+        "Slice data: click a slice inside the sliding mass.",
+    "{}: köşe sil": "{}: delete vertex",
+    "{}: köşe ekle": "{}: add vertex",
+    "{}: köşe taşı": "{}: move vertex",
+    "{} sil": "Delete {}",
+    "Kullanıcı tanımlı kayma yüzeyi": "User-defined slip surface",
+    "Yayılı yük": "Distributed load",
+    "Tekil yük": "Line load",
+    "Yayılı yük: yükün başlangıç ve bitiş noktalarını zemin yüzeyinde tıklayın.":
+        "Distributed load: click the start and end points of the load on the ground surface.",
+    "Tekil yük: yükün etkidiği noktayı zemin yüzeyinde tıklayın.":
+        "Line load: click the point of application on the ground surface.",
+    "Destek: önce şev yüzündeki başı (A), sonra zemin içindeki ucu (B) tıklayın veya koordinat girin.":
+        "Support: click the head on the slope face (A), then the end inside the ground (B), "
+        "or enter coordinates.",
+    "Kaplama: şev yüzünde kaplamanın başlangıç ve bitiş noktalarını tıklayın.":
+        "Facing: click the start and end points of the facing on the slope face.",
+    "Bulon paterni: şev yüzünde paternin başlangıç ve bitiş noktalarını tıklayın; aralık ve açı sonra sorulur.":
+        "Bolt pattern: click the start and end points of the pattern on the slope face; "
+        "spacing and angle are asked next.",
+    "Yazı: yazının konumunu tıklayın.": "Text: click the position of the text.",
+    "Çizgi: iki nokta tıklayın.": "Line: click two points.",
+    "Ok: başlangıç ve uç (ok başı) noktalarını tıklayın.":
+        "Arrow: click the start and the tip (arrow head).",
+    "Dikdörtgen: iki köşe tıklayın.": "Rectangle: click two corners.",
+    "Elips: çevreleyen dikdörtgenin iki köşesini tıklayın.":
+        "Ellipse: click two corners of the bounding rectangle.",
+    "Kayma sınırları: zemin yüzeyi üzerinde {} noktasına tıklayın.":
+        "Slope limits: click the {} point on the ground surface.",
+    "sol aralığın başlangıcı": "left range start",
+    "sol aralığın bitişi": "left range end",
+    "sağ aralığın başlangıcı": "right range start",
+    "sağ aralığın bitişi": "right range end",
+    "Tekil bulon/ankraj: şev yüzünde başlığın konumunu tıklayın (eğim ve boy araç çubuğundan). Esc = bitir.":
+        "Single bolt/anchor: click the head position on the slope face (inclination and "
+        "length from the toolbar). Esc = finish.",
+    "⚠ {} köşesi silinemez; tümünü silmek için Delete.":
+        "⚠ A vertex of {} cannot be deleted; press Delete to remove it entirely.",
+    "{} köşesi silinemez; tümünü silmek için Delete.":
+        "A vertex of {} cannot be deleted; press Delete to remove it entirely.",
+    "{} en az {} köşe içermeli.": "{} must contain at least {} vertices.",
+    "{} üzerine köşe eklenemez.": "A vertex cannot be added to {}.",
+    " — ilk noktaya tıklayarak veya C ile kapatın": " — close by clicking the first point or with C",
+    "{}: noktaları tıklayın veya koordinat girin (x,y | @dx,dy | @L<açı); Enter/sağ tık = bitir{}, Backspace = geri, Esc = iptal":
+        "{}: click points or enter coordinates (x,y | @dx,dy | @L<angle); Enter/right-click = "
+        "finish{}, Backspace = undo point, Esc = cancel",
+    "İptal (Esc)": "Cancel (Esc)",
+    "Bitir (Enter)": "Finish (Enter)",
+    "Kapat (C)": "Close (C)",
+    "Son noktayı geri al (Backspace)": "Undo last point (Backspace)",
+    "Özellik ata: {}": "Assign properties: {}",
+    "Köşe taşınıyor: x = {}, y = {}": "Moving vertex: x = {}, y = {}",
+    "{}: nokta {}  x = {}, y = {}   (uzunluk {} m, açı {}°)":
+        "{}: point {}  x = {}, y = {}   (length {} m, angle {}°)",
+    "{} için en az {} nokta gerekli.": "{} needs at least {} points.",
+    "Koordinat anlaşılamadı: '{}' (örnek: 10,5  @5,0  @10<30)":
+        "Coordinate not understood: '{}' (examples: 10,5  @5,0  @10<30)",
+    "Yakında sınır çizgisi yok.": "No boundary line nearby.",
+    "Yakında köşe yok.": "No vertex nearby.",
+    "Önce bir malzeme seçin.": "Choose a material first.",
+    "Tıklanan nokta model içinde değil.": "The clicked point is not inside the model.",
+    "Bölgeye '{}' atandı.": "'{}' assigned to the region.",
+    "Uzaklık = {} m   Δx = {}   Δy = {}   açı = {}°": "Distance = {} m   Δx = {}   Δy = {}   angle = {}°",
+    "Tıklanan nokta kayan kütlenin dışında.": "The clicked point is outside the sliding mass.",
+    "Model dışında.": "Outside the model.",
+    "Özellikler…": "Properties…",
+    "Köşeyi sil": "Delete vertex",
+    "Koordinatları düzenle…": "Edit coordinates…",
+    "Buraya köşe ekle": "Add vertex here",
+    "Kayma sınırları": "Slope limits",
+
+    # --------------------------------------------------------- compute
+    "Dairesel ön arama (Bishop, popülasyon tohumu)": "Circular pre-search (Bishop, population seed)",
+    "Diferansiyel evrim (global arama)": "Differential evolution (global search)",
+    "Nelder-Mead iyileştirme": "Nelder-Mead refinement",
+    "Poligon köşelerinin serbest optimizasyonu": "Free optimisation of the polyline vertices",
+    "Ara köşe ekleme ve yeniden optimizasyon": "Inserting mid vertices and re-optimising",
+    "Kritik yüzeyin son çözümü": "Final solution of the critical surface",
+    "Kullanıcı tanımlı yüzey çözülüyor": "Solving the user-defined surface",
+    "Dairesel": "Circular",
+    "Dairesel olmayan (poligonal)": "Non-circular (polyline)",
+    "Dairesel olmayan (B-spline)": "Non-circular (B-spline)",
+    "Kullanıcı tanımlı": "User-defined",
+    "Analiz başlatıldı": "Analysis started",
+    "Hesaplanıyor…": "Computing…",
+    "İptal ediliyor…": "Cancelling…",
+    "İptal istendi": "Cancellation requested",
+    "Toplam": "Total",
+    "Aşama": "Stage",
+    "Yöntem": "Method",
+    "Yüzey tipi": "Surface type",
+    "Dilim sayısı": "Number of slices",
+    "Nesil": "Generation",
+    "Değerlendirilen yüzey": "Surfaces evaluated",
+    "Geçerli / reddedilen": "Valid / rejected",
+    "En düşük FS": "Lowest FS",
+    "en düşük FS": "lowest FS",
+    "Son geçerli FS": "Last valid FS",
+    "Geçen süre": "Elapsed time",
+    "Tahmini kalan süre": "Estimated time left",
+    "İşlem günlüğü": "Log",
+    "ön arama": "pre-search",
+    "tamamlandı": "finished",
+    "sonuç yok": "no result",
+    "{}: tamamlandı, FS = {}": "{}: finished, FS = {}",
+    "{}: sonuç yok — {}": "{}: no result — {}",
+    "Yöntem {}: {} — Nesil {}, en düşük FS {}": "Method {}: {} — Generation {}, lowest FS {}",
+    "Yöntem {}: {} (ön arama) — Nesil {}, en düşük FS {}":
+        "Method {}: {} (pre-search) — Generation {}, lowest FS {}",
+    "Hesaplama iptal edildi.": "Computation cancelled.",
+    "Hesaplama tamamlandı ({} s). Global minimum: {} FS = {}":
+        "Computation finished ({} s). Global minimum: {} FS = {}",
+
+    # ---------------------------------------------- facing / pattern / annot dialogs
+    "Özel": "Custom",
+    "Kaplama Tiplerini Tanımla — Püskürtme Beton + Hasır Çelik":
+        "Define Facing Types — Shotcrete + Wire Mesh",
+    "Pasif (T / F) — önerilen": "Passive (T / F) — recommended",
+    "Aktif": "Active",
+    "Püskürtme beton kalınlığı t:": "Shotcrete thickness t:",
+    "Birim hacim ağırlık γ:": "Unit weight γ:",
+    "Beton kayma dayanımı τ:": "Shotcrete shear strength τ:",
+    "Hasır çelik:": "Wire mesh:",
+    "Hasır çelik alanı As:": "Mesh steel area As:",
+    "Çelik akma dayanımı fy:": "Steel yield strength fy:",
+    "Kaplama şev yüzüne atanır. Analizde: (1) ağırlığı γ·t yüzeye yük olarak eklenir; (2) kayma yüzeyi kaplamalı yüzeyden çıkıyor veya giriyorsa, kaplamanın kesilmesi için gereken kuvvet T = τ·t + As·fy, o noktada kayma yüzeyine teğet ve kaymaya karşı uygulanır. τ için tipik değer: 0.02–0.04·fck (C25 için ≈ 0.5–1.0 MPa, güvenli tarafta 0.3–0.5 MPa).":
+        "The facing is assigned to the slope face. In the analysis: (1) its weight γ·t is added "
+        "as a surface load; (2) where the slip surface exits or enters through the faced "
+        "surface, the force needed to shear the facing, T = τ·t + As·fy, acts there tangent to "
+        "the slip surface against sliding. Typical τ: 0.02–0.04·fck (≈ 0.5–1.0 MPa for C25, "
+        "0.3–0.5 MPa on the safe side).",
+    "T = τ·t + As·fy = {} + {} = {} kN/m   ·   ağırlık {} kN/m²":
+        "T = τ·t + As·fy = {} + {} = {} kN/m   ·   weight {} kN/m²",
+    "Kaplama rengi": "Facing colour",
+    "Kaplama {}": "Facing {}",
+    "Kaplama tipi:": "Facing type:",
+    "Destek tipi:": "Support type:",
+    "Aralık (şev yüzü boyunca):": "Spacing (along the slope face):",
+    "İlk bulon mesafesi:": "First bolt offset:",
+    "Eğim (yataydan aşağı):": "Inclination (below horizontal):",
+    "Boy:": "Length:",
+    "Bulon sayısı:": "Number of bolts:",
+    "Bulonlar zemin yüzeyi boyunca x₁'den itibaren eşit aralıkla yerleştirilir, başlıklar yüzeyde, doğrultu şevin içine doğrudur. Düzlem dışı aralık destek tipinde tanımlıdır.":
+        "Bolts are placed at equal spacing along the ground surface from x₁, heads on the "
+        "surface, pointing into the slope. The out-of-plane spacing is set in the support type.",
+    "En az bir kaplama tipi kalmalı.": "At least one facing type must remain.",
+    "Adlar boş olamaz ve benzersiz olmalı.": "Names must not be empty and must be unique.",
+    "Bulon Paterni": "Bolt Pattern",
+    "Kaplama Ata": "Assign Facing",
+
+    # --------------------------------------------------- loads / supports
+    "T = çekme kapasitesi  (kayma yüzeyini kestiği sürece sabit)":
+        "T = tensile capacity  (constant while it crosses the slip surface)",
+    "T = min(çekme, kök dayanımı × min(kök boyu, L_dış))":
+        "T = min(tensile, bond strength × min(bond length, L_out))",
+    "T = min(çekme, kök dayanımı × L_dış, plaka + kök dayanımı × L_iç)":
+        "T = min(tensile, bond strength × L_out, plate + bond strength × L_in)",
+    "T = min(çekme dayanımı, sıyrılma dayanımı × min(L_iç, L_dış))":
+        "T = min(tensile strength, pullout strength × min(L_in, L_out))",
+    "T = min(C·çekme, P_iç, P_dış);  P = 2·C·∫(adezyon + σv·tan δ) ds,  σv = γ·derinlik (ankrajlı uçta sıyrılma yok)":
+        "T = min(C·tensile, P_in, P_out);  P = 2·C·∫(adhesion + σv·tan δ) ds,  σv = γ·depth "
+        "(no pullout at an anchored end)",
+    "T = kazık kesme dayanımı / aralık  (kayma yüzeyini kestiği noktada)":
+        "T = pile shear strength / spacing  (where it crosses the slip surface)",
+    "Büyüklük q₁:": "Magnitude q₁:",
+    "Büyüklük q₂:": "Magnitude q₂:",
+    "Pozitif q zemine doğru (basınç) etkir. Yük, x₁–x₂ arasında zemin yüzeyine uygulanır.":
+        "Positive q acts towards the ground (pressure). The load is applied to the ground "
+        "surface between x₁ and x₂.",
+    "Açı +x ekseninden saat yönünün tersine ölçülür: 270° = düşey aşağı, 180° = sola (sağdan sola göçmede itici). Nokta zemin yüzeyine oturtulur.":
+        "The angle is measured counter-clockwise from +x: 270° = vertically down, 180° = to the "
+        "left (driving for right-to-left failure). The point is placed on the ground surface.",
+    "Destek rengi": "Support colour",
+    "Destek tipi ekle": "Add support type",
+    "Plaka kapasitesi:": "Plate capacity:",
+    "Şerit kaplama oranı:": "Strip coverage:",
+    "Arayüz adezyonu:": "Interface adhesion:",
+    "Arayüz sürtünme açısı δ:": "Interface friction angle δ:",
+    "Örtü birim hacim ağırlığı:": "Overburden unit weight:",
+    "Kazık kesme dayanımı:": "Pile shear strength:",
+    "Ankraj:": "Anchorage:",
+    "Desteğe dik": "Perpendicular to support",
+    "Yok": "None",
+    "Şev yüzünde": "Slope face",
+    "Gömülü uçta": "Embedded end",
+    "Her iki uçta": "Both ends",
+    "Uç ankrajlı": "End anchored",
+    "Enjeksiyonlu ankraj (tieback)": "Grouted tieback",
+    "Zemin çivisi": "Soil nail",
+    "Geotekstil": "Geotextile",
+    "Geosentetik": "Geosynthetic",
+    "Mikro kazık": "Micro-pile",
+    "En az bir destek tipi kalmalı (destekleri silmek için çizimden silin).":
+        "At least one support type must remain (delete supports from the drawing).",
+    "Destek tipi adları boş olamaz ve benzersiz olmalı.":
+        "Support type names must not be empty and must be unique.",
+    "Çatlak çizgisi x₁–x₂ arasında zemin yüzeyinin z kadar altına yerleştirilir. Kayma yüzeyi bu çizgiyi kret tarafında kestiği yerde kesilir ve çatlak yüzü düşey olarak zemine uzanır.":
+        "The crack line is placed z below the ground surface between x₁ and x₂. A slip surface "
+        "is cut where it crosses this line on the crest side and the crack face runs "
+        "vertically up to the ground.",
+    "x₂ > x₁ olmalı.": "x₂ must be greater than x₁.",
+    "Destek {}": "Support {}",
+    "Patern {}/{}": "Pattern {}/{}",
+    "çekme kapasitesi": "tensile capacity",
+    "kök sıyrılma": "bond pullout",
+    "sıyrılma (dış)": "pullout (outside)",
+    "sıyrılma (iç)": "pullout (inside)",
+    "plaka + sıyrılma (iç)": "plate + pullout (inside)",
+    "çekme dayanımı": "tensile strength",
+    "sıyrılma": "pullout",
+    "kazık kesme dayanımı": "pile shear strength",
+    "kaplama (τ·t + As·fy)": "facing (τ·t + As·fy)",
+    "pasif": "passive",
+    "aktif": "active",
+
+    # ------------------------------------------------------ materials
+    "u = Hu · γw · h  (h: dilim tabanından su tablosuna düşey mesafe). Hu = 1 hidrostatik; Hu < 1 akım nedeniyle azaltılmış basınç.":
+        "u = Hu · γw · h  (h: vertical distance from the slice base to the water table). "
+        "Hu = 1 hydrostatic; Hu < 1 pressure reduced by seepage.",
+    "Not: Malzeme özellikleri tüm projede ortaktır. Bir malzeme silinirse, ona atanmış bölgeler ilk malzemeye döner.":
+        "Note: material properties are shared by the whole project. Deleting a material "
+        "reassigns its regions to the first material.",
+    "En az bir malzeme kalmalı.": "At least one material must remain.",
+    "Malzeme adı boş olamaz.": "Material name must not be empty.",
+    "Malzeme adları benzersiz olmalı.": "Material names must be unique.",
+    "'{}' {} – {} aralığında olmalı.": "'{}' must be between {} and {}.",
+    "'{}' sayısal olmalı.": "'{}' must be numeric.",
+    "Malzeme {}": "Material {}",
+    "{} kopya": "{} copy",
+    "Türetilen": "Derived",
+    "Türetilen: mb = {}   s = {}   a = {}": "Derived: mb = {}   s = {}   a = {}",
+    # model catalogue
+    "Mohr-Coulomb": "Mohr-Coulomb",
+    "Undrained (Tresca)": "Undrained (Tresca)",
+    "Genelleştirilmiş Hoek-Brown": "Generalized Hoek-Brown",
+    "τ = su (toplam gerilme; boşluk suyu basıncı kullanılmaz)":
+        "τ = su (total stress; pore pressure not used)",
+    "su = max(su,min ; S · σ′v · OCR^m)   (Ladd & Foott)": "su = max(su,min ; S · σ′v · OCR^m)   (Ladd & Foott)",
+    "τ = c′ + σ′n · tan φ′   (göçme yüzeyi Mohr-Coulomb)": "τ = c′ + σ′n · tan φ′   (Mohr-Coulomb failure surface)",
+    "σ1 = σ3 + σci (mb σ3/σci + s)^a   (genelleştirilmiş Hoek-Brown, 2002)":
+        "σ1 = σ3 + σci (mb σ3/σci + s)^a   (generalized Hoek-Brown, 2002)",
+    "σ′v: dilim tabanında efektif düşey gerilme (W/b − u).":
+        "σ′v: effective vertical stress at the slice base (W/b − u).",
+    "Limit dengede yalnızca göçme zarfı (c′, φ′) kullanılır; rijitlik parametreleri bilgi amaçlı saklanır.":
+        "Limit equilibrium uses only the failure envelope (c′, φ′); the stiffness parameters "
+        "are stored for reference.",
+    "ψ = e − ec,  ec = ec0 − λc (p′/pat)^ξ;  LEM'de p′ ≈ σ′n alınır.":
+        "ψ = e − ec,  ec = ec0 − λc (p′/pat)^ξ;  p′ ≈ σ′n in LEM.",
+    "JRCn = JRC0 (Ln/L0)^(−0.02 JRC0), JCSn = JCS0 (Ln/L0)^(−0.03 JRC0); toplam sürtünme açısı ≤ 70°.":
+        "JRCn = JRC0 (Ln/L0)^(−0.02 JRC0), JCSn = JCS0 (Ln/L0)^(−0.03 JRC0); total friction "
+        "angle ≤ 70°.",
+    "Cylwik, Killian & Cicchini (2023). Anlık φ ≤ 70°.":
+        "Cylwik, Killian & Cicchini (2023). Instantaneous φ ≤ 70°.",
+    "Kohezyon c (kPa)": "Cohesion c (kPa)",
+    "Kohezyon c′ (kPa)": "Cohesion c′ (kPa)",
+    "İçsel sürtünme açısı φ (°)": "Friction angle φ (°)",
+    "İçsel sürtünme açısı φ′ (°)": "Friction angle φ′ (°)",
+    "Drenajsız kayma dayanımı su (kPa)": "Undrained shear strength su (kPa)",
+    "S (normal konsolide su/σ′v)": "S (normally consolidated su/σ′v)",
+    "m (üs)": "m (exponent)",
+    "OCR (aşırı konsolidasyon oranı)": "OCR (overconsolidation ratio)",
+    "Minimum su (kPa)": "Minimum su (kPa)",
+    "Dilatasyon açısı ψ (°)": "Dilatancy angle ψ (°)",
+    "m (gerilme bağımlılığı üssü)": "m (stress dependency exponent)",
+    "Rf (göçme oranı)": "Rf (failure ratio)",
+    "M (kritik durum gerilme oranı)": "M (critical state stress ratio)",
+    "Boşluk oranı e": "Void ratio e",
+    "ec0 (KDÇ referans boşluk oranı)": "ec0 (CSL reference void ratio)",
+    "Rezidüel sürtünme açısı φr (°)": "Residual friction angle φr (°)",
+    "Laboratuvar numune boyu L0 (m)": "Laboratory sample length L0 (m)",
+    "Arazi blok boyu Ln (m)": "Field block size Ln (m)",
+    "Kaya kütlesi basınç dayanımı σc (kPa)": "Rock mass compressive strength σc (kPa)",
+    "Dayanım büyüklük katsayısı a": "Strength magnitude coefficient a",
+    "Eğrilik katsayısı n": "Curvature coefficient n",
+    "Direkt çekme dayanımı |T0| (kPa)": "Direct tensile strength |T0| (kPa)",
+    "Tek eksenli basınç dayanımı σci (kPa)": "Intact UCS σci (kPa)",
+    "Örselenme faktörü D": "Disturbance factor D",
+
+    # -------------------------------------------------------- misc dialogs
+    "Dilim no": "Slice no.",
+    "Taban malzemesi": "Base material",
+    "Sol / sağ kenar x [m]": "Left / right edge x [m]",
+    "Genişlik b [m]": "Width b [m]",
+    "Taban kotu (orta) [m]": "Base elevation (mid) [m]",
+    "Zemin kotu (orta) [m]": "Ground elevation (mid) [m]",
+    "Taban açısı α [°]": "Base angle α [°]",
+    "Taban uzunluğu l [m]": "Base length l [m]",
+    "Ağırlık W [kN/m]": "Weight W [kN/m]",
+    "Boşluk suyu basıncı u [kPa]": "Pore pressure u [kPa]",
+    "Kohezyon c [kPa] (σn ≈ W/b − u)": "Cohesion c [kPa] (σn ≈ W/b − u)",
+    "Sürtünme açısı φ [°]": "Friction angle φ [°]",
+    "Sismik yatay kuvvet kh·W [kN/m]": "Seismic horizontal force kh·W [kN/m]",
+    "Dilim Verisi — {}": "Slice Data — {}",
+    "Dilim Verisi": "Slice Data",
+    "Koordinatlar — {}": "Coordinates — {}",
+    "Resim kaydedilemedi": "Image could not be saved",
+    "PDF Rapor": "PDF Report",
+    "SNAP açıkken noktalar bu aralıktaki ızgara noktalarına yakalanır.":
+        "With SNAP on, points snap to grid points at this spacing.",
+    "'{}' sayısal olmalı (girilen: '{}').": "'{}' must be numeric (entered: '{}').",
+    "En az {} nokta gerekli.": "At least {} points are required.",
+    "satır {}, {}": "row {}, {}",
+    "Raporu kaydet": "Save report",
+    "Metin (*.txt)": "Text (*.txt)",
+    "Su tablosu: u = Hu · γw · (YASS kotu − taban kotu); Hu ve suyun etkisi malzeme bazında Malzeme Özellikleri → Su Parametreleri'nden ayarlanır.":
+        "Water table: u = Hu · γw · (water table elevation − base elevation); Hu and whether "
+        "water acts are set per material in Material Properties → Water Parameters.",
+    "Ru: u = Ru · σv (dilim tabanındaki toplam düşey gerilme).":
+        "Ru: u = Ru · σv (total vertical stress at the slice base).",
+    "Yatay kuvvet kh·W göçme yönünde, dilim ağırlık merkezinde etkir. kv pozitif yukarı: düşey yük (1 − kv)·W.":
+        "The horizontal force kh·W acts in the failure direction at the slice centroid. kv is "
+        "positive upward: vertical load (1 − kv)·W.",
+    "mα kontrolü (Whitman & Bailey 1967) kapatılırsa veya eşiği düşürülürse, topukta dik negatif taban açılı yüzeylerde sayısal olarak güvenilmez, düşük FS değerleri bulunabilir. Arayüz kuvveti oranı, tekil (singular) çözümleri elemek için toplam ağırlığa göre bir üst sınır belirler.":
+        "If the mα check (Whitman & Bailey 1967) is switched off or its threshold lowered, "
+        "numerically unreliable low FS values can be found on surfaces with steep negative base "
+        "angles at the toe. The interslice force ratio caps the forces relative to the total "
+        "weight to reject singular solutions.",
+
+    # ------------------------------------------------------------ report dialog
+    "İçindekiler": "Table of contents",
+    "Model şekli ve geometri": "Model figure and geometry",
+    "Malzeme özellikleri": "Material properties",
+    "Analiz ayarları": "Analysis settings",
+    "Yükler, destekler, kaplama": "Loads, supports, facing",
+    "Sonuç tablosu ve FS grafiği": "Results table and FS chart",
+    "Kritik yüzey şekli (global minimum)": "Critical surface figure (global minimum)",
+    "Her yöntem için kritik yüzey şekli": "Critical surface figure for every method",
+    "Ek: dilim verileri": "Appendix: slice data",
+    "Ek: koordinatlar": "Appendix: coordinates",
+    "örn. KGM-13-2026-041": "e.g. PRJ-13-2026-041",
+    "Rapor başlığı:": "Report title:",
+    "Değerlendirme": "Assessment",
+    "Hedef güvenlik sayısı ile değerlendir:": "Assess against the target factor of safety:",
+    "Bölümler": "Sections",
+    "Oluşturduktan sonra PDF'i aç": "Open the PDF when created",
+    "Raporu Oluştur…": "Create Report…",
+    "Önce analizi çalıştırın (Hesapla, F5).": "Run the analysis first (Compute, F5).",
+    "Şev Stabilite Analiz Raporu": "Slope Stability Analysis Report",
+    "Dosya yazılamadı (başka bir programda açık olabilir):\n{}":
+        "The file could not be written (it may be open in another program):\n{}",
+    "Rapor oluşturulamadı:\n{}": "The report could not be created:\n{}",
+    "PDF raporu kaydet": "Save PDF report",
+    "PDF rapor kaydedildi ({} sayfa): {}": "PDF report saved ({} pages): {}",
+    "Analiz Raporu (PDF)": "Analysis Report (PDF)",
+    "Rapor bilgileri": "Report information",
+    "Proje:": "Project:",
+    "Kontrol eden:": "Checked by:",
+    "Firma / kurum:": "Company:",
+    "Rapor no:": "Report no.:",
+    "Tarih:": "Date:",
+    "Mobilize destek kuvvetleri": "Mobilised support forces",
+
+    # ---------------------------------------------------------- surface options
+    "{}  (popülasyon {}×boyut, {} nesil)": "{}  (population {}×dimension, {} generations)",
+    "Kullanıcı tanımlı yüzey yok. Önce Yüzeyler → Kullanıcı Yüzeyi Çiz ile çizin.":
+        "There is no user-defined surface. Draw one first with Surfaces → Draw User Surface.",
+    "Aralık bitişi başlangıçtan büyük olmalı.": "The range end must be greater than its start.",
+    "Her uç aralığı modelin yatay sınırlarıyla kesişmeli ({} – {} m).":
+        "Each end range must overlap the horizontal extent of the model ({} – {} m).",
+
+    # -------------------------------------------------------------- docks
+    "Arama": "Search",
+    "Kayma Stabilitesi": "Slope Stability",
+    "Kayma merkezi FS konturları": "Slip centre FS contours",
+    "Kritik yüzey kesikli çizgi": "Critical surface as dashed line",
+    "Ad": "Name",
+    "Malzeme dolgusu": "Material fill",
+    "Lejant": "Legend",
+    "YASS rengi": "Water table colour",
+    "Kaplama {}: {}  x = {}…{}": "Facing {}: {}  x = {}…{}",
+    "Gerilme çatlağı ({} köşe, su %{})": "Tension crack ({} vertices, water {}%)",
+    "Yük {}: yayılı {}–{} kPa": "Load {}: distributed {}–{} kPa",
+    "Yük {}: tekil {} kN/m": "Load {}: line {} kN/m",
+    "Destek {}: {}": "Support {}: {}",
+    "Bulon paterni {}: {}, @{} m, {}°": "Bolt pattern {}: {}, @{} m, {}°",
+    "Sismik: kh = {}, kv = {}": "Seismic: kh = {}, kv = {}",
+    "{}   FS = {}": "{}   FS = {}",
+    "Senaryo 1 – {}": "Scenario 1 – {}",
+    "{} ({} köşe)": "{} ({} vertices)",
+    "Yöntemler: {}": "Methods: {}",
+
+    # ---------------------------------------------------------- misc / core
+    "Dış sınır tanımlı değil.": "No external boundary defined.",
+    "Resmi dışa aktar": "Export image",
+    "Dosya yazılamadı:\n{}\n\nKlasörün yazılabilir olduğunu ve dosya uzantısının PNG veya JPEG olduğunu kontrol edin.":
+        "The file could not be written:\n{}\n\nCheck that the folder is writable and the file "
+        "extension is PNG or JPEG.",
+    "Profesyonel PDF analiz raporu oluştur": "Create a professional PDF analysis report",
+    "Sağ altta seçili yöntemlerin güvenlik sayıları": "Factors of safety of the selected methods (bottom right)",
+    "&Veri": "&Data",
+    "&Sorgu": "&Query",
+    "Global Minimum": "Global Minimum",
+    "{}: FS = {}{} — çıkış x = {}, giriş x = {} — {}": "{}: FS = {}{} — exit x = {}, entry x = {} — {}",
+    "{} nesil, {} yüzey": "{} generations, {} surfaces",
+    "kullanıcı yüzeyi": "user surface",
+    "{} yöntem için sonuç alınamadı. Gösterilen minimum yalnızca tamamlanan yöntemlere aittir.":
+        "No result for {} method(s). The minimum shown covers the completed methods only.",
+    "SlipSurface LE Yorumla {} — {} — [{}] — {}": "SlipSurface LE Interpret {} — {} — [{}] — {}",
+    "Dilim verisi — {}": "Slice data — {}",
+    "Seçili yöntemlerle kritik yüzeyleri hesapla": "Compute the critical surfaces with the selected methods",
+    "Sonuçları Yorumla penceresinde aç": "Open the results in the Interpret window",
+    "Son analizin profesyonel PDF raporunu oluştur": "Create a professional PDF report of the last analysis",
+    "Seçili sınırın köşe koordinatlarını tablo olarak düzenle":
+        "Edit the vertex coordinates of the selected boundary in a table",
+    "Gerilme çatlağı çizgisini çizin (kret bölgesinde, zemin altında)":
+        "Draw the tension crack line (in the crest zone, below the ground)",
+    "Seçili malzemeyi tıklanan bölgeye ata": "Assign the selected material to the clicked region",
+    "Sol ve sağ uç aralıklarını zemin üzerinde işaretleyin":
+        "Mark the left and right end ranges on the ground",
+    "Şev yüzüne tıklayın: seçili destek tipiyle, araç çubuğundaki eğimle (varsayılan 15°) bulon/ankraj otomatik eklenir":
+        "Click on the slope face: a bolt/anchor of the selected support type is added with the "
+        "toolbar inclination (default 15°)",
+    "Şev yüzünde başlangıç ve bitiş noktalarını tıklayın; aralığı seçin, bulonlar otomatik yerleşir (grup)":
+        "Click the start and end points on the slope face; choose the spacing and the bolts are "
+        "placed automatically (group)",
+    "Püskürtme beton + hasır çelik kaplama tiplerini tanımla": "Define shotcrete + wire mesh facing types",
+    "Şev yüzünde kaplamanın başlangıç ve bitiş noktalarını tıklayın":
+        "Click the start and end points of the facing on the slope face",
+    "Seçili kaplamayı topuk–kret arasındaki tüm şev yüzüne ata":
+        "Assign the selected facing to the whole slope face between toe and crest",
+    "Yataydan aşağı doğru eğim (şevin içine)": "Inclination below horizontal (into the slope)",
+    "Görüntü seçeneği": "Display option",
+    "Görüntü seçenekleri: varsayılan": "Display options: defaults",
+    "Kaplama ata": "Assign facing",
+    "Öneri (Rankine, {}): z_c = 2c / (γ·√Ka) = {} m": "Suggestion (Rankine, {}): z_c = 2c / (γ·√Ka) = {} m",
+    "Kayma sınırlarını sıfırla": "Reset slope limits",
+    "Açıldı: {}": "Opened: {}",
+    "Kaydedildi: {}": "Saved: {}",
+    "Kaydedilemedi": "Could not save",
+    "Hakkında / About": "About",
+    "Fare: tekerlek = zoom, orta tuş sürükle = kaydır, orta çift tık = tümünü göster":
+        "Mouse: wheel = zoom, middle drag = pan, middle double-click = zoom all",
+    "F2 tümünü göster   F5 hesapla   F6 yorumla": "F2 zoom all   F5 compute   F6 interpret",
+    "Çizim: tıkla / koordinat yaz (x,y  @dx,dy  @L<açı), Enter bitir, C kapat,":
+        "Drawing: click / type coordinates (x,y  @dx,dy  @L<angle), Enter finish, C close,",
+    "Backspace son noktayı geri al, Esc iptal": "Backspace undo last point, Esc cancel",
+    "Seç: köşeyi sürükle, çift tık = koordinat tablosu, Delete = sil, sağ tık = menü":
+        "Select: drag a vertex, double-click = coordinate table, Delete = delete, right-click = menu",
+    "Ctrl+Z / Ctrl+Y geri al / yinele": "Ctrl+Z / Ctrl+Y undo / redo",
+    "Yük ve destekler: çift tık = özellikler, sürükle = taşı, Delete = sil":
+        "Loads and supports: double-click = properties, drag = move, Delete = delete",
+    "Tekil bulon: Destek adımında eğim/boy girip şev yüzüne tıklayın":
+        "Single bolt: enter inclination/length in the Support step and click the slope face",
+    "Notlar (yazı/şekil): sürükle = taşı, çift tık = özellikler, Delete = sil":
+        "Notes (text/shapes): drag = move, double-click = properties, Delete = delete",
+    "Varsayılan destek tipi oluşturuldu (Destek → Destek Özelliklerini Tanımla ile değiştirin).":
+        "A default support type was created (change it with Support → Define Support Properties).",
+    "Kaplama tipi ekle": "Add facing type",
+    "Varsayılan kaplama tipi oluşturuldu: 10 cm püskürtme beton + Q188 (Özellikler → Kaplama Tiplerini Tanımla).":
+        "A default facing type was created: 10 cm shotcrete + Q188 (Properties → Define Facing Types).",
+    "Modelde zaten bir dış sınır var. Silinip yenisi çizilsin mi?":
+        "The model already has an external boundary. Delete it and draw a new one?",
+    "(Malzeme sınırları ve atamalar da silinir.)": "(Material boundaries and assignments are deleted too.)",
+    "Türkçe": "Türkçe",
+    "Eğim:": "Inclination:",
+    "Atanacak malzeme:": "Material to assign:",
+    "Kaplama:": "Facing:",
+    "Büyüklük": "Quantity",
+    "Değer": "Value",
+    "{} eklendi ({} nokta).": "{} added ({} points).",
+    "Destek ekle": "Add support",
+    "Destek eklendi ({}).": "Support added ({}).",
+    "Yük ekle": "Add load",
+    "Bulon paterni ekle": "Add bolt pattern",
+    "Bulon paterni eklendi: {}": "Bolt pattern added: {}",
+    "Bulon paterni eklendi: {} bulon, aralık {} m.": "Bolt pattern added: {} bolts, spacing {} m.",
+    "Kaplama '{}' atandı: x = {} … {}.": "Facing '{}' assigned: x = {} … {}.",
+    "Şev yüzü bulunamadı (20°'den dik zemin segmenti yok). Kaplama Ata aracını kullanın.":
+        "No slope face found (no ground segment steeper than 20°). Use the Assign Facing tool.",
+    "Kaplama tipleri": "Facing types",
+    "Destek özellikleri": "Support properties",
+    "Proje ayarları": "Project settings",
+    "Proje özeti": "Project summary",
+    "Malzeme özellikleri ": "Material properties ",
+    "Yüzey seçenekleri": "Surface options",
+    "Proje Ayarları → Yöntemler: en az bir yöntem seçin.":
+        "Project Settings → Methods: select at least one method.",
+    "{} eklendi: baş ({}, {}), eğim {}°, boy {} m. Devam etmek için tıklayın, Esc = bitir.":
+        "{} added: head ({}, {}), inclination {}°, length {} m. Click to continue, Esc = finish.",
+    "Yük düzenle": "Edit load",
+    "Destek düzenle": "Edit support",
+    "Bulon paterni düzenle": "Edit bolt pattern",
+    "Kaplama düzenle": "Edit facing",
+    "{}: koordinatlar": "{}: coordinates",
+    "x,y  |  @dx,dy  |  @L<açı": "x,y  |  @dx,dy  |  @L<angle",
+    "Koordinat girişi (çizim araçlarında): mutlak x,y, göreli @dx,dy, kutupsal @uzunluk<açı. Boş Enter = bitir, c = kapat, u = geri al.":
+        "Coordinate entry (drawing tools): absolute x,y, relative @dx,dy, polar @length<angle. "
+        "Empty Enter = finish, c = close, u = undo.",
+    "Dış sınır çiz": "Draw external boundary",
+    "Malzeme sınırı çiz": "Draw material boundary",
+
+    # validation / engine messages
+    "Kullanıcı tanımlı yüzey çizilmemiş (Yüzeyler → Kullanıcı Yüzeyi).":
+        "No user-defined surface drawn (Surfaces → User Surface).",
+    "Bishop yalnızca dairesel yüzeyler için geçerlidir.": "Bishop is valid for circular surfaces only.",
+    "Bishop yalnızca dairesel yüzeyler için geçerlidir; dairesel olmayan aramada atlandı.":
+        "Bishop is valid for circular surfaces only; skipped in the non-circular search.",
+    "çözüm yok": "no solution",
+    "Kabul edilebilir olmayan çözüm.": "Inadmissible solution.",
+    "negatif taban kayma direnci (tabanda çekme)": "negative base shear resistance (tension at the base)",
+    "Uç aralığı model sınırları içinde değil.": "The end range is not inside the model limits.",
+    "Simplified Bishop yalnızca dairesel yüzeyler için geçerlidir; dairesel olmayan yüzeylerde Spencer veya GLE seçin.":
+        "Simplified Bishop is valid for circular surfaces only; choose Spencer or GLE for "
+        "non-circular surfaces.",
+    "Bilinmeyen yöntem: {}": "Unknown method: {}",
+    "Kabul edilebilir kayma yüzeyi bulunamadı (uç aralıklarını ve geometriyi kontrol edin).":
+        "No admissible slip surface found (check the end ranges and the geometry).",
+    "Bilinmeyen malzeme modeli: {}": "Unknown material model: {}",
+    "En az bir malzeme tanımlayın.": "Define at least one material.",
+    "Çatlak suyu oranı 0 ile 1 arasında olmalı.": "The crack water ratio must be between 0 and 1.",
+    "mα eşiği 0 ile 1 arasında olmalı.": "The mα threshold must be between 0 and 1.",
+    "E maksimum oranı en az 1 olmalı.": "The maximum E ratio must be at least 1.",
+    "Destek tipi adları benzersiz olmalı.": "Support type names must be unique.",
+    "Kaplama tipi adları benzersiz olmalı.": "Facing type names must be unique.",
+    "Dilim sayısı en az 3 olmalı.": "The number of slices must be at least 3.",
+    "Dış sınır tanımlı değil (Sınırlar → Dış Sınır Ekle).":
+        "No external boundary defined (Boundaries → Add External Boundary).",
+    "Bu dosya bir SlipSurface LE projesi değil.": "This file is not a SlipSurface LE project.",
+    "Dosya daha yeni bir sürümle kaydedilmiş.": "The file was saved by a newer version.",
+    "{}: bilinmeyen malzeme modeli '{}' ({} olmalı).": "{}: unknown material model '{}' (must be {}).",
+    "{}: birim hacim ağırlıklar pozitif olmalı.": "{}: unit weights must be positive.",
+    "{}: c ≥ 0 ve 0 ≤ φ < 90 olmalı.": "{}: c ≥ 0 and 0 ≤ φ < 90 required.",
+    "{}: σci > 0, 0 < GSI ≤ 100, mi > 0, 0 ≤ D ≤ 1 olmalı.":
+        "{}: σci > 0, 0 < GSI ≤ 100, mi > 0, 0 ≤ D ≤ 1 required.",
+    "Atanmış malzeme '{}' tanımlı değil.": "Assigned material '{}' is not defined.",
+    "Gerilme çatlağı çizgisi en az 2 nokta ve farklı x değerleri içermeli.":
+        "The tension crack line needs at least 2 points with different x values.",
+    "{}: bilinmeyen destek tipi.": "{}: unknown support type.",
+    "{}: aralık > 0 ve kapasite ≥ 0 olmalı.": "{}: spacing > 0 and capacity ≥ 0 required.",
+    "Destek tipi '{}' tanımlı değil.": "Support type '{}' is not defined.",
+    "Bulon paterni: aralık ve boy pozitif olmalı.": "Bolt pattern: spacing and length must be positive.",
+    "{}: kalınlık > 0, diğer değerler ≥ 0 olmalı.": "{}: thickness > 0, other values ≥ 0 required.",
+    "Kaplama tipi '{}' tanımlı değil.": "Facing type '{}' is not defined.",
+    "Dış sınır en az 3 köşe içermeli.": "The external boundary must have at least 3 vertices.",
+    "Dış sınır kendini kesiyor (geçersiz poligon).": "The external boundary intersects itself (invalid polygon).",
+    "Dış sınırın alanı sıfır.": "The external boundary has zero area.",
+    "Malzeme sınırı {}: en az 2 nokta gerekli.": "Material boundary {}: at least 2 points required.",
+    "YASS noktaları x artan sırada olmalı.": "Water table points must be in increasing x order.",
+    "Model: {}": "Model: {}",
+    "Model değişti; yeniden hesaplayın (F5).": "The model changed; compute again (F5).",
+
+    # examples (menu captions)
+    "Basit şev H=10 m, 2H:1V": "Simple slope H=10 m, 2H:1V",
+    "ACADS EX1(a) — homojen şev": "ACADS EX1(a) — homogeneous slope",
+    "Katmanlı şev + YASS (örnek)": "Layered slope + water table (example)",
+    "Ankrajlı yarma + sürşarj (örnek)": "Anchored cut + surcharge (example)",
+    "Gerilme çatlaklı şev (çatlak dolu)": "Slope with tension crack (crack full)",
+    "Zemin çivili + püskürtme betonlu yarma (örnek)": "Soil-nailed cut with shotcrete (example)",
+    "Drenajsız kil / Undrained clay": "Undrained clay",
+    "Doğrusal olmayan dayanım / Nonlinear power law": "Nonlinear power law",
+    "Sismik / Seismic kh=0.15": "Seismic kh=0.15",
+    "Undrained clay / Drenajsız kil": "Undrained clay",
+    "Nonlinear power law / Doğrusal olmayan dayanım": "Nonlinear power law",
+    "Pseudo-static / Psödo-statik kh=0.15": "Pseudo-static kh=0.15",
+
+    # ------------------------------------------------- text report (Info Viewer)
+    "SlipSurface LE — Analiz Raporu": "SlipSurface LE — Analysis Report",
+    "Proje        : {}": "Project      : {}",
+    "Analiz       : {}": "Analysis     : {}",
+    "Hazırlayan   : {}": "Prepared by  : {}",
+    "Hazırlayan   :": "Prepared by  :",
+    "Kurum        :": "Company      :",
+    "Analiz       :": "Analysis     :",
+    "Proje        :": "Project      :",
+    "Kurum        : {}": "Company      : {}",
+    "Oluşturulma  : {}": "Created      : {}",
+    "Analiz zamanı: {} ({} s)": "Analysed at  : {} ({} s)",
+    "Not: {}": "Note: {}",
+    "Birimler           : Metrik (kN, kPa, m)": "Units              : Metric (kN, kPa, m)",
+    "Göçme yönü         : {}": "Failure direction  : {}",
+    "Sağdan sola": "Right to left",
+    "Soldan sağa": "Left to right",
+    "Dilim sayısı       : {}": "Number of slices   : {}",
+    "Tolerans / maks. it: {} / {}": "Tolerance / max it : {} / {}",
+    "Arayüz fonksiyonu  : {} (GLE)": "Interslice function: {} (GLE)",
+    "Yeraltı suyu       : {}, γw = {}": "Groundwater        : {}, γw = {}",
+    "Sismik             : kh = {}, kv = {}": "Seismic            : kh = {}, kv = {}",
+    "Yüzey tipi         : {}": "Surface type       : {}",
+    "Malzemeler": "Materials",
+    "Çatlak çizgisi x = {} – {}, çatlak suyu: %{} dolu": "Crack line x = {} – {}, crack water: {}% full",
+    "Dış yükler": "External loads",
+    "düşey": "vertical",
+    "yüzeye dik": "normal to surface",
+    "{}. Yayılı yük  x = {} – {}  q = {} – {} kPa ({})": "{}. Distributed load  x = {} – {}  q = {} – {} kPa ({})",
+    "{}. Tekil yük   ({}, {})  P = {} kN/m, açı {}°": "{}. Line load   ({}, {})  P = {} kN/m, angle {}°",
+    "Destek tipleri": "Support types",
+    "{} {} aralık {} m  çekme {} kN  {}": "{} {} spacing {} m  tensile {} kN  {}",
+    "Destekler": "Supports",
+    "Sonuçlar (yöntem başına kritik yüzey)": "Results (critical surface per method)",
+    "{} {}  {}  {}  {}  yüzey": "{} {}  {}  {}  {}  surface",
+    "merkez ({}, {}), R={}": "centre ({}, {}), R={}",
+    "çıkış x": "exit x",
+    "giriş x": "entry x",
+    "yüzey": "surface",
+    "Malzeme sınırı {}": "Material boundary {}",
+    "Malzeme sınırı {} ({} köşe)": "Material boundary {} ({} vertices)",
+    "Yük {}": "Load {}",
+    "Bulon paterni {}": "Bolt pattern {}",
+    "Kritik yüzeylerde gerilme çatlağı": "Tension crack on the critical surfaces",
+    "{} kritik yüzey çatlak çizgisini kesmiyor": "{} critical surface does not cross the crack line",
+    "{} x = {}  derinlik = {} m  su = {} m  itki V = {} kN/m": "{} x = {}  depth = {} m  water = {} m  thrust V = {} kN/m",
+    "Kaplamalar (püskürtme beton + hasır çelik)": "Facings (shotcrete + wire mesh)",
+    "{} t = {} m  γ = {}  τ = {} kPa  hasır {} (As = {} mm²/m, fy = {} MPa)  kapasite = {} kN/m":
+        "{} t = {} m  γ = {}  τ = {} kPa  mesh {} (As = {} mm²/m, fy = {} MPa)  capacity = {} kN/m",
+    "Bulon paternleri": "Bolt patterns",
+    "{}. {}: x = {} – {}, aralık {} m, ilk {} m, eğim {}°, boy {} m":
+        "{}. {}: x = {} – {}, spacing {} m, first {} m, inclination {}°, length {} m",
+    "Kritik yüzeylerde mobilize destek kuvvetleri [kN/m]": "Mobilised support forces on the critical surfaces [kN/m]",
+    "{} kritik yüzeyi kesen destek / kaplama yok": "{} no support / facing crosses the critical surface",
+    "{} {}: T = {}  (L_iç = {} m, L_dış = {} m, {}, {})": "{} {}: T = {}  (L_in = {} m, L_out = {} m, {}, {})",
+    "Global minimum: {} FS = {}": "Global minimum: {} FS = {}",
+}

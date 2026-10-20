@@ -18,7 +18,7 @@ import math
 
 import numpy as np
 import shapely
-from PySide6.QtCore import QPointF, QRectF, Qt, Signal
+from PySide6.QtCore import QLineF, QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import (
     QBrush,
     QColor,
@@ -108,6 +108,7 @@ class CadCanvas(QWidget):
         self.edit_kinds: set | None = None     # None = all entity kinds are editable
         self._annot_rects: dict = {}           # annotation index -> screen QRectF (hit test)
         self.assign_material: str | None = None
+        self._contour_cache: tuple | None = None   # (result id, grid, image)
 
         from slipsurface.ui.cad.tools import SelectTool
         self.tool = SelectTool(self)
@@ -160,6 +161,11 @@ class CadCanvas(QWidget):
         res = self.current_result()
         if res is not None and hasattr(res.surface, "r"):
             pts.append(np.array([[res.surface.xc, res.surface.yc + 0.05 * res.surface.r]]))
+        cg = self._contour()
+        if cg is not None:
+            g = cg[0]
+            pts.append(np.array([[g["x0"], g["y0"]], [g["x0"] + g["nx"] * g["side"],
+                                                     g["y0"] + g["ny"] * g["side"]]]))
         if not pts:
             return None
         a = np.vstack(pts)
@@ -315,12 +321,38 @@ class CadCanvas(QWidget):
         return [e for e in ents if e.key[0] in self.edit_kinds]
 
     def pick_annotation(self, sp: QPointF):
-        """Annotation whose box / shape contains the screen point."""
+        """Topmost annotation under the screen point: text box, line / arrow
+        within the pick distance, rectangle or ellipse (inside or on the edge)."""
         if self.edit_kinds is not None and "annot" not in self.edit_kinds:
             return None
-        for i, r in reversed(list(self._annot_rects.items())):
-            if r.adjusted(-4, -4, 4, 4).contains(sp):
+        if self.project is None:
+            return None
+        tol = PICK_PX
+        x, y = sp.x(), sp.y()
+        for i in reversed(range(len(self.project.annotations))):
+            a = self.project.annotations[i]
+            kind = a["kind"]
+            if kind == "text":
+                r = self._annot_rects.get(i)
+                if r is not None and r.adjusted(-4, -4, 4, 4).contains(sp):
+                    return ("annot", i)
+                continue
+            if len(a["pts"]) < 2:
+                continue
+            p0, p1 = self.w2s(*a["pts"][0]), self.w2s(*a["pts"][1])
+            if kind in ("line", "arrow"):
+                d, _, _ = point_segment_distance((x, y), (p0.x(), p0.y()), (p1.x(), p1.y()))
+                if d <= tol:
+                    return ("annot", i)
+                continue
+            r = QRectF(p0, p1).normalized()
+            if kind == "rect" and r.adjusted(-tol, -tol, tol, tol).contains(sp):
                 return ("annot", i)
+            if kind == "ellipse":
+                rx, ry = r.width() / 2 + tol, r.height() / 2 + tol
+                cx, cy = r.center().x(), r.center().y()
+                if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1.0:
+                    return ("annot", i)
         return None
 
     def pick_vertex(self, sp: QPointF):
@@ -435,8 +467,11 @@ class CadCanvas(QWidget):
             self._paint_slope_limits(p)
         self.tool.paint(p)
         self._paint_snap_marker(p)
+        legend_top = 10.0
+        if self.results is not None:
+            legend_top = max(legend_top, self._paint_contour_legend(p) + 8)
         if self.display("show_legend"):
-            self._paint_legend(p)
+            self._paint_legend(p, legend_top)
         if self.results is not None and self.display("show_fs_legend"):
             self._paint_fs_legend(p)
         self._paint_cursor(p)
@@ -654,8 +689,10 @@ class CadCanvas(QWidget):
         A, B = self.w2s(*a), self.w2s(*b)
         kind = st.kind if st else "end_anchored"
         pen = QPen(col, 2.0 + (1 if sel else 0))
-        if kind == "geotextile":
+        if kind in ("geotextile", "geosynthetic"):
             pen.setStyle(Qt.DashLine)
+        if kind == "micro_pile":
+            pen.setWidthF(4.0 + (1 if sel else 0))
         p.setPen(pen)
         p.drawLine(A, B)
         L = math.hypot(B.x() - A.x(), B.y() - A.y()) or 1.0
@@ -672,7 +709,11 @@ class CadCanvas(QWidget):
             for t in np.arange(0.1, 1.0, 0.1):
                 q = QPointF(A.x() + ux * L * t, A.y() + uy * L * t)
                 p.drawLine(q + QPointF(nx * 3, ny * 3), q - QPointF(nx * 3, ny * 3))
-        if kind != "geotextile":            # head plate
+        if kind == "micro_pile":            # pile cap + toe
+            p.setPen(QPen(col, 1.5))
+            p.setBrush(QColor("white"))
+            p.drawEllipse(B, 4, 4)
+        if kind not in ("geotextile", "geosynthetic"):   # head plate
             p.setPen(QPen(col, 3))
             p.drawLine(A + QPointF(nx * 6, ny * 6), A - QPointF(nx * 6, ny * 6))
         if kind == "end_anchored":
@@ -736,6 +777,39 @@ class CadCanvas(QWidget):
             p.setPen(Qt.NoPen)
 
     # ---------------------------------------------------------- results
+    def _contour(self):
+        """(grid, image) of the slip-centre FS contour map of the current result."""
+        res = self.current_result()
+        if res is None or not self.display("show_fs_contours") \
+                or getattr(res, "centres", None) is None:
+            return None
+        if self._contour_cache is None or self._contour_cache[0] is not res:
+            from slipsurface.ui.cad import fs_contour
+            g = fs_contour.build_grid(res.centres)
+            self._contour_cache = (res, g, fs_contour.render_image(g) if g else None)
+        _, g, img = self._contour_cache
+        return None if g is None else (g, img)
+
+    def _paint_contour(self, p: QPainter) -> None:
+        cg = self._contour()
+        if cg is None:
+            return
+        g, img = cg
+        tl = self.w2s(g["x0"], g["y0"] + g["ny"] * g["side"])
+        br = self.w2s(g["x0"] + g["nx"] * g["side"], g["y0"])
+        p.save()
+        p.setRenderHint(QPainter.SmoothPixmapTransform, True)
+        p.drawImage(QRectF(tl, br), img)
+        from slipsurface.ui.cad.fs_contour import LINE, contour_segments
+        seg = contour_segments(g)
+        if len(seg):
+            sx = self.width() / 2 + (seg[:, [0, 2]] - self.cx) * self.scale
+            sy = self.height() / 2 - (seg[:, [1, 3]] - self.cy) * self.scale
+            p.setPen(QPen(QColor(*LINE), 0.9))
+            p.drawLines([QLineF(a, b, c, d) for a, c, b, d in
+                         np.column_stack([sx[:, 0], sx[:, 1], sy[:, 0], sy[:, 1]])])
+        p.restore()
+
     def _paint_results(self, p: QPainter) -> None:
         res = self.current_result()
         if res is None or self.geometry is None:
@@ -801,19 +875,20 @@ class CadCanvas(QWidget):
             p.setFont(QFont("Source Sans 3", 8, QFont.Bold))
             p.setPen(QColor("#1f3d7a"))
             p.drawText(q + QPointF(6, 14), f"{f.T:.0f} kN/m")
-        # critical surface
+        contour = self._contour() is not None
         crit = QColor("#0a8a2a")
-        p.setPen(QPen(crit, 2.4))
-        p.setBrush(Qt.NoBrush)
-        p.drawPolyline(self._poly_screen(surf.points(s.x_exit, s.x_entry, 200)))
-        # centre, lines to centre, FS text
+        dark = QColor(40, 40, 40)
+        # centre, lines to centre (under the contour map), FS text
         if hasattr(surf, "r"):
             c = self.w2s(surf.xc, surf.yc)
             anchor = c
             if self.display("show_lines_to_center"):
-                p.setPen(QPen(crit, 1.1))
+                p.setPen(QPen(dark if contour else crit, 1.1,
+                              Qt.DashLine if contour else Qt.SolidLine))
                 for x in (s.x_exit, s.x_entry):
                     p.drawLine(c, self.w2s(x, float(g.ground_y(x))))
+            self._paint_contour(p)
+            p.setPen(QPen(crit, 1))
             p.setBrush(crit)
             p.drawEllipse(c, 2.5, 2.5)
         else:
@@ -834,21 +909,74 @@ class CadCanvas(QWidget):
             except Exception:
                 xm = 0.5 * (s.x_exit + s.x_entry)
                 anchor = self.w2s(xm, float(g.ground_y(xm)))
+        # critical surface
+        if self.display("critical_dashed"):
+            pen = QPen(dark, 1.6, Qt.DashLine)
+        else:
+            pen = QPen(crit, 2.4)
+        p.setPen(pen)
+        p.setBrush(Qt.NoBrush)
+        p.drawPolyline(self._poly_screen(surf.points(s.x_exit, s.x_entry, 200)))
         if self.display("show_fs_text"):
-            txt = f"{res.fos:.3f}"
-            f = QFont("Verdana", 10, QFont.Bold)
+            txt = f"FS = {res.fos:.3f}" if contour else f"{res.fos:.3f}"
+            f = QFont("Verdana", 9 if contour else 10, QFont.Bold)
             p.setFont(f)
             fm = QFontMetrics(f)
             w, h = fm.horizontalAdvance(txt) + 10, fm.height() + 4
             box = QRectF(anchor.x() - w / 2, anchor.y() - h - 4, w, h)
+            if contour:                          # centred on the critical centre
+                box.moveCenter(anchor)
             p.setPen(QPen(QColor(40, 40, 40), 1))
             p.setBrush(QColor("white"))
             p.drawRect(box)
-            p.setPen(crit)
+            p.setPen(QColor("#1f3d7a") if contour else crit)
             p.drawText(box, Qt.AlignCenter, txt)
 
+    def _paint_contour_legend(self, p: QPainter) -> float:
+        """Banded FS legend (top right). Returns its bottom edge (screen y)."""
+        cg = self._contour()
+        if cg is None:
+            return 0.0
+        from slipsurface.ui.cad import fs_contour as fc
+        g = cg[0]
+        labels = fc.legend_labels(g["vmax"])
+        f = QFont("Source Sans 3", 8)
+        fb = QFont("Source Sans 3", 9, QFont.Bold)
+        fm = QFontMetrics(f)
+        band_h = 6
+        sw = 16
+        lw = max(fm.horizontalAdvance(t) for t in labels) + 8
+        w = max(sw + lw + 22, QFontMetrics(fb).horizontalAdvance("FS") + 20)
+        h = 24 + band_h * fc.N_BANDS + fm.height() // 2 + 10
+        x0, y0 = self.width() - w - 12, 10
+        p.setPen(QPen(QColor(150, 150, 150), 1))
+        p.setBrush(QColor(255, 255, 255, 240))
+        p.drawRect(QRectF(x0, y0, w, h))
+        p.setFont(fb)
+        p.setPen(QColor("#e01e1e"))
+        p.drawText(QRectF(x0, y0 + 3, w, 18), Qt.AlignHCenter | Qt.AlignVCenter, "FS")
+        top = y0 + 24 + fm.height() // 4
+        bx = x0 + 8
+        for k in range(fc.N_BANDS):              # highest band on top
+            col = QColor(fc.PALETTE[fc.N_BANDS - 1 - k])
+            p.setPen(Qt.NoPen)
+            p.setBrush(col)
+            p.drawRect(QRectF(bx, top + k * band_h, sw, band_h))
+        p.setPen(QPen(QColor(60, 60, 60), 1))
+        p.setBrush(Qt.NoBrush)
+        p.drawRect(QRectF(bx, top, sw, band_h * fc.N_BANDS))
+        p.setFont(f)
+        p.setPen(QColor(30, 30, 30))
+        n = len(labels) - 1
+        for k, t in enumerate(labels):           # label k at boundary k*2 from the bottom
+            y = top + band_h * fc.N_BANDS - k * (band_h * fc.N_BANDS / n)
+            p.drawLine(QPointF(bx + sw, y), QPointF(bx + sw + 3, y))
+            p.drawText(QRectF(bx + sw + 6, y - fm.height() / 2, lw, fm.height()),
+                       Qt.AlignLeft | Qt.AlignVCenter, t)
+        return y0 + h
+
     # ----------------------------------------------------------- legend
-    def _paint_legend(self, p: QPainter) -> None:
+    def _paint_legend(self, p: QPainter, top: float = 10.0) -> None:
         if self.project is None or not self.project.materials:
             return
         used = None
@@ -867,7 +995,7 @@ class CadCanvas(QWidget):
         extra = 0
         if res is not None and self.display("show_all_surfaces") and res.top:
             extra = 46
-        x0, y0 = self.width() - w - 12, 10
+        x0, y0 = self.width() - w - 12, top
         p.setPen(QPen(QColor(150, 150, 150), 1))
         p.setBrush(QColor(255, 255, 255, 235))
         p.drawRect(QRectF(x0, y0, w, h + extra))
@@ -912,16 +1040,11 @@ class CadCanvas(QWidget):
                 continue
             lines = [name]
             if mode == "full":
-                if spec.model == "MC":
-                    lines.append(f"c = {spec.c:g} kPa,  φ = {spec.phi:g}°")
-                elif spec.model == "UD":
-                    lines.append(f"su = {spec.su:g} kPa (total stress)")
-                elif spec.model == "PL":
-                    lines.append(f"a = {spec.coefficient:g}, b = {spec.exponent:g}")
-                    lines.append(f"pa = {spec.reference_pressure:g} kPa")
-                else:
-                    lines.append(f"σci = {spec.sigma_ci:g} kPa, GSI = {spec.gsi:g}")
-                    lines.append(f"mi = {spec.mi:g},  D = {spec.d:g}")
+                from slipsurface.materials.catalog import model_name, parameter_text
+                if spec.model != "MC":
+                    lines.append(model_name(spec.model))
+                parts = parameter_text(spec).split(", ")
+                lines += [", ".join(parts[k:k + 2]) for k in range(0, len(parts), 2)]
                 g_txt = f"γ = {spec.gamma:g} kN/m³"
                 if spec.use_sat:
                     g_txt += f",  γsat = {spec.gamma_sat:g}"
@@ -986,6 +1109,8 @@ class CadCanvas(QWidget):
                     p.drawText(QRectF(box.left() + 4, y, w, fm.height()), Qt.AlignLeft, t)
                     y += fm.height()
                 self._annot_rects[i] = box
+                if sel:
+                    self._paint_annotation_grips(p, pts[:1], None)
                 continue
             if len(pts) < 2:
                 continue
@@ -1010,6 +1135,19 @@ class CadCanvas(QWidget):
             elif kind == "ellipse":
                 p.drawEllipse(r)
             self._annot_rects[i] = r if kind in ("rect", "ellipse") else QRectF()
+            if sel:
+                self._paint_annotation_grips(p, pts, r if kind in ("rect", "ellipse") else None)
+
+    def _paint_annotation_grips(self, p: QPainter, pts, frame) -> None:
+        """Selection feedback for a note: dashed frame and square grips."""
+        if frame is not None:
+            p.setPen(QPen(SELECT_COLOR, 1, Qt.DashLine))
+            p.setBrush(Qt.NoBrush)
+            p.drawRect(frame.adjusted(-3, -3, 3, 3))
+        p.setPen(QPen(SELECT_COLOR, 1))
+        p.setBrush(QColor("white"))
+        for q in pts:
+            p.drawRect(QRectF(q.x() - 4, q.y() - 4, 8, 8))
 
     # -------------------------------------------------- FS legend (results)
     def _paint_fs_legend(self, p: QPainter) -> None:
@@ -1025,7 +1163,7 @@ class CadCanvas(QWidget):
         rh = fm.height() + 3
         wn = max(fm.horizontalAdvance(n) for _, n, _ in rows) + 22
         wv = fm.horizontalAdvance("00.000") + 14
-        title = "Güvenlik sayısı (FS)"
+        title = tr("Güvenlik sayısı (FS)")
         w = max(wn + wv, fm.horizontalAdvance(title) + 16)
         h = rh * (len(rows) + 1) + 10
         x0, y0 = self.width() - w - 12, self.height() - h - 12
@@ -1079,7 +1217,7 @@ class CadCanvas(QWidget):
         if label:
             p.setFont(QFont("Source Sans 3", 8))
             p.setPen(QPen(SNAP_COLOR, 1))
-            p.drawText(QPointF(s.x() + 9, s.y() + 16), label)
+            p.drawText(QPointF(s.x() + 9, s.y() + 16), tr(label))
 
     def _paint_cursor(self, p: QPainter) -> None:
         if self.mouse_pos is None:

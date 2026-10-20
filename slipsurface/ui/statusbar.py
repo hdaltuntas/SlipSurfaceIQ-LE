@@ -51,6 +51,9 @@ class CadStatusBar(QStatusBar):
         canvas.mouse_world.connect(self._coords)
         canvas.status.connect(lambda m: self.showMessage(m, 8000))
 
+    def showMessage(self, text: str, timeout: int = 0) -> None:  # noqa: N802 (Qt API)
+        super().showMessage(tr(text), timeout)
+
     def _toggle(self, attr: str, on: bool) -> None:
         setattr(self.c, attr, on)
         self.c.update()

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from slipsurface.ui.preferences import fit_to_screen
+
 from slipsurface.ui.i18n import tr
 
 from PySide6.QtCore import QSize, Qt
@@ -36,7 +38,7 @@ class InterpretWindow(QMainWindow):
                  on_annotations=None) -> None:
         super().__init__(parent)
         self.setAttribute(Qt.WA_DeleteOnClose)
-        self.resize(1450, 900)
+        fit_to_screen(self, 1450, 900)
         self.results = results
         self.path = path
         self.on_annotations = on_annotations
@@ -65,9 +67,9 @@ class InterpretWindow(QMainWindow):
             "border: 1px solid #e2c36f; border-radius: 4px; }")
         if results.errors:
             details = "\n".join(f"{method_name(k)}: {v}" for k, v in results.errors.items())
-            self.result_warning.setText(
+            self.result_warning.setText(tr(
                 f"{len(results.errors)} yöntem için sonuç alınamadı. "
-                "Gösterilen minimum yalnızca tamamlanan yöntemlere aittir.\n" + details)
+                "Gösterilen minimum yalnızca tamamlanan yöntemlere aittir.\n" + details))
         self.result_warning.setVisible(bool(results.errors))
         center = QWidget()
         layout = QVBoxLayout(center)
@@ -225,8 +227,8 @@ class InterpretWindow(QMainWindow):
         self.area.show_rulers(bool(self.project.display_opt("show_ruler")))
         name = self.path.name if self.path else tr("Kaydedilmemiş")
         mname = method_name(self.key) if self.key else "—"
-        self.setWindowTitle(f"SlipSurface LE Yorumla {__version__} — {name} — "
-                            f"[{self.project.summary.title}] — {mname}")
+        self.setWindowTitle(tr(f"SlipSurface LE Yorumla {__version__} — {name} — "
+                            f"[{self.project.summary.title}] — {mname}"))
         r = self.results.results.get(self.key)
         if r is not None:
             lam = f", λ = {r.lem.lam:.3f}" if r.lem.lam == r.lem.lam else ""
@@ -332,14 +334,14 @@ class InterpretWindow(QMainWindow):
         SliceDataDialog(r, i, method_name(self.key), self).exec()
 
     def info_viewer(self) -> None:
-        txt = report_text(self.results)
+        txt = report_text(self.results, tr)
         if self.results.project.general.data_output == "maximum":
             for k, r in self.results.results.items():
                 txt += f"\n\nDilim verisi — {method_name(k)}\n" + "-" * 60 + "\n"
                 for i in range(r.slices.n):
                     rows = slice_rows(r, i)
                     txt += "  ".join(f"{a}: {b}" for a, b in rows[:1] + rows[2:10]) + "\n"
-        InfoViewer(txt, self).exec()
+        InfoViewer(tr(txt), self).exec()
 
     def pdf_report(self) -> None:
         from slipsurface.ui.dialogs.report import export_report

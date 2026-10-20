@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from slipsurface.ui.preferences import fit_to_screen
+
 from slipsurface.ui.i18n import tr
 
 
@@ -90,7 +92,7 @@ class ProjectSettingsDialog(QDialog):
     def __init__(self, project: Project, parent=None, page: int = 0) -> None:
         super().__init__(parent)
         self.setWindowTitle(tr("Proje Ayarları"))
-        self.resize(760, 560)
+        fit_to_screen(self, 760, 560)
         self.p = project.copy()
 
         self.nav = QListWidget()

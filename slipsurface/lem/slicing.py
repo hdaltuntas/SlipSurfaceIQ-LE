@@ -92,6 +92,7 @@ class SliceSet:
     M_p: np.ndarray = None  # type: ignore[assignment]
     support_forces: list = None  # type: ignore[assignment]
     crack: dict | None = None          # tension crack at the uphill end (see loads.TensionCrack)
+    sigma_v_eff: np.ndarray = None  # type: ignore[assignment]  # W/b - u (before total-stress zeroing)
 
     def __post_init__(self) -> None:
         if self.y_cg is None:
@@ -101,6 +102,8 @@ class SliceSet:
                 setattr(self, k, np.zeros(len(self.b)))
         if self.support_forces is None:
             self.support_forces = []
+        if self.sigma_v_eff is None:
+            self.sigma_v_eff = np.maximum(self.W / self.b - self.u, 0.0)
 
     @property
     def has_passive(self) -> bool:
@@ -257,6 +260,8 @@ def make_slices(
         u = np.zeros_like(xm)
     # Total-stress strengths (Tresca/su) use total normal forces under every
     # groundwater mode, including a global Ru coefficient.
+    # SHANSEP needs the effective vertical stress, so keep it before zeroing.
+    sigma_v_eff = np.maximum(W / b - u, 0.0)
     total_stress = np.array([m.total_stress for m in mats])[mat_idx]
     u = np.where(total_stress, 0.0, u)
 
@@ -304,4 +309,4 @@ def make_slices(
 
     return SliceSet(xl, xr, xm, b, y_base, y_top, alpha, l, W, u, mat_idx, mats,
                     surf, x_exit, x_entry, direction, y_cg, o.kh, o.kv,
-                    support_forces=info, crack=crack, **forces)
+                    support_forces=info, crack=crack, sigma_v_eff=sigma_v_eff, **forces)

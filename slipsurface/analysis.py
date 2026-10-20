@@ -80,9 +80,15 @@ def search_settings(p: Project, method: str) -> SearchSettings:
 
 
 def run_analysis(p: Project,
-                 progress: Callable[[int, int, str, int, float], bool | None] | None = None
-                 ) -> AnalysisResults:
-    """`progress(i, n, method, generation, best)` returning True cancels."""
+                 progress: Callable[[int, int, str, int, float], bool | None] | None = None,
+                 status: dict | None = None) -> AnalysisResults:
+    """`progress(i, n, method, generation, best)` returning True cancels.
+
+    `status` (optional) is updated in place with the search state of the
+    current method (see optimizer.search) plus `method`, `index`, `n_methods`,
+    `n_slices` and `done` (finished methods: key -> FoS or error text)."""
+    stat = status if status is not None else {}
+    stat.update(done={}, n_slices=p.methods.n_slices)
     t0 = time.perf_counter()
     geom = p.build_geometry()
     mats = p.build_materials()
@@ -98,10 +104,12 @@ def run_analysis(p: Project,
             raise ValueError("Kullanıcı tanımlı yüzey çizilmemiş (Yüzeyler → Kullanıcı Yüzeyi).")
         surf = PolylineSurface(extend_to_ground(geom, pts))
         for i, m in enumerate(methods):
+            stat.update(method=m, index=i, n_methods=n, stage="user", surface_type="user")
             if progress and progress(i, n, m, 0, np.nan):
                 raise SearchCancelled()
             if m == "bishop":
                 out.errors[m] = "Bishop yalnızca dairesel yüzeyler için geçerlidir."
+                stat["done"][m] = out.errors[m]
                 continue
             res, s = analyze(geom, surf, mats, method=m, opts=p.slice_options(), **p.solver_kw())
             if s is None or not res.ok:
@@ -111,30 +119,36 @@ def run_analysis(p: Project,
                 out.errors[m] = res.issue or "Kabul edilebilir olmayan çözüm."
                 continue
             out.results[m] = SearchResult(surf, res.fos, res, s, 1, [], "kullanıcı yüzeyi", m)
+            stat["done"][m] = res.fos
     else:
         for i, m in enumerate(methods):
+            stat.update(method=m, index=i, n_methods=n)
             if p.surfaces.surface_type == "noncircular" and m == "bishop":
                 out.errors[m] = ("Bishop yalnızca dairesel yüzeyler için geçerlidir; "
                                  "dairesel olmayan aramada atlandı.")
+                stat["done"][m] = out.errors[m]
                 continue
 
             def prog(gen, best, i=i, m=m):
                 return progress(i, n, m, gen, best) if progress else None
 
             try:
-                out.results[m] = search(geom, mats, search_settings(p, m), prog)
+                out.results[m] = search(geom, mats, search_settings(p, m), prog, stat)
+                stat["done"][m] = out.results[m].fos
             except SearchCancelled:
                 raise
             except (RuntimeError, ValueError) as exc:
                 out.errors[m] = str(exc)
+                stat["done"][m] = str(exc)
 
     out.elapsed = time.perf_counter() - t0
     out.finished = _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return out
 
 
-def report_text(r: AnalysisResults) -> str:
-    """Plain-text analysis report (Info Viewer)."""
+def report_text(r: AnalysisResults, tr: Callable[[str], str] = lambda s: s) -> str:
+    """Plain-text analysis report (Info Viewer). `tr` translates the words that
+    are embedded inside padded columns (the UI passes its translator)."""
     p = r.project
     L = ["SlipSurface LE — Analiz Raporu", "=" * 60,
          f"Proje        : {p.summary.title}", f"Analiz       : {p.summary.analysis}",
@@ -147,7 +161,8 @@ def report_text(r: AnalysisResults) -> str:
     g = p.general
     L += ["Proje ayarları", "-" * 60,
           "Birimler           : Metrik (kN, kPa, m)",
-          f"Göçme yönü         : {'Sağdan sola' if g.failure_direction == 'right_to_left' else 'Soldan sağa'}",
+          f"Göçme yönü         : "
+          f"{tr('Sağdan sola' if g.failure_direction == 'right_to_left' else 'Soldan sağa')}",
           f"Dilim sayısı       : {p.methods.n_slices}",
           f"Tolerans / maks. it: {p.methods.tolerance} / {p.methods.max_iter}",
           f"Arayüz fonksiyonu  : {p.methods.interslice} (GLE)",
@@ -155,17 +170,11 @@ def report_text(r: AnalysisResults) -> str:
           f"Sismik             : kh = {p.seismic.kh}, kv = {p.seismic.kv}",
           f"Yüzey tipi         : {p.surfaces.surface_type}", ""]
     L += ["Malzemeler", "-" * 60]
+    from slipsurface.materials.catalog import model_name, parameter_text
     for m in p.materials:
-        if m.model == "MC":
-            L.append(f"{m.name:18s} Mohr-Coulomb  γ={m.gamma:g}  γsat={m.gamma_sat if m.use_sat else m.gamma:g}"
-                     f"  c={m.c:g} kPa  φ={m.phi:g}°")
-        elif m.model == "UD":
-            L.append(f"{m.name:18s} Undrained γ={m.gamma:g} su={m.su:g} kPa (total stress)")
-        elif m.model == "PL":
-            L.append(f"{m.name:18s} Power law γ={m.gamma:g} a={m.coefficient:g} b={m.exponent:g} pa={m.reference_pressure:g} kPa")
-        else:
-            L.append(f"{m.name:18s} Hoek-Brown    γ={m.gamma:g}  σci={m.sigma_ci:g} kPa  "
-                     f"GSI={m.gsi:g}  mi={m.mi:g}  D={m.d:g}")
+        gs = m.gamma_sat if m.use_sat else m.gamma
+        L.append(f"{m.name:18s} {tr(model_name(m.model)):26s} γ={m.gamma:g}  γsat={gs:g}  "
+                 f"{parameter_text(m)}")
     if p.tension_crack:
         xs = [q[0] for q in p.tension_crack]
         L += ["", "Gerilme çatlağı", "-" * 60,
@@ -187,15 +196,16 @@ def report_text(r: AnalysisResults) -> str:
         from slipsurface.loads import SUPPORT_KINDS
         L += ["", "Destek tipleri", "-" * 60]
         for t in p.support_types:
-            L.append(f"{t.name:16s} {SUPPORT_KINDS[t.kind]:30s} aralık {t.spacing:g} m  "
+            L.append(f"{t.name:16s} {tr(SUPPORT_KINDS[t.kind]):30s} aralık {t.spacing:g} m  "
                      f"çekme {t.tensile:g} kN  "
-                     f"{'pasif' if t.application == 'passive' else 'aktif'}")
+                     f"{tr('pasif' if t.application == 'passive' else 'aktif')}")
         L += ["", "Destekler", "-" * 60]
         for i, sp in enumerate(p.supports, 1):
             L.append(f"{i:2d}. {sp['type']:16s} A=({sp['a'][0]:.2f}, {sp['a'][1]:.2f})  "
                      f"B=({sp['b'][0]:.2f}, {sp['b'][1]:.2f})")
     L += ["", "Sonuçlar (yöntem başına kritik yüzey)", "-" * 60,
-          f"{'Yöntem':26s} {'FS':>7s}  {'λ':>7s}  {'çıkış x':>8s}  {'giriş x':>8s}  yüzey"]
+          f"{tr('Yöntem'):26s} {'FS':>7s}  {'λ':>7s}  {tr('çıkış x'):>8s}  "
+          f"{tr('giriş x'):>8s}  {tr('yüzey')}"]
     for k, res in r.results.items():
         s = res.surface
         lam = f"{res.lem.lam:7.3f}" if res.lem.lam == res.lem.lam else "      –"
@@ -237,8 +247,8 @@ def report_text(r: AnalysisResults) -> str:
                 L.append(f"{method_name(k):26s} kritik yüzeyi kesen destek / kaplama yok")
             for f in sf:
                 L.append(f"{method_name(k):26s} {f.label}: T = {f.T:8.2f}  "
-                         f"(L_iç = {f.L_in:.2f} m, L_dış = {f.L_out:.2f} m, {f.governing}, "
-                         f"{'pasif' if f.passive else 'aktif'})")
+                         f"(L_iç = {f.L_in:.2f} m, L_dış = {f.L_out:.2f} m, {tr(f.governing)}, "
+                         f"{tr('pasif' if f.passive else 'aktif')})")
     gm = r.global_minimum()
     if gm:
         L += ["", f"Global minimum: {method_name(gm[0])} FS = {gm[1].fos:.3f}"]

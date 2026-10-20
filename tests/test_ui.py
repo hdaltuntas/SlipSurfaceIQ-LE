@@ -134,9 +134,9 @@ def test_interpret_reuses_window_and_explains_partial_results(win):
     assert "Spencer" in iw.result_warning.text()
     assert "Yakınsama" in iw.result_warning.text()
     iw._display_option("show_fs_legend", False)
-    iw._display_option("show_all_surfaces", False)
+    iw._display_option("show_all_surfaces", True)
     iw._display_reset()
-    assert iw.a_fs_legend.isChecked() and iw.a_all.isChecked()
+    assert iw.a_fs_legend.isChecked() and not iw.a_all.isChecked()   # default: contour map
     assert not iw.project.display_opt("show_vertices")
 
 
@@ -144,7 +144,7 @@ def test_close_during_analysis_is_deferred(app, win, monkeypatch):
     from threading import Event
     from slipsurface.optimizer import SearchCancelled
     started, release = Event(), Event()
-    def slow_analysis(project, progress):
+    def slow_analysis(project, progress, **kw):
         started.set()
         release.wait(5)
         assert progress(0, 1, "bishop", 1, 1.0)

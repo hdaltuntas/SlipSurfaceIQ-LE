@@ -178,7 +178,19 @@ class DocumentViewer(QWidget):
                                                               project.methods.methods)])
             meth.setIcon(0, icon("compute"))
             scen.addChild(meth)
+        self._translate_items()
         self.tree.expandAll()
+
+    def _translate_items(self) -> None:
+        """Item captions are built from templates; user names (materials) stay."""
+        from PySide6.QtWidgets import QTreeWidgetItemIterator
+        it = QTreeWidgetItemIterator(self.tree)
+        while it.value():
+            item = it.value()
+            data = item.data(0, Qt.UserRole)
+            if not (data and data[0] == "material"):
+                item.setText(0, tr(item.text(0)))
+            it += 1
 
     def _add_notes(self, scen, project) -> None:
         if not project.annotations:
@@ -237,13 +249,15 @@ MODELER_OPTIONS = [
 ]
 
 INTERPRET_OPTIONS = {
-    "Kayma Stabilitesi": [
-        ("Arama", [("show_slope_limits", tr("Kayma sınırları"), "bool"),
-                   ("show_fs_legend", tr("FS lejantı (sağ alt)"), "bool")]),
+    tr("Kayma Stabilitesi"): [
+        (tr("Arama"), [("show_slope_limits", tr("Kayma sınırları"), "bool"),
+                       ("show_fs_contours", tr("Kayma merkezi FS konturları"), "bool"),
+                       ("show_fs_legend", tr("FS lejantı (sağ alt)"), "bool")]),
         (tr("Dilimler"), [("show_slices", tr("Dilim sınırları ve dolgu"), "bool"),
                       ("slice_fill_color", tr("Dolgu rengi"), "color")]),
         (tr("Yüzeyler"), [("show_lines_to_center", tr("Merkeze çizgiler"), "bool"),
                       ("show_fs_text", tr("FS yazısı"), "bool"),
+                      ("critical_dashed", tr("Kritik yüzey kesikli çizgi"), "bool"),
                       ("show_all_surfaces", tr("Tüm yüzeyler (en düşük 25)"), "bool"),
                       ("show_control_points", tr("Spline kontrol noktaları"), "bool")]),
     ],

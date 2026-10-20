@@ -80,7 +80,8 @@ def run(argv: list[str] | None = None, project_path: str | None = None,
     win = ModelerWindow(EXAMPLES[example]() if example else None)
     if project_path:
         win.open_project(project_path)
-    win.showFullScreen()
+    from slipsurface.ui.preferences import show_screen_sized
+    show_screen_sized(win)
     if smoke:
         def _quit():
             win.doc.mark_clean()

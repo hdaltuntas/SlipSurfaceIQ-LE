@@ -13,6 +13,7 @@ from slipsurface.optimizer import SearchCancelled
 
 class AnalysisWorker(QObject):
     progress = Signal(int, int, str, int, float)   # i, n, method, generation, best
+    detail = Signal(object)                        # copy of the live search status dict
     finished = Signal(object)                      # AnalysisResults
     failed = Signal(str)
     cancelled = Signal()
@@ -20,6 +21,7 @@ class AnalysisWorker(QObject):
     def __init__(self, project) -> None:
         super().__init__()
         self.project = project
+        self.status: dict = {}
         self._stop = False
 
     def request_stop(self) -> None:
@@ -33,11 +35,12 @@ class AnalysisWorker(QObject):
             now = time.monotonic()
             if now - last_update >= 0.1:
                 self.progress.emit(i, n, m, gen, best)
+                self.detail.emit(dict(self.status, done=dict(self.status.get("done", {}))))
                 last_update = now
             return self._stop
 
         try:
-            res = run_analysis(self.project, on_progress)
+            res = run_analysis(self.project, on_progress, status=self.status)
         except SearchCancelled:
             self.cancelled.emit()
         except Exception as exc:          # report, never crash the GUI
