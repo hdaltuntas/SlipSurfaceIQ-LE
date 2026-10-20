@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=SlipSurfaceIQ LE
+Comment=2D limit equilibrium slope stability analysis
+Exec=/opt/slipsurface-iq-le/slipsurface %f
+Icon=slipsurface-iq-le
+Terminal=false
+Categories=Science;Engineering;
+StartupNotify=true

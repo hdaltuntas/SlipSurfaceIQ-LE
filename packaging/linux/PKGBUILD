@@ -1,0 +1,18 @@
+# Packages the verified, bundled Linux application produced by build.py.
+pkgname=slipsurface-iq-le
+pkgver=@VERSION@
+pkgrel=1
+pkgdesc='2D limit equilibrium slope stability analysis'
+arch=('x86_64')
+url='https://github.com/hdaltuntas/SlipSurfaceIQ-LE'
+license=('AGPL-3.0-or-later')
+depends=('glibc>=2.39' 'libglvnd' 'libxkbcommon-x11' 'fontconfig' 'dbus'
+         'glib2' 'libx11' 'xcb-util-cursor' 'xcb-util-wm' 'xcb-util-image'
+         'xcb-util-keysyms' 'xcb-util-renderutil')
+options=('!strip' '!debug')
+source=('payload.tar.gz')
+sha256sums=('@SHA256@')
+
+package() {
+    cp -a "$srcdir/payload/." "$pkgdir/"
+}
