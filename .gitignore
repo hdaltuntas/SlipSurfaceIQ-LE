@@ -8,10 +8,10 @@ pytest_full.log
 build/
 dist/
 *.egg-info/
-.idea/workspace.xml
-.idea/pythonConsole.xml
 
-# IDE / editor caches
+# IDE / editor settings (kept out of the repository)
+.idea/
+.vscode/
 .vs/
 .test-tmp*/
 /.ui-*.png

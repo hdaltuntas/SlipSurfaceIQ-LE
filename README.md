@@ -3,7 +3,7 @@
 2D Limit Denge (LEM) şev stabilite programı: Slide2 düzeninde native masaüstü
 **Modeler** + ayrı **Yorumla** penceresi, doğrulanmış hesap motoru.
 
-## Geri bildirim düzeltmeleri (2026.0.x)
+## 2026.0.0 — geri bildirim güncellemesi
 
 - **Ekran çözünürlüğü**: Modeler ve Yorumla pencereleri ilk açılışta ekranın kullanılabilir
   alanını algılayıp o boyutta (ekranı kaplayan pencere) açılır; diyaloglar ekran
@@ -42,7 +42,7 @@
   şev yüzünde / gömülü uçta / her iki uçta; sıyrılma `2·C·∫(adezyon + σv·tan δ)ds`,
   σv = γ·derinlik). Enjeksiyonlu ankraj (grouted tieback) ve geotekstil önceden vardı.
 
-## 2026.0.0
+## 2026.0.0 — ilk sürüm
 
 - Sürüm düzeni: `yıl.ana.alt` (2026.0.0).
 - **Görünüm → Dil / Language** ile Türkçe/İngilizce arayüz seçimi anında uygulanır.
@@ -116,11 +116,7 @@ Gereksinim: Python 3.10+ (önerilen 3.11–3.13).
    ```
 3. **`main.py`**'yi açıp Run/Debug'a basın.
 
-| IDE | Hazır ayar |
-|---|---|
-| **VS Code** | `.vscode/launch.json`: *SlipSurface LE*, *ankrajlı örnek*, *örnek seç*, *açık dosyayı aç*, *Ortam kontrolü*, *Testler*. Yorumlayıcı: `.venv` (otomatik bulunur) |
-| **PyCharm** | `.idea/runConfigurations`: *SlipSurface LE*, *Ortam kontrolü* ve *Tests*. Settings → Python Interpreter → `.venv` |
-| **Spyder / diğer** | `main.py`'yi çalıştırın (Spyder'da Run → Configuration → *Execute in an external system terminal* önerilir) |
+Spyder'da Run → Configuration → *Execute in an external system terminal* önerilir.
 
 ### Komut satırı
 ```bash
@@ -249,7 +245,6 @@ main.py           IDE / komut satırı giriş noktası
 pyproject.toml    paket tanımı (pip install -e .)
 requirements*.txt bağımlılıklar
 run_windows.bat, run_linux_mac.sh   tek tık kurulum + çalıştırma
-.vscode/, .idea/  isteğe bağlı IDE çalıştırma/hata ayıklama ayarları (program için gerekli değil)
 slipsurface/
   geometry/   slope.py, surfaces.py (daire, polyline, B-spline), builder.py (sınırlardan bölgeler)
   materials/  Mohr-Coulomb, Hoek-Brown
@@ -278,3 +273,17 @@ tests/
       hasır çelik kaplama, 15° tekil bulon/ankraj, bulon paterni
 - [x] v0.6: PDF rapor, poligonal dairesel olmayan yüzey, sonuç ekranında kontrol noktaları gizli
 - [ ] Sonraki: olasılıksal analiz (Monte Carlo), Sarma, geri analiz
+
+## Lisans
+
+Copyright © 2026 Hasan Deniz Altuntaş.
+
+SlipSurface LE, [GNU Affero Genel Kamu Lisansı sürüm 3](LICENSE) (AGPL-3.0) veya (tercihinize göre)
+daha sonraki bir sürümü altında dağıtılan özgür yazılımdır. Program **hiçbir garanti
+olmaksızın** sunulur; sonuçların mühendislik yargısıyla değerlendirilmesi ve
+doğrulanması kullanıcının sorumluluğundadır. Programı değiştirip bir ağ üzerinden
+(ör. sunucu / web hizmeti olarak) kullanıcılara sunarsanız, AGPL gereği değiştirilmiş
+kaynak kodunu da bu kullanıcılara sağlamanız gerekir. Kullanılan üçüncü taraf bileşenlerin
+lisansları **Yardım → Hakkında** bölümünde listelenir (Qt/PySide6: LGPL-3.0,
+NumPy/SciPy/Shapely: BSD, ReportLab: BSD, ezdxf ve QtAwesome: MIT, Material Design
+Icons: Apache-2.0, Source Sans 3: SIL OFL 1.1).
