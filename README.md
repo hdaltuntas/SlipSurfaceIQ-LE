@@ -82,6 +82,17 @@ switched at any time without losing work. The program runs on Windows, Linux and
 
 ## Installation and start-up
 
+### Native installers
+
+Windows MSI, Ubuntu DEB, Fedora/openSUSE RPM and Arch Linux packages are built by
+the [Native packages workflow](.github/workflows/packages.yml) and published as
+[release assets](https://github.com/hdaltuntas/SlipSurfaceIQ-LE/releases).
+These x86-64 installers include Python and the application dependencies.
+See [package installation and build instructions](packaging/README.md) for supported
+systems, commands, checksums and verification details.
+
+### Running from source
+
 **Requirements:** Python 3.10 or newer (3.11 – 3.14 recommended). The required packages are
 PySide6 (Qt), NumPy, SciPy, Shapely, ReportLab, ezdxf and QtAwesome.
 
