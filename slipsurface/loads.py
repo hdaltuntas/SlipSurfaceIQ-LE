@@ -19,7 +19,8 @@ Loads
 
 Supports (straight, from head A on the slope to end B inside the slope);
 I = intersection with the slip surface, L_in = |AI| (in the sliding mass),
-L_out = |IB| (in stable ground). Force per metre = T / spacing.
+L_out = |IB| (in stable ground). Force per metre = T / spacing for discrete
+supports; geotextile/geosynthetic strengths are already per metre width.
   end_anchored     T = tensile capacity
   grouted_tieback  T = min(tensile, bond * min(bond_length, L_out))
   soil_nail        T = min(tensile, bond * L_out, plate + bond * L_in)
@@ -92,8 +93,8 @@ class LineLoad:
 class SupportType:
     name: str = "Ankraj 1"
     kind: str = "end_anchored"
-    spacing: float = 1.5  # out-of-plane spacing [m] (geotextile: 1)
-    tensile: float = 200.0  # kN
+    spacing: float = 1.5  # out-of-plane spacing [m]; ignored for geotextile/geosynthetic
+    tensile: float = 200.0  # kN; kN/m for geotextile/geosynthetic
     plate: float = 100.0  # kN (soil nail)
     bond_strength: float = 50.0  # kN/m (tieback, soil nail)
     bond_length: float = 4.0  # m (tieback)
@@ -133,6 +134,12 @@ class SupportForce:
     L_out: float
     governing: str
     label: str = ""
+
+    def mobilized(self, fos: float) -> float:
+        """Applied force [kN/m] at the solved factor of safety."""
+        if not np.isfinite(fos) or fos <= 0:
+            raise ValueError("factor of safety must be finite and positive")
+        return self.T / fos if self.passive else self.T
 
 
 @dataclass
@@ -333,7 +340,7 @@ def slice_forces(loads: LoadSet, geom, surf, xl, xr, x_exit, x_entry, direction:
             po_in = geosynthetic_pullout(sup.stype, geom, A, p)
             po_out = geosynthetic_pullout(sup.stype, geom, p, B)
         T, gov = support_capacity(sup.stype, L_in, L_out, po_in, po_out)
-        spacing = 1.0 if sup.stype.kind == "geosynthetic" else sup.stype.spacing
+        spacing = 1.0 if sup.stype.kind in ("geotextile", "geosynthetic") else sup.stype.spacing
         T = max(T, 0.0) / max(spacing, 1e-9)
         if sup.stype.orientation == "perpendicular":
             d = (B - A) / np.hypot(*(B - A))

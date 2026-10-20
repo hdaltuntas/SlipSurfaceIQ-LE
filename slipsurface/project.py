@@ -92,6 +92,52 @@ def _from_dict(cls, d: dict | None):
     return cls(**{k: v for k, v in (d or {}).items() if k in known})
 
 
+def _finite_inputs(value, path="project") -> None:
+    """Reject NaN/Infinity, including values accepted by Python's JSON reader."""
+    if isinstance(value, dict):
+        for key, item in value.items():
+            _finite_inputs(item, f"{path}.{key}")
+    elif isinstance(value, (list, tuple)):
+        for i, item in enumerate(value):
+            _finite_inputs(item, f"{path}[{i}]")
+    elif isinstance(value, (float, np.floating)) and not np.isfinite(value):
+        raise ValueError(f"{path}: sonlu bir sayı gerekli.")
+
+
+def _choice(value, allowed, label) -> None:
+    if value not in allowed:
+        raise ValueError(f"{label}: bilinmeyen seçenek '{value}'.")
+
+
+def _validate_loads(loads) -> None:
+    def numbers(value, shape):
+        a = np.asarray(value)
+        if a.shape != shape or a.dtype.kind not in "iuf":
+            raise ValueError(f"{shape} biçiminde sayısal veri gerekli")
+        return a.astype(float)
+
+    for i, ld in enumerate(loads, 1):
+        label = f"Yük {i}"
+        kind = ld.get("kind")
+        _choice(kind, ("distributed", "line"), label)
+        try:
+            if kind == "distributed":
+                pts, q = numbers(ld["points"], (2, 2)), numbers(ld["q"], (2,))
+                if pts[0, 0] == pts[1, 0]:
+                    raise ValueError("yayılı yükün yatay uzunluğu pozitif olmalı")
+                _choice(ld.get("orientation", "vertical"), ("vertical", "normal"), label)
+                values = np.concatenate([pts.ravel(), q])
+            else:
+                pt = numbers(ld["point"], (2,))
+                magnitude = float(numbers(ld["magnitude"], ()))
+                angle = float(numbers(ld.get("angle", 270), ()))
+                values = np.array([*pt, magnitude, angle])
+            if not np.all(np.isfinite(values)):
+                raise ValueError("yük değerleri sonlu olmalı")
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError(f"{label}: geçersiz yük verisi ({exc}).") from None
+
+
 # ------------------------------------------------------------------ parts
 @dataclass
 class ProjectSummary:
@@ -392,6 +438,41 @@ class Project:
 
     # ------------------------------------------------------- validation
     def validate(self) -> None:
+        _finite_inputs(self.analysis_inputs())
+        _choice(
+            self.general.failure_direction, ("auto", "right_to_left", "left_to_right"), "Göçme yönü"
+        )
+        _choice(self.groundwater.method, ("water_table", "ru", "none"), "Yeraltı suyu yöntemi")
+        _choice(
+            self.methods.interslice,
+            ("constant", "half-sine", "clipped-sine", "trapezoidal"),
+            "Arayüz fonksiyonu",
+        )
+        _choice(self.surfaces.surface_type, ("circular", "noncircular", "user"), "Yüzey tipi")
+        _choice(self.surfaces.noncircular_shape, ("polyline", "spline"), "Yüzey biçimi")
+        _choice(self.surfaces.effort, tuple(EFFORT), "Arama yoğunluğu")
+        if self.groundwater.gamma_w <= 0 or not 0 <= self.groundwater.ru <= 1:
+            raise ValueError("γw > 0 ve 0 ≤ Ru ≤ 1 olmalı.")
+        if self.seismic.kh < 0 or not -1 <= self.seismic.kv <= 1:
+            raise ValueError("kh ≥ 0 ve −1 ≤ kv ≤ 1 olmalı.")
+        if self.methods.tolerance <= 0:
+            raise ValueError("Çözüm toleransı pozitif olmalı.")
+        for label, value, minimum in (
+            ("Dilim sayısı", self.methods.n_slices, 3),
+            ("İterasyon sayısı", self.methods.max_iter, 1),
+            ("Kontrol noktası sayısı", self.surfaces.n_ctrl, 2),
+        ):
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, np.integer))
+                or value < minimum
+            ):
+                raise ValueError(f"{label}: en az {minimum} olan bir tam sayı gerekli.")
+        if not 0 <= self.methods.f_start <= 1 or not 0 <= self.methods.f_end <= 1:
+            raise ValueError("Arayüz fonksiyonu uç değerleri 0 ile 1 arasında olmalı.")
+        if self.advanced.min_depth < 0:
+            raise ValueError("Minimum derinlik negatif olamaz.")
+        _validate_loads(self.loads)
         names = self.material_names()
         if not names:
             raise ValueError("En az bir malzeme tanımlayın.")
@@ -438,6 +519,9 @@ class Project:
         if len(set(snames)) != len(snames):
             raise ValueError("Destek tipi adları benzersiz olmalı.")
         for t in self.support_types:
+            _choice(t.application, ("active", "passive"), t.name)
+            _choice(t.orientation, ("parallel", "tangent", "perpendicular"), t.name)
+            _choice(t.anchorage, ("none", "face", "embedded", "both"), t.name)
             if t.kind not in SUPPORT_KINDS:
                 raise ValueError(f"{t.name}: bilinmeyen destek tipi.")
             if t.spacing <= 0 or t.tensile < 0:
@@ -452,6 +536,7 @@ class Project:
         if len(set(fnames)) != len(fnames):
             raise ValueError("Kaplama tipi adları benzersiz olmalı.")
         for ft in self.facing_types:
+            _choice(ft.application, ("active", "passive"), ft.name)
             if ft.thickness <= 0 or ft.gamma < 0 or ft.tau < 0 or ft.mesh_as < 0:
                 raise ValueError(f"{ft.name}: kalınlık > 0, diğer değerler ≥ 0 olmalı.")
         for f in self.facings:
@@ -490,6 +575,7 @@ class Project:
         return next((t for t in self.support_types if t.name == name), None)
 
     def load_set(self) -> LoadSet:
+        _validate_loads(self.loads)
         ls = LoadSet()
         for ld in self.loads:
             if ld["kind"] == "distributed":
@@ -533,6 +619,7 @@ class Project:
 
     def slice_options(self) -> SliceOptions:
         gw = self.groundwater
+        _choice(gw.method, ("water_table", "ru", "none"), "Yeraltı suyu yöntemi")
         pore = gw.method
         if pore == "water_table" and not self.water_table:
             pore = "none"

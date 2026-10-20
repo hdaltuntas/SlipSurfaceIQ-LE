@@ -952,7 +952,7 @@ class CadCanvas(QWidget):
             p.drawEllipse(q, 4, 4)
             p.setFont(QFont("Source Sans 3", 8, QFont.Bold))
             p.setPen(QColor("#1f3d7a"))
-            p.drawText(q + QPointF(6, 14), f"{f.T:.0f} kN/m")
+            p.drawText(q + QPointF(6, 14), f"Tmob = {f.mobilized(res.fos):.0f} kN/m")
         contour = self._contour() is not None
         crit = QColor("#0a8a2a")
         dark = QColor(40, 40, 40)

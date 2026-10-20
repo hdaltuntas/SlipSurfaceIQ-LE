@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 import numpy as np
+from scipy.optimize import brentq
 
 from slipsurface.geometry import CircularSurface
 from slipsurface.lem.slicing import SliceSet
@@ -120,13 +121,43 @@ def _driving_moment_over_R(s: SliceSet, F: float = 1.0) -> float:
     return float(np.sum(s.Wv * np.sin(s.alpha)) + np.sum(s.Fh * (yc - s.y_cg)) / R - m_ext / R)
 
 
+def _passive_root(balance, guess, lower, tol, max_iter):
+    """Bracket the equilibrium residual without dividing by the driving force.
+
+    T/F can reverse the driving force at a trial F without invalidating the
+    eventual equilibrium. Keep Bishop's m-alpha poles outside the bracket.
+    """
+    lo = max(1e-8, lower + 1e-8 * max(1.0, lower))
+    hi = max(1.0, float(guess), 2 * lo)
+    flo = balance(lo)
+    for _ in range(60):
+        fhi = balance(hi)
+        if np.isfinite(flo) and np.isfinite(fhi) and flo * fhi <= 0:
+            try:
+                root, info = brentq(
+                    balance,
+                    lo,
+                    hi,
+                    xtol=1e-12,
+                    rtol=max(1e-14, min(tol, 1e-10)),
+                    maxiter=max_iter,
+                    full_output=True,
+                )
+            except (ValueError, RuntimeError):
+                return np.nan, 0
+            if abs(balance(root)) <= max(tol, 1e-10) * max(1.0, root):
+                return float(root), max(1, info.iterations) if flo * fhi < 0 else 1
+            return np.nan, 0
+        hi *= 2
+    return np.nan, 0
+
+
 def ordinary(s: SliceSet, tol: float = 1e-9, max_iter: int = 50) -> LEMResult:
     """Ordinary (Fellenius / Swedish) method (moment form for circles,
-    force form along the base otherwise). Passive loads: fixed-point on F."""
+    force form along the base otherwise). Passive loads: bracketed equilibrium."""
     sin_a, cos_a = np.sin(s.alpha), np.cos(s.alpha)
-    F = 1.0
-    it = 0
-    for it in range(1, (max_iter if s.has_passive else 1) + 1):  # noqa: B007 (used after loop)
+
+    def state(F):
         qx, qy, _m = frame_ext(s, F)
         Hx = -s.Fh + qx  # horizontal external force (frame, +x)
         V = s.Wv - qy  # net downward external force
@@ -134,17 +165,25 @@ def ordinary(s: SliceSet, tol: float = 1e-9, max_iter: int = 50) -> LEMResult:
             driving = _driving_moment_over_R(s, F)
         else:
             driving = np.sum(V * sin_a - Hx * cos_a)
-        if driving <= 0:
-            return LEMResult(np.nan, "Ordinary", False, 0, message="non-positive driving moment")
         n_eff = np.maximum(V * cos_a + Hx * sin_a - s.u * s.l, 0.0)
         c, tp = _strength(s, n_eff / s.l)
-        F_new = float(np.sum(c * s.l + n_eff * tp) / driving)
-        if not s.has_passive or abs(F_new - F) < tol * F_new:
-            F = F_new
-            break
-        F = F_new
+        return driving, float(np.sum(c * s.l + n_eff * tp))
+
+    driving, resistance = state(np.inf if s.has_passive else 1.0)
+    if driving <= 0:
+        return LEMResult(np.nan, "Ordinary", False, 0, message="non-positive driving moment")
+    if s.has_passive:
+        scale = max(1.0, float(np.sum(s.W)))
+
+        def balance(F):
+            drive, resist = state(F)
+            return (F * drive - resist) / scale
+
+        F, it = _passive_root(balance, max(1.0, resistance / driving), 0.0, tol, max_iter)
+        if not np.isfinite(F) or state(F)[0] <= 0:
+            return LEMResult(np.nan, "Ordinary", False, it, message="did not converge")
     else:
-        return LEMResult(F, "Ordinary", False, it, message="did not converge")
+        F, it = resistance / driving, 1
     return LEMResult(F, "Ordinary", True, it, float(np.min(cos_a)))
 
 
@@ -164,7 +203,7 @@ def bishop_simplified(
             message="Simplified Bishop is defined for circular surfaces only",
         )
     sin_a, cos_a, tan_a = np.sin(s.alpha), np.cos(s.alpha), np.tan(s.alpha)
-    if _driving_moment_over_R(s, 1.0 if not s.has_passive else 1e9) <= 0:
+    if _driving_moment_over_R(s, 1.0 if not s.has_passive else np.inf) <= 0:
         return LEMResult(np.nan, "Bishop", False, 0, message="non-positive driving moment")
 
     nonlinear = any(m.nonlinear for m in s.materials)
@@ -175,7 +214,19 @@ def bishop_simplified(
     if not np.isfinite(f) or f <= 0:
         f = 1.0
 
+    def passive_balance(F):
+        ma = cos_a + sin_a * tp / F
+        _, qy, _ = frame_ext(s, F)
+        resistance = np.sum((c * s.b + (s.Wv - qy - s.u * s.b) * tp) / ma)
+        return (F * _driving_moment_over_R(s, F) - resistance) / max(1.0, float(s.W.sum()))
+
     for it in range(1, max_iter + 1):
+        if s.has_passive:
+            lower = max(0.0, float(np.max(-sin_a * tp / cos_a)))
+            solved, _ = _passive_root(passive_balance, f, lower, tol, max_iter)
+            if not np.isfinite(solved):
+                return LEMResult(np.nan, "Bishop", False, it, message="did not converge")
+            previous, f = f, solved
         m_a = cos_a + sin_a * tp / f
         if np.any(m_a <= 1e-9):
             return LEMResult(
@@ -196,7 +247,11 @@ def bishop_simplified(
             n_eff = (eff_w - c * s.b * tan_a / f_new) / m_a
             sigma_n = np.maximum(n_eff / s.l, 0.0)
             c, tp = _strength(s, sigma_n)
-        if abs(f_new - f) < tol * max(1.0, abs(f)):
+        done = abs(f_new - f) < tol * max(1.0, abs(f))
+        if s.has_passive:
+            done = not nonlinear or (it > 1 and abs(f_new - previous) < tol * max(1.0, f))
+            done = done and abs(passive_balance(f_new)) <= max(tol, 1e-10) * max(1.0, f_new)
+        if done:
             m_a = cos_a + sin_a * tp / f_new
             n_eff = (eff_w - c * s.b * tan_a / f_new) / m_a
             res = LEMResult(float(f_new), "Bishop", True, it, float(m_a.min()))
