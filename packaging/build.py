@@ -58,7 +58,9 @@ def licenses() -> None:
         dependencies[name] = dist.version
         for file in dist.files or []:
             if any(
-                word in file.name.lower() for word in ("license", "licence", "copying", "notice")
+                word in part.lower()
+                for part in file.parts
+                for word in ("license", "licence", "copying", "notice")
             ):
                 source = Path(dist.locate_file(file))
                 if source.is_file():
