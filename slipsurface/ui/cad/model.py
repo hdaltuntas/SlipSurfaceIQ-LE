@@ -14,13 +14,31 @@ import numpy as np
 
 from slipsurface.project import Project
 
-LABELS = {"external": tr("Dış sınır"), "material": tr("Malzeme sınırı"), "water": "YASS",
-          "user": tr("Kullanıcı yüzeyi"), "load": "Yük", "support": tr("Destek"),
-          "crack": tr("Gerilme çatlağı"), "pattern": "Bulon paterni", "facing": "Kaplama",
-          "annot": "Not"}
-MIN_POINTS = {"external": 3, "material": 2, "water": 2, "user": 2, "load": 1, "support": 2,
-              "crack": 2, "pattern": 2, "facing": 2, "annot": 1}
-FIXED_POINTS = {"support", "load", "pattern", "facing", "annot"}   # no vertex insert/delete
+LABELS = {
+    "external": tr("Dış sınır"),
+    "material": tr("Malzeme sınırı"),
+    "water": "YASS",
+    "user": tr("Kullanıcı yüzeyi"),
+    "load": "Yük",
+    "support": tr("Destek"),
+    "crack": tr("Gerilme çatlağı"),
+    "pattern": "Bulon paterni",
+    "facing": "Kaplama",
+    "annot": "Not",
+}
+MIN_POINTS = {
+    "external": 3,
+    "material": 2,
+    "water": 2,
+    "user": 2,
+    "load": 1,
+    "support": 2,
+    "crack": 2,
+    "pattern": 2,
+    "facing": 2,
+    "annot": 1,
+}
+FIXED_POINTS = {"support", "load", "pattern", "facing", "annot"}  # no vertex insert/delete
 
 
 @dataclass
@@ -32,8 +50,11 @@ class Entity:
     @property
     def label(self) -> str:
         kind, i = self.key
-        return f"{LABELS[kind]} {i + 1}" if kind in ("material", "load", "support", "pattern",
-                                                      "facing", "annot") else LABELS[kind]
+        return (
+            f"{LABELS[kind]} {i + 1}"
+            if kind in ("material", "load", "support", "pattern", "facing", "annot")
+            else LABELS[kind]
+        )
 
     def segments(self):
         n = len(self.pts)

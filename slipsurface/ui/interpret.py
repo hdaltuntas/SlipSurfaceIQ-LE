@@ -36,8 +36,9 @@ from slipsurface.ui.statusbar import CadStatusBar
 
 
 class InterpretWindow(QMainWindow):
-    def __init__(self, results, path=None, parent=None, annotations=None,
-                 on_annotations=None) -> None:
+    def __init__(
+        self, results, path=None, parent=None, annotations=None, on_annotations=None
+    ) -> None:
         super().__init__(parent)
         self.setAttribute(Qt.WA_DeleteOnClose)
         fit_to_screen(self, 1450, 900)
@@ -48,10 +49,11 @@ class InterpretWindow(QMainWindow):
         # Only the notes are editable here (own undo stack); they are passed
         # back to the Modeler through `on_annotations`.
         pr = results.project.copy()
-        pr.annotations = [dict(a) for a in (annotations if annotations is not None
-                                            else pr.result_annotations)]
+        pr.annotations = [
+            dict(a) for a in (annotations if annotations is not None else pr.result_annotations)
+        ]
         self._display = pr.display
-        self._display["show_vertices"] = False   # clean result drawing (no edit handles)
+        self._display["show_vertices"] = False  # clean result drawing (no edit handles)
         self.doc = Document(pr)
         gm = results.global_minimum()
         self.key = gm[0] if gm else (next(iter(results.results), None))
@@ -66,12 +68,16 @@ class InterpretWindow(QMainWindow):
         self.result_warning.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.result_warning.setStyleSheet(
             "QLabel { background: #fff4d6; color: #674900; padding: 10px; "
-            "border: 1px solid #e2c36f; border-radius: 4px; }")
+            "border: 1px solid #e2c36f; border-radius: 4px; }"
+        )
         if results.errors:
             details = "\n".join(f"{method_name(k)}: {v}" for k, v in results.errors.items())
-            self.result_warning.setText(tr(
-                f"{len(results.errors)} yöntem için sonuç alınamadı. "
-                "Gösterilen minimum yalnızca tamamlanan yöntemlere aittir.\n" + details))
+            self.result_warning.setText(
+                tr(
+                    f"{len(results.errors)} yöntem için sonuç alınamadı. "
+                    "Gösterilen minimum yalnızca tamamlanan yöntemlere aittir.\n" + details
+                )
+            )
         self.result_warning.setVisible(bool(results.errors))
         center = QWidget()
         layout = QVBoxLayout(center)
@@ -116,6 +122,7 @@ class InterpretWindow(QMainWindow):
         if not getattr(self, "_shown_once", False):
             self._shown_once = True
             from PySide6.QtCore import QTimer
+
             QTimer.singleShot(0, self.canvas.zoom_extents)
 
     # ------------------------------------------------------------ build
@@ -137,15 +144,21 @@ class InterpretWindow(QMainWindow):
         self.a_all = A(tr("Tüm Yüzeyler"), self._toggle_all, "all_surfaces", None, True)
         self.a_all.setChecked(bool(self.project.display_opt("show_all_surfaces")))
         self.a_info = A(tr("Bilgi Görüntüleyici…"), self.info_viewer, "info", "F10")
-        self.a_slice = A("Dilim Verisi", lambda: c.set_tool(T.SliceQueryTool(c, self.slice_data)),
-                         "slice_query", None, True)
+        self.a_slice = A(
+            "Dilim Verisi",
+            lambda: c.set_tool(T.SliceQueryTool(c, self.slice_data)),
+            "slice_query",
+            None,
+            True,
+        )
         self.a_legend = A("Lejant", self._toggle_legend, "legend", None, True)
         self.a_legend.setChecked(bool(self.project.display_opt("show_legend")))
         self.a_zoom_all = A(tr("Tümünü Göster"), c.zoom_extents, "zoom_all", "F2")
         self.a_zoom_in = A(tr("Yakınlaştır"), lambda: c.zoom(1.25), "zoom_in")
         self.a_zoom_out = A(tr("Uzaklaştır"), lambda: c.zoom(0.8), "zoom_out")
-        self.a_zoom_win = A(tr("Pencereyle Zoom"), lambda: c.set_tool(T.ZoomWindowTool(c)),
-                            "zoom_window")
+        self.a_zoom_win = A(
+            tr("Pencereyle Zoom"), lambda: c.set_tool(T.ZoomWindowTool(c)), "zoom_window"
+        )
         self.a_pan = A(tr("Kaydır"), lambda: c.set_tool(T.PanTool(c)), "pan")
         self.a_select = A(tr("Seç"), c.select_tool, "select", "Esc")
         self.a_measure = A(tr("Ölç"), lambda: c.set_tool(T.MeasureTool(c)), "measure")
@@ -179,15 +192,32 @@ class InterpretWindow(QMainWindow):
         if self.key is not None:
             self.method_combo.setCurrentIndex(self.method_combo.findData(self.key))
         self.method_combo.currentIndexChanged.connect(
-            lambda i: self.set_method(self.method_combo.itemData(i)))
+            lambda i: self.set_method(self.method_combo.itemData(i))
+        )
 
         tb = QToolBar(tr("Yorumla"))
         tb.setIconSize(QSize(24, 24))
         tb.addWidget(self.method_combo)
-        for a in (self.a_global, None, self.a_all, self.a_slice, self.a_legend, None,
-                  self.a_info, self.a_report, self.a_export, None, self.a_zoom_all, self.a_zoom_in,
-                  self.a_zoom_out, self.a_zoom_win, self.a_pan, None, self.a_select,
-                  self.a_measure):
+        for a in (
+            self.a_global,
+            None,
+            self.a_all,
+            self.a_slice,
+            self.a_legend,
+            None,
+            self.a_info,
+            self.a_report,
+            self.a_export,
+            None,
+            self.a_zoom_all,
+            self.a_zoom_in,
+            self.a_zoom_out,
+            self.a_zoom_win,
+            self.a_pan,
+            None,
+            self.a_select,
+            self.a_measure,
+        ):
             tb.addSeparator() if a is None else tb.addAction(a)
         self.addToolBar(Qt.TopToolBarArea, tb)
         nb = QToolBar(tr("Notlar"))
@@ -207,8 +237,17 @@ class InterpretWindow(QMainWindow):
         for a in (self.a_undo, self.a_redo, None, self.a_delete):
             m.addSeparator() if a is None else m.addAction(a)
         m = mb.addMenu(tr("&Görünüm"))
-        for a in (self.a_zoom_all, self.a_zoom_in, self.a_zoom_out, self.a_zoom_win, self.a_pan,
-                  None, self.a_all, self.a_legend, self.a_fs_legend):
+        for a in (
+            self.a_zoom_all,
+            self.a_zoom_in,
+            self.a_zoom_out,
+            self.a_zoom_win,
+            self.a_pan,
+            None,
+            self.a_all,
+            self.a_legend,
+            self.a_fs_legend,
+        ):
             m.addSeparator() if a is None else m.addAction(a)
         m = mb.addMenu("&Veri")
         m.addAction(self.a_info)
@@ -229,14 +268,21 @@ class InterpretWindow(QMainWindow):
         self.area.show_rulers(bool(self.project.display_opt("show_ruler")))
         name = self.path.name if self.path else tr("Kaydedilmemiş")
         mname = method_name(self.key) if self.key else "—"
-        self.setWindowTitle(tr(f"SlipSurfaceIQ LE Yorumla {__version__} — {name} — "
-                            f"[{self.project.summary.title}] — {mname}"))
+        self.setWindowTitle(
+            tr(
+                f"SlipSurfaceIQ LE Yorumla {__version__} — {name} — "
+                f"[{self.project.summary.title}] — {mname}"
+            )
+        )
         r = self.results.results.get(self.key)
         if r is not None:
             lam = f", λ = {r.lem.lam:.3f}" if r.lem.lam == r.lem.lam else ""
-            self.status.showMessage(f"{mname}: FS = {r.fos:.3f}{lam} — çıkış x = "
-                                    f"{r.slices.x_exit:.2f}, giriş x = {r.slices.x_entry:.2f} — "
-                                    f"{r.message}", 0)
+            self.status.showMessage(
+                f"{mname}: FS = {r.fos:.3f}{lam} — çıkış x = "
+                f"{r.slices.x_exit:.2f}, giriş x = {r.slices.x_entry:.2f} — "
+                f"{r.message}",
+                0,
+            )
 
     def set_method(self, key) -> None:
         if key is None or key not in self.results.results:
@@ -287,14 +333,16 @@ class InterpretWindow(QMainWindow):
         self._refresh()
 
     def _sync_display_actions(self) -> None:
-        for action, key in ((self.a_all, "show_all_surfaces"),
-                            (self.a_legend, "show_legend"),
-                            (self.a_fs_legend, "show_fs_legend")):
+        for action, key in (
+            (self.a_all, "show_all_surfaces"),
+            (self.a_legend, "show_legend"),
+            (self.a_fs_legend, "show_fs_legend"),
+        ):
             action.setChecked(bool(self.project.display_opt(key)))
 
     # ------------------------------------------------------------ notes
     def _on_doc_changed(self) -> None:
-        self.doc.project.display = self._display      # display options are not undone
+        self.doc.project.display = self._display  # display options are not undone
         self._refresh()
         if self.on_annotations is not None:
             self.on_annotations([dict(a) for a in self.doc.project.annotations])
@@ -319,6 +367,7 @@ class InterpretWindow(QMainWindow):
         sel = self.canvas.selection
         if sel is not None and sel[0] == "annot":
             from slipsurface.ui.cad.model import delete_entity
+
             self.canvas.request_edit("Not sil", lambda p: delete_entity(p, sel))
             self.canvas.selection = None
 
@@ -352,8 +401,10 @@ class InterpretWindow(QMainWindow):
 
     def pdf_report(self) -> None:
         from slipsurface.ui.dialogs.report import export_report
+
         export_report(self, self.results, self.project, self.path)
 
     def export_image(self) -> None:
         from slipsurface.ui.export import export_image
+
         export_image(self, self.area, "sonuc.png")

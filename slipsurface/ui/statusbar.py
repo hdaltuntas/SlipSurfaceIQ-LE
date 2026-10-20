@@ -9,8 +9,10 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QLabel, QLineEdit, QStatusBar, QToolButton
 
-TOGGLE_CSS = ("QToolButton{border:none;padding:0 5px;color:#9aa0a6;font-weight:bold;}"
-              "QToolButton:checked{color:#111;}")
+TOGGLE_CSS = (
+    "QToolButton{border:none;padding:0 5px;color:#9aa0a6;font-weight:bold;}"
+    "QToolButton:checked{color:#111;}"
+)
 
 
 class CadStatusBar(QStatusBar):
@@ -26,16 +28,19 @@ class CadStatusBar(QStatusBar):
             self.cmd = QLineEdit()
             self.cmd.setPlaceholderText("x,y  |  @dx,dy  |  @L<açı")
             self.cmd.setFixedWidth(170)
-            self.cmd.setToolTip("Koordinat girişi (çizim araçlarında): mutlak x,y, göreli @dx,dy, "
-                                "kutupsal @uzunluk<açı. Boş Enter = bitir, c = kapat, u = geri al.")
+            self.cmd.setToolTip(
+                "Koordinat girişi (çizim araçlarında): mutlak x,y, göreli @dx,dy, "
+                "kutupsal @uzunluk<açı. Boş Enter = bitir, c = kapat, u = geri al."
+            )
             self.cmd.returnPressed.connect(self._command)
             self.addPermanentWidget(self.cmd)
         self.toggles = {}
-        for name, attr, key, tip in (("SNAP", "snap_on", "F9", tr("Izgara noktalarına yakala")),
-                                     ("GRID", "grid_on", "F7", tr("Izgarayı göster")),
-                                     ("ORTHO", "ortho_on", "F8", tr("Yatay/düşey kısıtla")),
-                                     ("OSNAP", "osnap_on", "F3",
-                                      tr("Nesne yakalama: uç, orta nokta, kesişim, en yakın"))):
+        for name, attr, key, tip in (
+            ("SNAP", "snap_on", "F9", tr("Izgara noktalarına yakala")),
+            ("GRID", "grid_on", "F7", tr("Izgarayı göster")),
+            ("ORTHO", "ortho_on", "F8", tr("Yatay/düşey kısıtla")),
+            ("OSNAP", "osnap_on", "F3", tr("Nesne yakalama: uç, orta nokta, kesişim, en yakın")),
+        ):
             b = QToolButton()
             b.setText(name)
             b.setCheckable(True)

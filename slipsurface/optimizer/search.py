@@ -61,7 +61,7 @@ def circle_from_chord(geom: SlopeGeometry, x1: float, x2: float, theta: float) -
     half = 0.5 * np.hypot(*chord)
     if half < 1e-9:
         raise ValueError("degenerate chord")
-    n_up = np.array([-chord[1], chord[0]]) / (2 * half)   # left normal of p1->p2 points up
+    n_up = np.array([-chord[1], chord[0]]) / (2 * half)  # left normal of p1->p2 points up
     theta = float(np.clip(theta, 1e-3, np.pi / 2))
     centre = 0.5 * (p1 + p2) + n_up * half / np.tan(theta)
     return CircularSurface(float(centre[0]), float(centre[1]), float(half / np.sin(theta)))
@@ -74,7 +74,7 @@ def _lower_hull(x: np.ndarray, y: np.ndarray) -> np.ndarray:
         while len(hull) >= 2:
             a, b = hull[-2], hull[-1]
             cross = (x[b] - x[a]) * (y[i] - y[a]) - (y[b] - y[a]) * (x[i] - x[a])
-            if cross <= 0:                 # b is above segment a-i -> drop
+            if cross <= 0:  # b is above segment a-i -> drop
                 hull.pop()
             else:
                 break
@@ -90,8 +90,9 @@ def _vertex_x(x1: float, x2: float, n_inner: int, kind: str) -> np.ndarray:
     return SplineSurface(x1, x2, np.zeros(n_inner + 2)).control_points()[:, 0]
 
 
-def polyline_from_params(geom: SlopeGeometry, x1: float, x2: float, depths,
-                         convex_only: bool = True) -> PolylineSurface:
+def polyline_from_params(
+    geom: SlopeGeometry, x1: float, x2: float, depths, convex_only: bool = True
+) -> PolylineSurface:
     if x2 < x1:
         x1, x2 = x2, x1
     if x2 - x1 < 1e-6:
@@ -108,8 +109,9 @@ def polyline_from_params(geom: SlopeGeometry, x1: float, x2: float, depths,
     return PolylineSurface(np.column_stack([gx, y]))
 
 
-def spline_from_params(geom: SlopeGeometry, x1: float, x2: float, depths,
-                       convex_only: bool = True) -> SplineSurface:
+def spline_from_params(
+    geom: SlopeGeometry, x1: float, x2: float, depths, convex_only: bool = True
+) -> SplineSurface:
     if x2 < x1:
         x1, x2 = x2, x1
     if x2 - x1 < 1e-6:
@@ -131,8 +133,9 @@ def spline_from_params(geom: SlopeGeometry, x1: float, x2: float, depths,
     return SplineSurface(x1, x2, y)
 
 
-def spline_params_from_surface(geom: SlopeGeometry, surf, x1: float, x2: float,
-                               n_ctrl: int, kind: str = "spline") -> np.ndarray:
+def spline_params_from_surface(
+    geom: SlopeGeometry, surf, x1: float, x2: float, n_ctrl: int, kind: str = "spline"
+) -> np.ndarray:
     """Inverse of spline/polyline_from_params: depths that make the surface
     follow `surf` (used to seed the search with the critical circle)."""
     gx = _vertex_x(x1, x2, n_ctrl, kind)[1:-1]
@@ -147,24 +150,24 @@ def spline_params_from_surface(geom: SlopeGeometry, surf, x1: float, x2: float,
 # ------------------------------------------------------------ settings
 @dataclass
 class SearchSettings:
-    method: str = "bishop"               # bishop | spencer | gle
-    surface_type: str = "circular"       # circular | polyline | spline
+    method: str = "bishop"  # bishop | spencer | gle
+    surface_type: str = "circular"  # circular | polyline | spline
     n_slices: int = 30
     popsize: int = 20
     maxiter: int = 80
     tol: float = 1e-4
     seed: int | None = 0
     theta_deg: tuple[float, float] = (5.0, 85.0)
-    n_ctrl: int = 4                      # interior spline control points
+    n_ctrl: int = 4  # interior spline control points
     convex_only: bool = True
-    check_admissibility: bool = True     # reject m_alpha < 0.2 and base tension (see lem.bishop)
+    check_admissibility: bool = True  # reject m_alpha < 0.2 and base tension (see lem.bishop)
     left_range: tuple[float, float] | None = None
     right_range: tuple[float, float] | None = None
-    min_chord: float = 1.0               # m, ignore tiny surfaces
+    min_chord: float = 1.0  # m, ignore tiny surfaces
     slice_opts: SliceOptions = field(default_factory=SliceOptions)
-    solver_kw: dict = field(default_factory=dict)   # e.g. interslice function, tol
+    solver_kw: dict = field(default_factory=dict)  # e.g. interslice function, tol
     polish: bool = True
-    keep_top: int = 25                   # lowest distinct surfaces returned for display
+    keep_top: int = 25  # lowest distinct surfaces returned for display
 
 
 @dataclass
@@ -212,18 +215,29 @@ def search(
     current (last admissible FoS) and surface_type."""
     st = settings or SearchSettings()
     stat = status if status is not None else {}
-    stat.update(stage="evolution", generation=0, maxiter=st.maxiter, evaluated=0, valid=0,
-                rejected=0, best=float("nan"), current=float("nan"),
-                surface_type=st.surface_type)
+    stat.update(
+        stage="evolution",
+        generation=0,
+        maxiter=st.maxiter,
+        evaluated=0,
+        valid=0,
+        rejected=0,
+        best=float("nan"),
+        current=float("nan"),
+        surface_type=st.surface_type,
+    )
     if st.surface_type in ("spline", "polyline") and st.method == "bishop":
-        raise ValueError("Simplified Bishop yalnızca dairesel yüzeyler için geçerlidir; "
-                         "dairesel olmayan yüzeylerde Spencer veya GLE seçin.")
+        raise ValueError(
+            "Simplified Bishop yalnızca dairesel yüzeyler için geçerlidir; "
+            "dairesel olmayan yüzeylerde Spencer veya GLE seçin."
+        )
     if st.method not in METHODS:
         raise ValueError(f"Bilinmeyen yöntem: {st.method}")
     sopts = replace(st.slice_opts, n_slices=st.n_slices)
 
     def run(surf):
         return analyze(geom, surf, materials, method=st.method, opts=sopts, **st.solver_kw)
+
     L = _range(st.left_range, geom)
     R = _range(st.right_range, geom)
     tol_x = 1e-6 + 0.002 * (geom.x_max - geom.x_min)
@@ -267,9 +281,14 @@ def search(
         n_evals += 1
         stat["evaluated"] = n_evals
         res, s = run(surf)
-        if not res.ok or (st.check_admissibility and not res.admissible) or not (
-                L[0] - tol_x <= s.x_exit <= L[1] + tol_x and
-                R[0] - tol_x <= s.x_entry <= R[1] + tol_x):
+        if (
+            not res.ok
+            or (st.check_admissibility and not res.admissible)
+            or not (
+                L[0] - tol_x <= s.x_exit <= L[1] + tol_x
+                and R[0] - tol_x <= s.x_entry <= R[1] + tol_x
+            )
+        ):
             # no solution, numerically / physically unreliable, or the actual
             # ends lie outside the slope limits
             stat["rejected"] += 1
@@ -299,8 +318,16 @@ def search(
         stat.update(stage="evolution", generation=0, maxiter=st.maxiter, best=float("nan"))
 
     de = differential_evolution(
-        evaluate, bounds, popsize=popsize, maxiter=st.maxiter, tol=st.tol,
-        seed=st.seed, polish=False, init=init, updating="immediate", callback=callback,
+        evaluate,
+        bounds,
+        popsize=popsize,
+        maxiter=st.maxiter,
+        tol=st.tol,
+        seed=st.seed,
+        polish=False,
+        init=init,
+        updating="immediate",
+        callback=callback,
     )
     x_best, f_best = de.x, de.fun
 
@@ -308,19 +335,24 @@ def search(
         stat["stage"] = "polish"
         lo = np.array([b[0] for b in bounds])
         hi = np.array([b[1] for b in bounds])
-        nm = minimize(lambda p: evaluate(np.clip(p, lo, hi)), x_best, method="Nelder-Mead",
-                      options=dict(xatol=1e-4, fatol=1e-6, maxiter=600))
+        nm = minimize(
+            lambda p: evaluate(np.clip(p, lo, hi)),
+            x_best,
+            method="Nelder-Mead",
+            options=dict(xatol=1e-4, fatol=1e-6, maxiter=600),
+        )
         if nm.fun < f_best:
             x_best, f_best = np.clip(nm.x, lo, hi), nm.fun
 
     if f_best >= PENALTY:
-        raise RuntimeError("Kabul edilebilir kayma yüzeyi bulunamadı "
-                           "(uç aralıklarını ve geometriyi kontrol edin).")
+        raise RuntimeError(
+            "Kabul edilebilir kayma yüzeyi bulunamadı (uç aralıklarını ve geometriyi kontrol edin)."
+        )
 
     surf = build(x_best)
     if st.surface_type == "polyline" and st.polish:
         stat["stage"] = "vertices"
-        evaluate_surface.status = stat           # type: ignore[attr-defined]
+        evaluate_surface.status = stat  # type: ignore[attr-defined]
         surf, f_best = _optimize_polyline(geom, surf, f_best, evaluate_surface, st)
     stat["stage"] = "final"
     lem, slices = run(surf)
@@ -329,10 +361,17 @@ def search(
     if st.surface_type == "circular" and seen:
         circles = [(cast(CircularSurface, sf), f) for f, sf, _ in seen]
         centres = np.asarray([[c.xc, c.yc, c.r, f] for c, f in circles], dtype=np.float64)
-    return SearchResult(surf, lem.fos, lem, slices, n_evals,
-                        top=_distinct_top(seen, st.keep_top, geom),
-                        message=f"{gen} nesil, {n_evals} yüzey", method=st.method,
-                        centres=centres)
+    return SearchResult(
+        surf,
+        lem.fos,
+        lem,
+        slices,
+        n_evals,
+        top=_distinct_top(seen, st.keep_top, geom),
+        message=f"{gen} nesil, {n_evals} yüzey",
+        method=st.method,
+        centres=centres,
+    )
 
 
 def _optimize_polyline(geom, surf: PolylineSurface, f_best: float, evaluate_surface, st):
@@ -340,9 +379,10 @@ def _optimize_polyline(geom, surf: PolylineSurface, f_best: float, evaluate_surf
     vertices in x and y, end vertices along the ground), Nelder-Mead on the
     vertex coordinates. Then one vertex is inserted in the middle of each
     segment and the polish is repeated."""
+
     def unpack(q, n):
         x1, x2 = sorted((q[0], q[1]))
-        xi, yi = q[2:2 + n], q[2 + n:]
+        xi, yi = q[2 : 2 + n], q[2 + n :]
         x = np.concatenate([[x1], xi, [x2]])
         if np.any(np.diff(x) <= 1e-6) or x1 < geom.x_min or x2 > geom.x_max:
             raise ValueError("vertex order")
@@ -362,11 +402,17 @@ def _optimize_polyline(geom, surf: PolylineSurface, f_best: float, evaluate_surf
                 return evaluate_surface(unpack(q, n))
             except ValueError:
                 return PENALTY
+
         span = 0.02 * (geom.x_max - geom.x_min)
         simplex = [q0] + [q0 + span * e for e in np.eye(len(q0))]
-        res = minimize(obj, q0, method="Nelder-Mead",
-                       options=dict(initial_simplex=np.array(simplex), xatol=1e-3,
-                                    fatol=1e-5, maxiter=maxiter))
+        res = minimize(
+            obj,
+            q0,
+            method="Nelder-Mead",
+            options=dict(
+                initial_simplex=np.array(simplex), xatol=1e-3, fatol=1e-5, maxiter=maxiter
+            ),
+        )
         if res.fun < f0:
             return unpack(res.x, n), float(res.fun)
         return None, f0
@@ -390,23 +436,33 @@ def _optimize_polyline(geom, surf: PolylineSurface, f_best: float, evaluate_surf
     return best, fb
 
 
-def _seeded_population(geom, materials, st: SearchSettings, bounds, progress,
-                       stat: dict | None = None):
+def _seeded_population(
+    geom, materials, st: SearchSettings, bounds, progress, stat: dict | None = None
+):
     """Stage 1 for B-spline search: a quick circular search (Bishop) whose
     critical circle, fitted as a spline, seeds the DE population together
     with Sobol samples and perturbed copies of the seed."""
     from scipy.stats import qmc
 
-    circ_st = SearchSettings(method="bishop", surface_type="circular", n_slices=st.n_slices,
-                             popsize=15, maxiter=40, seed=st.seed, polish=True,
-                             check_admissibility=st.check_admissibility,
-                             left_range=st.left_range, right_range=st.right_range, keep_top=1,
-                             slice_opts=st.slice_opts)
+    circ_st = SearchSettings(
+        method="bishop",
+        surface_type="circular",
+        n_slices=st.n_slices,
+        popsize=15,
+        maxiter=40,
+        seed=st.seed,
+        polish=True,
+        check_admissibility=st.check_admissibility,
+        left_range=st.left_range,
+        right_range=st.right_range,
+        keep_top=1,
+        slice_opts=st.slice_opts,
+    )
     dim = len(bounds)
     lo = np.array([b[0] for b in bounds])
     hi = np.array([b[1] for b in bounds])
     m = int(np.ceil(np.log2(max(8, 10 * dim))))
-    n_pop = 2 ** m
+    n_pop = 2**m
     rng = np.random.default_rng(st.seed)
     pop = qmc.scale(qmc.Sobol(dim, seed=st.seed).random_base2(m), lo, hi)
 
@@ -421,8 +477,9 @@ def _seeded_population(geom, materials, st: SearchSettings, bounds, progress,
         raise
     except (RuntimeError, ValueError):
         return pop, n_pop // dim
-    seed = spline_params_from_surface(geom, circ.surface, circ.slices.x_exit,
-                                      circ.slices.x_entry, st.n_ctrl, st.surface_type)
+    seed = spline_params_from_surface(
+        geom, circ.surface, circ.slices.x_exit, circ.slices.x_entry, st.n_ctrl, st.surface_type
+    )
     seed = np.clip(seed, lo, hi)
     n_seed = max(3, n_pop // 4)
     span = hi - lo
@@ -443,8 +500,9 @@ def _distinct_top(seen, k: int, geom) -> list[tuple[float, object]]:
     tol = 0.01 * (geom.x_max - geom.x_min)
     out: list[tuple[float, object, tuple[float, float]]] = []
     for f, surf, ext in sorted(seen, key=lambda t: t[0]):
-        if all(abs(ext[0] - e[0]) + abs(ext[1] - e[1]) > tol or abs(f - g) > 1e-3
-               for g, _, e in out):
+        if all(
+            abs(ext[0] - e[0]) + abs(ext[1] - e[1]) > tol or abs(f - g) > 1e-3 for g, _, e in out
+        ):
             out.append((f, surf, ext))
             if len(out) >= k:
                 break

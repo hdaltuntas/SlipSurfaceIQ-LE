@@ -1,4 +1,5 @@
 """Persistent appearance preferences shared by all windows."""
+
 from PySide6.QtCore import QSettings
 from functools import cache
 from pathlib import Path
@@ -22,7 +23,7 @@ def interface_font():
     return QFont(family, 10)
 
 
-DESIGN_SIZE = (1920, 1080)        # logical resolution the window sizes were designed for
+DESIGN_SIZE = (1920, 1080)  # logical resolution the window sizes were designed for
 
 
 def available_geometry(widget=None):
@@ -60,7 +61,8 @@ def apply_theme(dark=None):
         dark = settings().value("dark", False, type=bool)
     settings().setValue("dark", dark)
     bg, base, text, border = (
-        ("#161e2c", "#202c3e", "#e6edf7", "#36465d") if dark
+        ("#161e2c", "#202c3e", "#e6edf7", "#36465d")
+        if dark
         else ("#f1f5f9", "#ffffff", "#243348", "#d9e2ed")
     )
     pal = QPalette()

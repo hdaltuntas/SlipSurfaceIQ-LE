@@ -1,4 +1,5 @@
 """Trusted local Python scripts, evaluated against an isolated project copy."""
+
 import contextlib
 import io
 
@@ -9,8 +10,12 @@ from slipsurface.project import MaterialSpec, Project, empty_project
 def run_script(source: str, project: Project) -> tuple[Project, str]:
     candidate = project.copy()
     namespace = {
-        "project": candidate, "Project": Project, "MaterialSpec": MaterialSpec,
-        "SupportType": SupportType, "FacingType": FacingType, "empty_project": empty_project,
+        "project": candidate,
+        "Project": Project,
+        "MaterialSpec": MaterialSpec,
+        "SupportType": SupportType,
+        "FacingType": FacingType,
+        "empty_project": empty_project,
     }
     output = io.StringIO()
     with contextlib.redirect_stdout(output):
@@ -23,7 +28,7 @@ def run_script(source: str, project: Project) -> tuple[Project, str]:
     return candidate, output.getvalue()
 
 
-TEMPLATE = '''# Trusted Python: has access to your computer. Units: m, kN, kPa.
+TEMPLATE = """# Trusted Python: has access to your computer. Units: m, kN, kPa.
 # Every Project field is available: geometry, materials, loads, supports,
 # support_patterns, facing_types, facings, water_table, tension_crack, settings.
 project = empty_project()
@@ -35,4 +40,4 @@ project.supports = [{"a":[25,5], "b":[38,1], "type":"Anchor"}]
 project.loads = [{"kind":"distributed", "points":[[38,10],[48,10]],
                   "q":[15,15], "orientation":"vertical"}]
 print("Project ready:", project.name)
-'''
+"""

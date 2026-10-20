@@ -36,9 +36,21 @@ from slipsurface.ui.icons import color_icon
 
 TITLE_CSS = "color:#2a7ad0;font-size:16px;"
 # standard welded wire mesh (TS 4559 / EN 10080 style): name -> As [mm2/m]
-MESHES = {"Q106": 106, "Q131": 131, "Q158": 158, "Q188": 188, "Q221": 221, "Q257": 257,
-          "Q295": 295, "Q335": 335, "Q378": 378, "Q424": 424, "Q524": 524, "Q589": 589,
-          "Özel": None}
+MESHES = {
+    "Q106": 106,
+    "Q131": 131,
+    "Q158": 158,
+    "Q188": 188,
+    "Q221": 221,
+    "Q257": 257,
+    "Q295": 295,
+    "Q335": 335,
+    "Q378": 378,
+    "Q424": 424,
+    "Q524": 524,
+    "Q589": 589,
+    "Özel": None,
+}
 
 
 def _spin(lo, hi, dec, val, suffix=""):
@@ -130,7 +142,8 @@ class FacingTypesDialog(QDialog):
             "(2) kayma yüzeyi kaplamalı yüzeyden çıkıyor veya giriyorsa, kaplamanın kesilmesi "
             "için gereken kuvvet T = τ·t + As·fy, o noktada kayma yüzeyine teğet ve kaymaya "
             "karşı uygulanır. τ için tipik değer: 0.02–0.04·fck (C25 için ≈ 0.5–1.0 MPa, "
-            "güvenli tarafta 0.3–0.5 MPa).")
+            "güvenli tarafta 0.3–0.5 MPa)."
+        )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
         right = QVBoxLayout()
@@ -215,9 +228,13 @@ class FacingTypesDialog(QDialog):
         if self.cur < 0:
             return
         t = self.types[self.cur]
-        self.capacity.setText(tr(f"T = τ·t + As·fy = {t.tau * t.thickness:.1f} + "
-                              f"{t.mesh_as * t.mesh_fy / 1000:.1f} = {t.capacity:.1f} kN/m   "
-                              f"·   ağırlık {t.weight_per_m:.2f} kN/m²"))
+        self.capacity.setText(
+            tr(
+                f"T = τ·t + As·fy = {t.tau * t.thickness:.1f} + "
+                f"{t.mesh_as * t.mesh_fy / 1000:.1f} = {t.capacity:.1f} kN/m   "
+                f"·   ağırlık {t.weight_per_m:.2f} kN/m²"
+            )
+        )
 
     def _rename(self, text):
         t = self.types[self.cur]
@@ -320,9 +337,11 @@ class PatternDialog(QDialog):
         f.addRow("Eğim (yataydan aşağı):", self.angle)
         f.addRow("Boy:", self.length)
         f.addRow("Bulon sayısı:", self.count)
-        note = QLabel("Bulonlar zemin yüzeyi boyunca x₁'den itibaren eşit aralıkla yerleştirilir, "
-                      "başlıklar yüzeyde, doğrultu şevin içine doğrudur. Düzlem dışı aralık "
-                      "destek tipinde tanımlıdır.")
+        note = QLabel(
+            "Bulonlar zemin yüzeyi boyunca x₁'den itibaren eşit aralıkla yerleştirilir, "
+            "başlıklar yüzeyde, doğrultu şevin içine doğrudur. Düzlem dışı aralık "
+            "destek tipinde tanımlıdır."
+        )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
         lay = QVBoxLayout(self)
@@ -338,8 +357,9 @@ class PatternDialog(QDialog):
             self.count.setText("—")
             return
         try:
-            n = self.count_fn(self.x1.value(), self.x2.value(), self.spacing.value(),
-                              self.offset.value())
+            n = self.count_fn(
+                self.x1.value(), self.x2.value(), self.spacing.value(), self.offset.value()
+            )
             self.count.setText(str(n))
         except ValueError:
             self.count.setText("—")
@@ -360,8 +380,15 @@ class AnnotationDialog(QDialog):
     def __init__(self, ann: dict, parent=None) -> None:
         super().__init__(parent)
         kind = ann["kind"]
-        self.setWindowTitle({"text": tr("Yazı"), "line": tr("Çizgi"), "arrow": tr("Ok"),
-                             "rect": tr("Dikdörtgen"), "ellipse": tr("Elips")}[kind])
+        self.setWindowTitle(
+            {
+                "text": tr("Yazı"),
+                "line": tr("Çizgi"),
+                "arrow": tr("Ok"),
+                "rect": tr("Dikdörtgen"),
+                "ellipse": tr("Elips"),
+            }[kind]
+        )
         self.ann = ann
         self.color = ann.get("color", "#c0392b")
         self.fill = ann.get("fill")

@@ -26,9 +26,11 @@ from slipsurface.lem import method_name
 from slipsurface.project import DEFAULT_DISPLAY
 from slipsurface.ui.icons import color_icon, icon
 
-HEADER_CSS = ("QLabel{background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #e9f2fd,"
-              "stop:1 #cfe2fa);border:1px solid #8fb4e3;color:#1b3a63;font-weight:bold;"
-              "padding:2px;}")
+HEADER_CSS = (
+    "QLabel{background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #e9f2fd,"
+    "stop:1 #cfe2fa);border:1px solid #8fb4e3;color:#1b3a63;font-weight:bold;"
+    "padding:2px;}"
+)
 
 
 def header(text: str) -> QLabel:
@@ -42,7 +44,7 @@ def header(text: str) -> QLabel:
 class DocumentViewer(QWidget):
     summary_requested = Signal()
     settings_requested = Signal()
-    entity_activated = Signal(object)       # entity key
+    entity_activated = Signal(object)  # entity key
     material_activated = Signal(str)
     method_activated = Signal(str)
 
@@ -118,8 +120,12 @@ class DocumentViewer(QWidget):
                 it.setData(0, Qt.UserRole, ("entity", ("water", 0)))
                 bnd.addChild(it)
             if project.tension_crack:
-                it = QTreeWidgetItem([f"Gerilme çatlağı ({len(project.tension_crack)} köşe, "
-                                      f"su %{100 * project.groundwater.crack_water:.0f})"])
+                it = QTreeWidgetItem(
+                    [
+                        f"Gerilme çatlağı ({len(project.tension_crack)} köşe, "
+                        f"su %{100 * project.groundwater.crack_water:.0f})"
+                    ]
+                )
                 it.setData(0, Qt.UserRole, ("entity", ("crack", 0)))
                 bnd.addChild(it)
             if project.surfaces.user_surface:
@@ -139,8 +145,12 @@ class DocumentViewer(QWidget):
                     it.setData(0, Qt.UserRole, ("entity", ("support", i)))
                     sup.addChild(it)
                 for i, pt in enumerate(project.support_patterns):
-                    it = QTreeWidgetItem([f"Bulon paterni {i + 1}: {pt['type']}, "
-                                          f"@{pt['spacing']:g} m, {pt.get('angle', 15):g}°"])
+                    it = QTreeWidgetItem(
+                        [
+                            f"Bulon paterni {i + 1}: {pt['type']}, "
+                            f"@{pt['spacing']:g} m, {pt.get('angle', 15):g}°"
+                        ]
+                    )
                     it.setIcon(0, icon("bolt_pattern"))
                     it.setData(0, Qt.UserRole, ("entity", ("pattern", i)))
                     sup.addChild(it)
@@ -154,8 +164,9 @@ class DocumentViewer(QWidget):
                     it = QTreeWidgetItem([txt])
                     if ft is not None:
                         it.setIcon(0, color_icon(ft.color))
-                        it.setToolTip(0, f"t = {ft.thickness:g} m, {ft.mesh}, "
-                                         f"T = {ft.capacity:.1f} kN/m")
+                        it.setToolTip(
+                            0, f"t = {ft.thickness:g} m, {ft.mesh}, T = {ft.capacity:.1f} kN/m"
+                        )
                     it.setData(0, Qt.UserRole, ("entity", ("facing", i)))
                     fac.addChild(it)
             if project.loads or project.seismic.kh or project.seismic.kv:
@@ -171,11 +182,19 @@ class DocumentViewer(QWidget):
                     it.setData(0, Qt.UserRole, ("entity", ("load", i)))
                     lds.addChild(it)
                 if project.seismic.kh or project.seismic.kv:
-                    lds.addChild(QTreeWidgetItem([f"Sismik: kh = {project.seismic.kh:g}, "
-                                                  f"kv = {project.seismic.kv:g}"]))
+                    lds.addChild(
+                        QTreeWidgetItem(
+                            [f"Sismik: kh = {project.seismic.kh:g}, kv = {project.seismic.kv:g}"]
+                        )
+                    )
             self._add_notes(scen, project)
-            meth = QTreeWidgetItem([tr("Yöntemler") + ": " + ", ".join(method_name(k) for k in
-                                                              project.methods.methods)])
+            meth = QTreeWidgetItem(
+                [
+                    tr("Yöntemler")
+                    + ": "
+                    + ", ".join(method_name(k) for k in project.methods.methods)
+                ]
+            )
             meth.setIcon(0, icon("compute"))
             scen.addChild(meth)
         self._translate_items()
@@ -184,6 +203,7 @@ class DocumentViewer(QWidget):
     def _translate_items(self) -> None:
         """Item captions are built from templates; user names (materials) stay."""
         from PySide6.QtWidgets import QTreeWidgetItemIterator
+
         it = QTreeWidgetItemIterator(self.tree)
         while it.value():
             item = it.value()
@@ -198,8 +218,13 @@ class DocumentViewer(QWidget):
         nt = QTreeWidgetItem([f"{tr('Notlar')} ({len(project.annotations)})"])
         nt.setIcon(0, icon("annot_text"))
         scen.addChild(nt)
-        names = {"text": tr("Yazı"), "line": tr("Çizgi"), "arrow": tr("Ok"), "rect": tr("Dikdörtgen"),
-                 "ellipse": tr("Elips")}
+        names = {
+            "text": tr("Yazı"),
+            "line": tr("Çizgi"),
+            "arrow": tr("Ok"),
+            "rect": tr("Dikdörtgen"),
+            "ellipse": tr("Elips"),
+        }
         for i, an in enumerate(project.annotations):
             txt = names.get(an["kind"], an["kind"])
             if an["kind"] == "text":
@@ -227,39 +252,69 @@ class DocumentViewer(QWidget):
 
 # ======================================================= display options
 MODELER_OPTIONS = [
-    (tr("Sınırlar"), [
-        ("external_color", tr("Dış sınır rengi"), "color"),
-        ("material_boundary_color", tr("Malzeme sınırı rengi"), "color"),
-        ("water_table_color", "YASS rengi", "color"),
-        ("show_vertices", tr("Sınır köşelerini göster"), "bool"),
-        ("line_width", tr("Çizgi kalınlığı"), "int"),
-    ]),
-    (tr("Çeşitli"), [
-        ("show_ruler", tr("Cetveli göster"), "bool"),
-        ("show_grid", tr("Izgarayı göster"), "bool"),
-        ("fill_materials", "Malzeme dolgusu", "bool"),
-        ("show_legend", "Lejant", "bool"),
-        ("show_slope_limits", tr("Kayma sınırları"), "bool"),
-    ]),
-    (tr("Malzeme Etiketleri"), [
-        ("material_labels", tr("Bölge üzerinde"),
-         ("choice", [("none", tr("Yok")), ("name", "Ad"), ("full", tr("Ad + parametreler"))])),
-        ("label_size", tr("Etiket yazı boyutu"), "int"),
-    ]),
+    (
+        tr("Sınırlar"),
+        [
+            ("external_color", tr("Dış sınır rengi"), "color"),
+            ("material_boundary_color", tr("Malzeme sınırı rengi"), "color"),
+            ("water_table_color", "YASS rengi", "color"),
+            ("show_vertices", tr("Sınır köşelerini göster"), "bool"),
+            ("line_width", tr("Çizgi kalınlığı"), "int"),
+        ],
+    ),
+    (
+        tr("Çeşitli"),
+        [
+            ("show_ruler", tr("Cetveli göster"), "bool"),
+            ("show_grid", tr("Izgarayı göster"), "bool"),
+            ("fill_materials", "Malzeme dolgusu", "bool"),
+            ("show_legend", "Lejant", "bool"),
+            ("show_slope_limits", tr("Kayma sınırları"), "bool"),
+        ],
+    ),
+    (
+        tr("Malzeme Etiketleri"),
+        [
+            (
+                "material_labels",
+                tr("Bölge üzerinde"),
+                (
+                    "choice",
+                    [("none", tr("Yok")), ("name", "Ad"), ("full", tr("Ad + parametreler"))],
+                ),
+            ),
+            ("label_size", tr("Etiket yazı boyutu"), "int"),
+        ],
+    ),
 ]
 
 INTERPRET_OPTIONS = {
     tr("Kayma Stabilitesi"): [
-        (tr("Arama"), [("show_slope_limits", tr("Kayma sınırları"), "bool"),
-                       ("show_fs_contours", tr("Kayma merkezi FS konturları"), "bool"),
-                       ("show_fs_legend", tr("FS lejantı (sağ alt)"), "bool")]),
-        (tr("Dilimler"), [("show_slices", tr("Dilim sınırları ve dolgu"), "bool"),
-                      ("slice_fill_color", tr("Dolgu rengi"), "color")]),
-        (tr("Yüzeyler"), [("show_lines_to_center", tr("Merkeze çizgiler"), "bool"),
-                      ("show_fs_text", tr("FS yazısı"), "bool"),
-                      ("critical_dashed", tr("Kritik yüzey kesikli çizgi"), "bool"),
-                      ("show_all_surfaces", tr("Tüm yüzeyler (en düşük 25)"), "bool"),
-                      ("show_control_points", tr("Spline kontrol noktaları"), "bool")]),
+        (
+            tr("Arama"),
+            [
+                ("show_slope_limits", tr("Kayma sınırları"), "bool"),
+                ("show_fs_contours", tr("Kayma merkezi FS konturları"), "bool"),
+                ("show_fs_legend", tr("FS lejantı (sağ alt)"), "bool"),
+            ],
+        ),
+        (
+            tr("Dilimler"),
+            [
+                ("show_slices", tr("Dilim sınırları ve dolgu"), "bool"),
+                ("slice_fill_color", tr("Dolgu rengi"), "color"),
+            ],
+        ),
+        (
+            tr("Yüzeyler"),
+            [
+                ("show_lines_to_center", tr("Merkeze çizgiler"), "bool"),
+                ("show_fs_text", tr("FS yazısı"), "bool"),
+                ("critical_dashed", tr("Kritik yüzey kesikli çizgi"), "bool"),
+                ("show_all_surfaces", tr("Tüm yüzeyler (en düşük 25)"), "bool"),
+                ("show_control_points", tr("Spline kontrol noktaları"), "bool"),
+            ],
+        ),
     ],
     tr("Genel"): MODELER_OPTIONS,
 }
@@ -297,7 +352,8 @@ class PropertyGrid(QTreeWidget):
                     for val, txt in typ[1]:
                         cb.addItem(txt, val)
                     cb.currentIndexChanged.connect(
-                        lambda _i, k=key, c=cb: self._emit(k, c.currentData()))
+                        lambda _i, k=key, c=cb: self._emit(k, c.currentData())
+                    )
                     self.setItemWidget(it, 1, cb)
                     self._items[key] = (it, "choice", cb)
                     self.header().resizeSection(1, 128)

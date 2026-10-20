@@ -14,7 +14,7 @@ from PySide6.QtGui import QColor, QFont, QFontMetrics, QImage, QPainter, QPen
 
 from slipsurface.ui.cad.canvas import CadCanvas
 
-AXIS_L, AXIS_B, AXIS_T, AXIS_R = 54, 38, 8, 10      # logical px around the drawing
+AXIS_L, AXIS_B, AXIS_T, AXIS_R = 54, 38, 8, 10  # logical px around the drawing
 
 
 def _nice(x: float) -> float:
@@ -25,18 +25,33 @@ def _nice(x: float) -> float:
     return 10 * e
 
 
-def render_view(project, geometry, results=None, key=None, size=(1500, 760),
-                scale: float = 2.2, display: dict | None = None, axes: bool = True) -> bytes:
+def render_view(
+    project,
+    geometry,
+    results=None,
+    key=None,
+    size=(1500, 760),
+    scale: float = 2.2,
+    display: dict | None = None,
+    axes: bool = True,
+) -> bytes:
     """PNG bytes of the drawing. `size` is the logical size of the drawing
     area (px); `scale` the supersampling factor."""
     p = project.copy()
-    p.display.update({"show_vertices": False, "show_slope_limits": False,
-                      "show_control_points": False, "show_ruler": False})
+    p.display.update(
+        {
+            "show_vertices": False,
+            "show_slope_limits": False,
+            "show_control_points": False,
+            "show_ruler": False,
+        }
+    )
     if display:
         p.display.update(display)
     w, h = size
     canvas = CadCanvas(editable=False)
     from slipsurface.ui.app import light_palette
+
     canvas.setPalette(light_palette())
     canvas.setAttribute(Qt.WA_DontShowOnScreen, True)
     canvas.resize(w, h)
@@ -110,8 +125,13 @@ def _axes(p: QPainter, c: CadCanvas, ox: float, oy: float, w: float, h: float) -
     p.restore()
 
 
-def report_figures(results, project_for_display=None, method_figures: bool = True,
-                   model_figure: bool = True, global_figure: bool = True):
+def report_figures(
+    results,
+    project_for_display=None,
+    method_figures: bool = True,
+    model_figure: bool = True,
+    global_figure: bool = True,
+):
     """All drawings for the report (ReportFigures)."""
     from slipsurface.report import ReportFigures
 
@@ -128,8 +148,11 @@ def report_figures(results, project_for_display=None, method_figures: bool = Tru
         figs.model = render_view(mp, geom, size=(1080, 520), scale=3.0)
     rp = results.project.copy()
     rp.display.update(disp.display)
-    rp.annotations = list(getattr(disp, "annotations", []) if project_for_display is not None
-                          else results.project.result_annotations)
+    rp.annotations = list(
+        getattr(disp, "annotations", [])
+        if project_for_display is not None
+        else results.project.result_annotations
+    )
     rp.display.update({"show_fs_legend": True})
     gm = results.global_minimum()
     if gm and global_figure:
@@ -140,6 +163,5 @@ def report_figures(results, project_for_display=None, method_figures: bool = Tru
         for k in results.results:
             if gm and k == gm[0] and global_figure:
                 continue
-            figs.methods[k] = render_view(single, geom, results, k, size=(1080, 520),
-                                          scale=2.4)
+            figs.methods[k] = render_view(single, geom, results, k, size=(1080, 520), scale=2.4)
     return figs

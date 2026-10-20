@@ -1,4 +1,5 @@
 """Layer-based, metre-based 2D DXF geometry exchange."""
+
 from pathlib import Path
 
 import ezdxf
@@ -14,11 +15,13 @@ def export_dxf(project: Project, path: str | Path) -> None:
     doc = ezdxf.new("R2010")
     doc.units = units.M
     space = doc.modelspace()
+
     def poly(layer, points, closed=False):
         if points:
             if layer not in doc.layers:
                 doc.layers.new(layer)
             space.add_lwpolyline(points, close=closed, dxfattribs={"layer": layer})
+
     poly("SS_EXTERNAL", project.external, True)
     for points in project.material_boundaries:
         poly("SS_MATERIAL", points)
@@ -60,8 +63,11 @@ def import_dxf(path: str | Path) -> tuple[Project, list[str]]:
         elif layer == "SS_MATERIAL":
             project.material_boundaries.append(points)
         elif layer in ("SS_WATER", "SS_CRACK", "SS_SURFACE"):
-            target = {"SS_WATER": "water_table", "SS_CRACK": "tension_crack",
-                      "SS_SURFACE": "user_surface"}[layer]
+            target = {
+                "SS_WATER": "water_table",
+                "SS_CRACK": "tension_crack",
+                "SS_SURFACE": "user_surface",
+            }[layer]
             owner = project.surfaces if layer == "SS_SURFACE" else project
             if getattr(owner, target):
                 raise ValueError(f"Multiple entities on {layer}; join them before importing.")

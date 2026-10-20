@@ -53,8 +53,8 @@ def test_assignment_points():
     assert mat_at(60, 10) == "Fill"
     assert mat_at(60, 2) == "Soft clay"
     assert mat_at(60, -6) == "Weathered rock"
-    assert mat_at(5, -0.65) == "Soft clay"     # clay top at x=5 is y≈-0.571
-    assert mat_at(5, -0.50) == "Fill"           # unassigned sliver -> default (first) material
+    assert mat_at(5, -0.65) == "Soft clay"  # clay top at x=5 is y≈-0.571
+    assert mat_at(5, -0.50) == "Fill"  # unassigned sliver -> default (first) material
 
 
 def test_material_line_snapped_to_boundary():
@@ -86,8 +86,9 @@ def test_validation_messages():
 
 def test_project_matches_direct_api():
     p = acads_1a_project()
-    res, _ = analyze(p.build_geometry(), CircularSurface(20, 28, 28), p.build_materials(),
-                     opts=p.slice_options())
+    res, _ = analyze(
+        p.build_geometry(), CircularSurface(20, 28, 28), p.build_materials(), opts=p.slice_options()
+    )
     assert res.fos == pytest.approx(0.9855, abs=2e-3)
 
 
@@ -97,8 +98,11 @@ def test_v1_file_is_converted():
     g1, g2 = p.build_geometry(), q.build_geometry()
     assert g1.domain.area == pytest.approx(g2.domain.area)
     # the legacy v1 file keeps its original (Turkish) material names
-    for m1, m2 in (("Dolgu", "Fill"), ("Yumuşak kil", "Soft clay"),
-                   ("Ayrışmış kaya", "Weathered rock")):
+    for m1, m2 in (
+        ("Dolgu", "Fill"),
+        ("Yumuşak kil", "Soft clay"),
+        ("Ayrışmış kaya", "Weathered rock"),
+    ):
         a1 = sum(r.polygon.area for r in g1.regions if r.material == m1)
         a2 = sum(r.polygon.area for r in g2.regions if r.material == m2)
         assert a1 == pytest.approx(a2, rel=1e-6), m2

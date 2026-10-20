@@ -18,11 +18,14 @@ from slipsurface.optimizer import SearchResult
 from slipsurface.project import default_project
 
 
-@pytest.mark.parametrize("external", [
-    [[0, -10], [40, -10], [40, 10], [20, 10], [20, 0], [0, 0]],
-    [[0, -10], [40, -10], [40, 0], [20, 0], [20, 10], [0, 10]],
-    [[0, -10], [40, -10], [40, 10], [15, 10], [20, 0], [0, 0]],
-])
+@pytest.mark.parametrize(
+    "external",
+    [
+        [[0, -10], [40, -10], [40, 10], [20, 10], [20, 0], [0, 0]],
+        [[0, -10], [40, -10], [40, 0], [20, 0], [20, 10], [0, 10]],
+        [[0, -10], [40, -10], [40, 10], [15, 10], [20, 0], [0, 0]],
+    ],
+)
 def test_unsupported_faces_are_rejected_instead_of_interpolated(external):
     with pytest.raises(ValueError, match="Dik şev yüzü veya çıkmalı"):
         boundary_geometry(external)
@@ -47,8 +50,12 @@ def test_ponded_seismic_mass_matches_explicit_water_forces(method, water_level):
     p.materials[0].c = 40.0
     p.water_table = [[0, water_level], [55, water_level]]
     surf = CircularSurface(15, 28, 28)
-    s = make_slices(p.build_geometry(), surf, p.build_materials(),
-                    opts=SliceOptions(n_slices=50, kh=0.15, kv=0.05))
+    s = make_slices(
+        p.build_geometry(),
+        surf,
+        p.build_materials(),
+        opts=SliceOptions(n_slices=50, kh=0.15, kv=0.05),
+    )
     # Independent representation: keep only soil as mass and apply the
     # water's vertical/seismic forces at the water column's own centroid.
     soil_weight = 18.0 * (s.y_top - s.y_base) * s.b
@@ -57,20 +64,25 @@ def test_ponded_seismic_mass_matches_explicit_water_forces(method, water_level):
     water_cg = 0.5 * (water_level + s.y_top)
     qx = s.direction * s.kh * water_weight
     qy = -(1 - s.kv) * water_weight
-    separate = replace(s, W=soil_weight, y_cg=soil_cg,
-                       Qx_a=qx, Qy_a=qy, M_a=s.xm * qy - water_cg * qx)
+    separate = replace(
+        s, W=soil_weight, y_cg=soil_cg, Qx_a=qx, Qy_a=qy, M_a=s.xm * qy - water_cg * qx
+    )
     expected = SOLVERS[method](separate)
     actual = SOLVERS[method](s)
     assert actual.ok and expected.ok
     assert actual.fos == pytest.approx(expected.fos, rel=1e-7)
     np.testing.assert_allclose(
-        s.W * s.y_cg, soil_weight * soil_cg + water_weight * water_cg, rtol=1e-12)
+        s.W * s.y_cg, soil_weight * soil_cg + water_weight * water_cg, rtol=1e-12
+    )
 
 
-@pytest.mark.parametrize("material", [
-    Undrained("Soil 1", gamma=18, su=35),
-    Shansep("Soil 1", gamma=18, s_ratio=0.3),
-])
+@pytest.mark.parametrize(
+    "material",
+    [
+        Undrained("Soil 1", gamma=18, su=35),
+        Shansep("Soil 1", gamma=18, s_ratio=0.3),
+    ],
+)
 def test_janbu_total_stress_models_use_cohesive_correction(material):
     p = default_project()
     g = p.build_geometry()
@@ -105,8 +117,9 @@ def summary_window():
     surf = CircularSurface(15, 28, 28)
     lem, slices = analyze(w.doc.geometry, surf, p.build_materials())
     assert lem.ok
-    w.last_results = AnalysisResults(p.copy(), w.doc.geometry, results={
-        "bishop": SearchResult(surf, lem.fos, lem, slices, 1)})
+    w.last_results = AnalysisResults(
+        p.copy(), w.doc.geometry, results={"bishop": SearchResult(surf, lem.fos, lem, slices, 1)}
+    )
     yield app, w
     w.doc.mark_clean()
     w.close()
@@ -143,8 +156,18 @@ def test_summary_edits_and_undo_refresh_both_report_paths(summary_window, tmp_pa
             assert dialog.project.text() == title and dialog.author.text() == author
             dialog.close()
     out = tmp_path / "summary.pdf"
-    build_pdf(results, out, ReportOptions(toc=False, model=False, method_figures=False,
-              global_figure=False, slice_table=False, coordinates=False))
+    build_pdf(
+        results,
+        out,
+        ReportOptions(
+            toc=False,
+            model=False,
+            method_figures=False,
+            global_figure=False,
+            slice_table=False,
+            coordinates=False,
+        ),
+    )
     text = "\n".join(page.extract_text() for page in PdfReader(out).pages)
     assert "Updated title" in text and "Updated author" in text
 

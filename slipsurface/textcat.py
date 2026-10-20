@@ -26,12 +26,13 @@ class Catalog:
                 numbered = key.endswith(" {}") and key.count("{}") == 1 and ":" not in key
                 group = r"(\d+)" if numbered else "(.*?)"
                 patterns.append((re.compile(group.join(parts), re.S), value))
-        patterns.sort(key=lambda kv: -len(kv[0].pattern))      # most specific first
+        patterns.sort(key=lambda kv: -len(kv[0].pattern))  # most specific first
         self.patterns = patterns
         # templates spanning lines are tried on the whole text before the
         # line-by-line fallback
-        self.multiline = [(rx, v) for rx, v in patterns if "\n" in rx.pattern
-                          or "\\n" in rx.pattern]
+        self.multiline = [
+            (rx, v) for rx, v in patterns if "\n" in rx.pattern or "\\n" in rx.pattern
+        ]
 
     def translate(self, source: str) -> str:
         if not isinstance(source, str) or not source:
@@ -41,13 +42,13 @@ class Catalog:
             return hit
         for prefix in self.PREFIXES:
             if source.startswith(prefix):
-                return prefix + self.translate(source[len(prefix):])
+                return prefix + self.translate(source[len(prefix) :])
         stripped = source.strip()
         if stripped != source:
             if not stripped:
                 return source
-            lead = source[:len(source) - len(source.lstrip())]
-            trail = source[len(source.rstrip()):]
+            lead = source[: len(source) - len(source.lstrip())]
+            trail = source[len(source.rstrip()) :]
             return lead + self.translate(stripped) + trail
         if "\n" in source:
             for rx, template in self.multiline:

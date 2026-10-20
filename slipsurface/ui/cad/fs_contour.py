@@ -20,10 +20,32 @@ import numpy as np
 from PySide6.QtGui import QColor, QImage
 
 # sequential FS palette, low (dark brown/red) -> high (green), 24 bands
-PALETTE = ["#6c6546", "#635037", "#5a3b29", "#50261a", "#47110c", "#450703", "#5f2b11",
-           "#784f1f", "#92732d", "#ac963c", "#b6a83e", "#aa9f30", "#9e9622", "#918d14",
-           "#858406", "#708000", "#558000", "#3b8000", "#208000", "#058000", "#007500",
-           "#006800", "#005b00", "#004d00"]
+PALETTE = [
+    "#6c6546",
+    "#635037",
+    "#5a3b29",
+    "#50261a",
+    "#47110c",
+    "#450703",
+    "#5f2b11",
+    "#784f1f",
+    "#92732d",
+    "#ac963c",
+    "#b6a83e",
+    "#aa9f30",
+    "#9e9622",
+    "#918d14",
+    "#858406",
+    "#708000",
+    "#558000",
+    "#3b8000",
+    "#208000",
+    "#058000",
+    "#007500",
+    "#006800",
+    "#005b00",
+    "#004d00",
+]
 N_BANDS = len(PALETTE)
 LINE = (230, 30, 30)
 
@@ -66,6 +88,7 @@ def build_grid(centres: np.ndarray | None, n: int = 26) -> dict | None:
     if filled.sum() < 4:
         return None
     from scipy import ndimage
+
     mask = ndimage.binary_fill_holes(ndimage.binary_closing(filled, iterations=2) | filled)
     _, (jy, jx) = ndimage.distance_transform_edt(~filled, return_indices=True)
     full = grid[jy, jx]
@@ -79,9 +102,18 @@ def build_grid(centres: np.ndarray | None, n: int = 26) -> dict | None:
     # the critical value); the soft mask gives a rounded outline
     full = np.maximum(ndimage.gaussian_filter(full, 1.3, mode="nearest"), crit[3])
     soft = ndimage.gaussian_filter(mask.astype(float), 1.0, mode="constant")
-    return {"x0": x0, "y0": y0, "side": side, "nx": nx, "ny": ny, "values": full,
-            "mask": mask, "soft_mask": soft, "vmax": vmax,
-            "crit": (float(crit[0]), float(crit[1]), float(crit[3]))}
+    return {
+        "x0": x0,
+        "y0": y0,
+        "side": side,
+        "nx": nx,
+        "ny": ny,
+        "values": full,
+        "mask": mask,
+        "soft_mask": soft,
+        "vmax": vmax,
+        "crit": (float(crit[0]), float(crit[1]), float(crit[3])),
+    }
 
 
 def band_of(v, vmax: float):
@@ -93,9 +125,9 @@ def _fine_fields(g: dict, upsample: int):
     key = ("fine", upsample)
     if key not in g:
         from scipy import ndimage
+
         v = ndimage.zoom(g["values"], upsample, order=3, mode="nearest", grid_mode=True)
-        m = ndimage.zoom(g["soft_mask"], upsample, order=3, mode="grid-constant",
-                         grid_mode=True)
+        m = ndimage.zoom(g["soft_mask"], upsample, order=3, mode="grid-constant", grid_mode=True)
         # keep only the main region (cubic overshoot leaves small specks)
         lab, n = ndimage.label(m >= 0.5)
         if n > 1:
@@ -113,24 +145,25 @@ def render_image(g: dict, upsample: int = 16) -> QImage:
     pal = np.array([QColor(c).getRgb()[:3] for c in PALETTE], dtype=np.uint8)
     rgb = pal[bands]
     alpha = (np.clip((m - 0.5) * 20.0 + 0.5, 0.0, 1.0) * 255).astype(np.uint8)
-    rgba = np.dstack([rgb, alpha])[::-1].copy()            # flip: image row 0 = top
+    rgba = np.dstack([rgb, alpha])[::-1].copy()  # flip: image row 0 = top
     h, w = rgba.shape[:2]
     img = QImage(rgba.data, w, h, 4 * w, QImage.Format_RGBA8888)
-    return img.copy()                                      # own the buffer
+    return img.copy()  # own the buffer
 
 
 def _march(f: np.ndarray, level: float, valid: np.ndarray | None = None) -> np.ndarray:
     """Marching squares: iso-line segments of `f` at `level` as an (n, 4) array
     (i0, j0, i1, j1) in fractional array indices (row, column)."""
-    a, b = f[:-1, :-1], f[:-1, 1:]            # (i, j), (i, j+1)
-    c, d = f[1:, 1:], f[1:, :-1]              # (i+1, j+1), (i+1, j)
-    ii, jj = np.mgrid[0:a.shape[0], 0:a.shape[1]].astype(float)
+    a, b = f[:-1, :-1], f[:-1, 1:]  # (i, j), (i, j+1)
+    c, d = f[1:, 1:], f[1:, :-1]  # (i+1, j+1), (i+1, j)
+    ii, jj = np.mgrid[0 : a.shape[0], 0 : a.shape[1]].astype(float)
 
     def cross(p, q):
         return (p - level) * (q - level) < 0
 
     def t(p, q):
         return (level - p) / np.where(q - p == 0, 1e-12, q - p)
+
     edges = [  # (crosses, row, col) for edges a-b, b-c, d-c, a-d
         (cross(a, b), ii, jj + t(a, b)),
         (cross(b, c), ii + t(b, c), jj + 1),
@@ -139,8 +172,9 @@ def _march(f: np.ndarray, level: float, valid: np.ndarray | None = None) -> np.n
     ]
     count = sum(e[0].astype(int) for e in edges)
     if valid is not None:
-        count = np.where(valid[:-1, :-1] & valid[1:, 1:] & valid[:-1, 1:] & valid[1:, :-1],
-                         count, 0)
+        count = np.where(
+            valid[:-1, :-1] & valid[1:, 1:] & valid[:-1, 1:] & valid[1:, :-1], count, 0
+        )
     segs = []
     sel2 = count == 2
     if sel2.any():
@@ -160,9 +194,8 @@ def _march(f: np.ndarray, level: float, valid: np.ndarray | None = None) -> np.n
             first_j = np.where(take_first, rj, first_j)
             second_i = np.where(take_second, ri, second_i)
             second_j = np.where(take_second, rj, second_j)
-        segs.append(np.column_stack([first_i[sel2], first_j[sel2],
-                                     second_i[sel2], second_j[sel2]]))
-    sel4 = count == 4                          # saddle: pair a-b with b-c, d-c with a-d
+        segs.append(np.column_stack([first_i[sel2], first_j[sel2], second_i[sel2], second_j[sel2]]))
+    sel4 = count == 4  # saddle: pair a-b with b-c, d-c with a-d
     if sel4.any():
         e0, e1, e2, e3 = edges
         segs.append(np.column_stack([e0[1][sel4], e0[2][sel4], e1[1][sel4], e1[2][sel4]]))
@@ -187,8 +220,8 @@ def contour_segments(g: dict, upsample: int = 16) -> np.ndarray:
     # array index (row i, column j) -> world: pixel centres of the zoomed grid
     f = upsample
     s = g["side"]
-    x = lambda j: g["x0"] + (j + 0.5) / f * s   # noqa: E731
-    y = lambda i: g["y0"] + (i + 0.5) / f * s   # noqa: E731
+    x = lambda j: g["x0"] + (j + 0.5) / f * s  # noqa: E731
+    y = lambda i: g["y0"] + (i + 0.5) / f * s  # noqa: E731
     g["segments"] = np.column_stack([x(seg[:, 1]), y(seg[:, 0]), x(seg[:, 3]), y(seg[:, 2])])
     return g["segments"]
 

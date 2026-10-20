@@ -9,8 +9,16 @@ from slipsurface.geometry import CircularSurface, PolylineSurface, simple_slope
 from slipsurface.lem import METHODS, SliceOptions, analyze
 from slipsurface.materials import MohrCoulomb
 
-FORCE_EQ = ["spencer", "gle", "janbu_simplified", "janbu_corrected", "corps1", "corps2",
-            "lowe_karafiath", "ordinary"]
+FORCE_EQ = [
+    "spencer",
+    "gle",
+    "janbu_simplified",
+    "janbu_corrected",
+    "corps1",
+    "corps2",
+    "lowe_karafiath",
+    "ordinary",
+]
 
 
 def acads():
@@ -33,8 +41,7 @@ def test_planar_block_all_force_methods(method, kh, kv):
     g, mats = acads()
     th = math.radians(15)
     surf = PolylineSurface([[20, 0], [60, 40 * math.tan(th)]])
-    res, _ = analyze(g, surf, mats, n_slices=40, method=method,
-                     opts=SliceOptions(kh=kh, kv=kv))
+    res, _ = analyze(g, surf, mats, n_slices=40, method=method, opts=SliceOptions(kh=kh, kv=kv))
     assert res.ok, res.message
     assert res.fos == pytest.approx(block_exact(th, kh, kv), rel=1e-6)
 
@@ -62,12 +69,15 @@ def test_all_methods_reasonable_on_acads_circle(method):
 @pytest.mark.parametrize("method", ["janbu_simplified", "corps1", "corps2", "lowe_karafiath"])
 def test_force_methods_mirror_invariant(method):
     from slipsurface.project import acads_1a_project
+
     p = acads_1a_project()
-    a, _ = analyze(p.build_geometry(), CircularSurface(20, 28, 28), p.build_materials(),
-                   method=method)
+    a, _ = analyze(
+        p.build_geometry(), CircularSurface(20, 28, 28), p.build_materials(), method=method
+    )
     p.external = [[0, -5], [60, -5], [60, 0], [40, 0], [20, 10], [0, 10]]
-    b, s = analyze(p.build_geometry(), CircularSurface(40, 28, 28), p.build_materials(),
-                   method=method)
+    b, s = analyze(
+        p.build_geometry(), CircularSurface(40, 28, 28), p.build_materials(), method=method
+    )
     assert s.direction == +1
     assert b.fos == pytest.approx(a.fos, rel=1e-6)
 

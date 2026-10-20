@@ -69,8 +69,18 @@ from slipsurface.materials.catalog import MODELS
 
 FORMAT = "slipsurface-le"
 VERSION = 3
-PALETTE = ["#f0c800", "#3cb371", "#ff7f3f", "#8080d0", "#8b8b00", "#c97bb4", "#5fb3c9",
-           "#c4a484", "#9acd32", "#d2691e"]
+PALETTE = [
+    "#f0c800",
+    "#3cb371",
+    "#ff7f3f",
+    "#8080d0",
+    "#8b8b00",
+    "#c97bb4",
+    "#5fb3c9",
+    "#c4a484",
+    "#9acd32",
+    "#d2691e",
+]
 
 
 def _today() -> str:
@@ -96,17 +106,17 @@ class ProjectSummary:
 @dataclass
 class MaterialSpec:
     name: str = "Zemin 1"
-    model: str = "MC"            # key of slipsurface.materials.catalog.MODELS
+    model: str = "MC"  # key of slipsurface.materials.catalog.MODELS
     gamma: float = 19.0
     gamma_sat: float = 20.0
-    use_sat: bool = False        # Slide2: saturated unit weight checkbox
+    use_sat: bool = False  # Slide2: saturated unit weight checkbox
     c: float = 5.0
     phi: float = 30.0
-    sigma_ci: float = 25_000.0   # kPa
+    sigma_ci: float = 25_000.0  # kPa
     gsi: float = 50.0
     mi: float = 10.0
     d: float = 0.0
-    use_water: bool = True       # water table acts on this material
+    use_water: bool = True  # water table acts on this material
     hu: float = 1.0
     color: str = PALETTE[0]
 
@@ -158,69 +168,119 @@ class MaterialSpec:
 
     def to_material(self) -> Material:
         gs = self.gamma_sat if self.use_sat else self.gamma
-        common: dict[str, Any] = dict(gamma=self.gamma, gamma_sat=gs,
-                                      use_water=self.use_water, hu=self.hu)
+        common: dict[str, Any] = dict(
+            gamma=self.gamma, gamma_sat=gs, use_water=self.use_water, hu=self.hu
+        )
         if self.model == "UD":
             return Undrained(self.name, su=self.su, **common)
         if self.model == "PL":
-            return PowerLaw(self.name, coefficient=self.coefficient, exponent=self.exponent,
-                            reference_pressure=self.reference_pressure, **common)
+            return PowerLaw(
+                self.name,
+                coefficient=self.coefficient,
+                exponent=self.exponent,
+                reference_pressure=self.reference_pressure,
+                **common,
+            )
         if self.model == "MC":
             return MohrCoulomb(self.name, c=self.c, phi=self.phi, **common)
         if self.model == "HB":
-            return HoekBrown(self.name, sigma_ci=self.sigma_ci, gsi=self.gsi, mi=self.mi,
-                             d=self.d, **common)
+            return HoekBrown(
+                self.name, sigma_ci=self.sigma_ci, gsi=self.gsi, mi=self.mi, d=self.d, **common
+            )
         if self.model == "HBD":
-            return HoekBrownDirect(self.name, sigma_ci=self.sigma_ci, mb_in=self.hb_mb,
-                                   s_in=self.hb_s, a_in=self.hb_a, **common)
+            return HoekBrownDirect(
+                self.name,
+                sigma_ci=self.sigma_ci,
+                mb_in=self.hb_mb,
+                s_in=self.hb_s,
+                a_in=self.hb_a,
+                **common,
+            )
         if self.model == "SH":
-            return Shansep(self.name, s_ratio=self.shansep_s, m_exp=self.shansep_m,
-                           ocr=self.ocr, su_min=self.shansep_su_min, **common)
+            return Shansep(
+                self.name,
+                s_ratio=self.shansep_s,
+                m_exp=self.shansep_m,
+                ocr=self.ocr,
+                su_min=self.shansep_su_min,
+                **common,
+            )
         if self.model == "HS":
-            return HardeningSoil(self.name, c=self.c, phi=self.phi, psi=self.hs_psi,
-                                 e50_ref=self.hs_e50, eoed_ref=self.hs_eoed, eur_ref=self.hs_eur,
-                                 m_power=self.hs_m, p_ref=self.hs_pref, rf=self.hs_rf, **common)
+            return HardeningSoil(
+                self.name,
+                c=self.c,
+                phi=self.phi,
+                psi=self.hs_psi,
+                e50_ref=self.hs_e50,
+                eoed_ref=self.hs_eoed,
+                eur_ref=self.hs_eur,
+                m_power=self.hs_m,
+                p_ref=self.hs_pref,
+                rf=self.hs_rf,
+                **common,
+            )
         if self.model == "SS":
-            return Sanisand(self.name, m_c=self.ss_m, void_ratio=self.ss_e, e_c0=self.ss_ec0,
-                            lambda_c=self.ss_lambda, xi=self.ss_xi, n_b=self.ss_nb,
-                            p_at=self.ss_pat, **common)
+            return Sanisand(
+                self.name,
+                m_c=self.ss_m,
+                void_ratio=self.ss_e,
+                e_c0=self.ss_ec0,
+                lambda_c=self.ss_lambda,
+                xi=self.ss_xi,
+                n_b=self.ss_nb,
+                p_at=self.ss_pat,
+                **common,
+            )
         if self.model == "PC":
-            return PowerCurve(self.name, pc_a=self.pc_a, pc_b=self.pc_b, pc_c=self.pc_c,
-                              pc_d=self.pc_d, **common)
+            return PowerCurve(
+                self.name, pc_a=self.pc_a, pc_b=self.pc_b, pc_c=self.pc_c, pc_d=self.pc_d, **common
+            )
         if self.model == "BB":
-            return BartonBandis(self.name, phi_r=self.bb_phir, jrc=self.bb_jrc, jcs=self.bb_jcs,
-                                l0=self.bb_l0, ln=self.bb_ln, **common)
+            return BartonBandis(
+                self.name,
+                phi_r=self.bb_phir,
+                jrc=self.bb_jrc,
+                jcs=self.bb_jcs,
+                l0=self.bb_l0,
+                ln=self.bb_ln,
+                **common,
+            )
         if self.model == "CN":
-            return CNIRockMass(self.name, sigma_cm=self.cni_sigma_c, cni_a=self.cni_a,
-                               cni_n=self.cni_n, tensile=self.cni_t, **common)
+            return CNIRockMass(
+                self.name,
+                sigma_cm=self.cni_sigma_c,
+                cni_a=self.cni_a,
+                cni_n=self.cni_n,
+                tensile=self.cni_t,
+                **common,
+            )
         raise ValueError(f"Bilinmeyen malzeme modeli: {self.model}")
 
 
 @dataclass
 class GeneralSettings:
-    units: str = "metric"                     # kN, kPa, m
+    units: str = "metric"  # kN, kPa, m
     failure_direction: str = "right_to_left"  # right_to_left | left_to_right
     data_output: str = "standard"
 
 
 @dataclass
 class MethodSettings:
-    methods: list[str] = field(default_factory=lambda: ["bishop", "janbu_simplified",
-                                                        "spencer"])
+    methods: list[str] = field(default_factory=lambda: ["bishop", "janbu_simplified", "spencer"])
     n_slices: int = 50
     tolerance: float = 0.005
     max_iter: int = 75
-    interslice: str = "half-sine"   # GLE: half-sine | constant | clipped-sine | trapezoidal
+    interslice: str = "half-sine"  # GLE: half-sine | constant | clipped-sine | trapezoidal
     f_start: float = 0.5
     f_end: float = 0.5
 
 
 @dataclass
 class GroundwaterSettings:
-    method: str = "water_table"               # water_table | ru | none
+    method: str = "water_table"  # water_table | ru | none
     gamma_w: float = 9.81
     ru: float = 0.0
-    crack_water: float = 0.0                  # tension crack filled fraction (0 dry .. 1 full)
+    crack_water: float = 0.0  # tension crack filled fraction (0 dry .. 1 full)
 
 
 @dataclass
@@ -233,21 +293,21 @@ class SeismicSettings:
 class AdvancedSettings:
     check_admissibility: bool = True
     min_depth: float = 0.0
-    m_alpha_min: float = 0.2        # admissibility threshold (Whitman & Bailey)
-    e_max_ratio: float = 50.0       # reject interslice forces > ratio * total weight
+    m_alpha_min: float = 0.2  # admissibility threshold (Whitman & Bailey)
+    e_max_ratio: float = 50.0  # reject interslice forces > ratio * total weight
 
 
 @dataclass
 class SurfaceSettings:
-    surface_type: str = "circular"            # circular | noncircular | user
+    surface_type: str = "circular"  # circular | noncircular | user
     search: str = "auto_refine"
-    effort: str = "normal"                    # fast | normal | fine
+    effort: str = "normal"  # fast | normal | fine
     n_ctrl: int = 4
-    noncircular_shape: str = "polyline"       # polyline (Slide2, straight segments) | spline
+    noncircular_shape: str = "polyline"  # polyline (Slide2, straight segments) | spline
     convex_only: bool = True
     seed: int = 0
-    left_range: list[float] | None = None     # slope limits, left end
-    right_range: list[float] | None = None    # slope limits, right end
+    left_range: list[float] | None = None  # slope limits, left end
+    right_range: list[float] | None = None  # slope limits, right end
     user_surface: list[list[float]] | None = None
 
 
@@ -268,13 +328,13 @@ DEFAULT_DISPLAY = {
     "show_lines_to_center": True,
     "show_fs_text": True,
     "show_all_surfaces": False,
-    "show_fs_contours": True,        # slip-centre FS contour map (circular searches)
-    "critical_dashed": True,         # critical surface as a dashed line
+    "show_fs_contours": True,  # slip-centre FS contour map (circular searches)
+    "critical_dashed": True,  # critical surface as a dashed line
     "show_legend": True,
     "show_fs_legend": True,
-    "material_labels": "none",       # none | name | full
+    "material_labels": "none",  # none | name | full
     "label_size": 8,
-    "show_control_points": False,    # B-spline control polygon of the critical surface
+    "show_control_points": False,  # B-spline control polygon of the critical surface
 }
 
 
@@ -299,8 +359,8 @@ class Project:
     support_patterns: list[dict] = field(default_factory=list)
     facing_types: list[FacingType] = field(default_factory=list)
     facings: list[dict] = field(default_factory=list)
-    annotations: list[dict] = field(default_factory=list)          # Modeler notes
-    result_annotations: list[dict] = field(default_factory=list)   # Interpret notes
+    annotations: list[dict] = field(default_factory=list)  # Modeler notes
+    result_annotations: list[dict] = field(default_factory=list)  # Interpret notes
     display: dict = field(default_factory=lambda: dict(DEFAULT_DISPLAY))
 
     # ---------------------------------------------------------- helpers
@@ -339,9 +399,10 @@ class Project:
             raise ValueError("Malzeme adları benzersiz olmalı.")
         for m in self.materials:
             if m.model not in MODELS:
-                raise ValueError(f"{m.name}: bilinmeyen malzeme modeli '{m.model}' "
-                                 f"({', '.join(MODELS)} olmalı).")
-            if m.model not in ("MC", "HB"):        # MC/HB give the messages below
+                raise ValueError(
+                    f"{m.name}: bilinmeyen malzeme modeli '{m.model}' ({', '.join(MODELS)} olmalı)."
+                )
+            if m.model not in ("MC", "HB"):  # MC/HB give the messages below
                 try:
                     m.to_material()
                 except ValueError as exc:
@@ -352,8 +413,9 @@ class Project:
                 raise ValueError(f"{m.name}: birim hacim ağırlıklar pozitif olmalı.")
             if m.model == "MC" and (m.c < 0 or not 0 <= m.phi < 90):
                 raise ValueError(f"{m.name}: c ≥ 0 ve 0 ≤ φ < 90 olmalı.")
-            if m.model == "HB" and (m.sigma_ci <= 0 or not 0 < m.gsi <= 100 or m.mi <= 0
-                                    or not 0 <= m.d <= 1):
+            if m.model == "HB" and (
+                m.sigma_ci <= 0 or not 0 < m.gsi <= 100 or m.mi <= 0 or not 0 <= m.d <= 1
+            ):
                 raise ValueError(f"{m.name}: σci > 0, 0 < GSI ≤ 100, mi > 0, 0 ≤ D ≤ 1 olmalı.")
         for a in self.assignments:
             if a["material"] not in names:
@@ -362,8 +424,9 @@ class Project:
         if tc:
             xs = sorted(q[0] for q in tc)
             if len(tc) < 2 or any(b <= a for a, b in zip(xs, xs[1:], strict=False)):
-                raise ValueError("Gerilme çatlağı çizgisi en az 2 nokta ve farklı x değerleri "
-                                 "içermeli.")
+                raise ValueError(
+                    "Gerilme çatlağı çizgisi en az 2 nokta ve farklı x değerleri içermeli."
+                )
         if not 0 <= self.groundwater.crack_water <= 1:
             raise ValueError("Çatlak suyu oranı 0 ile 1 arasında olmalı.")
         adv = self.advanced
@@ -410,8 +473,14 @@ class Project:
         if not self.has_geometry:
             raise ValueError("Dış sınır tanımlı değil (Sınırlar → Dış Sınır Ekle).")
         assign = [(a["point"][0], a["point"][1], a["material"]) for a in self.assignments]
-        return boundary_geometry(self.external, self.material_boundaries, assign,
-                                 self.materials[0].name, self.water_table, self.name)
+        return boundary_geometry(
+            self.external,
+            self.material_boundaries,
+            assign,
+            self.materials[0].name,
+            self.water_table,
+            self.name,
+        )
 
     def build_materials(self) -> dict[str, Material]:
         self.validate()
@@ -428,16 +497,16 @@ class Project:
                 q1, q2 = ld["q"]
                 if x2 < x1:
                     x1, x2, q1, q2 = x2, x1, q2, q1
-                ls.distributed.append(DistributedLoad(x1, x2, q1, q2,
-                                                      ld.get("orientation", "vertical")))
+                ls.distributed.append(
+                    DistributedLoad(x1, x2, q1, q2, ld.get("orientation", "vertical"))
+                )
             elif ld["kind"] == "line":
                 x, y = ld["point"]
                 ls.line.append(LineLoad(x, y, ld["magnitude"], ld.get("angle", 270.0)))
         for i, sp in enumerate(self.supports):
             st = self.support_type(sp["type"])
             if st is not None:
-                ls.supports.append(Support(tuple(sp["a"]), tuple(sp["b"]), st,
-                                           f"Destek {i + 1}"))
+                ls.supports.append(Support(tuple(sp["a"]), tuple(sp["b"]), st, f"Destek {i + 1}"))
         geom = None
         for j, pt in enumerate(self.support_patterns):
             st = self.support_type(pt["type"])
@@ -459,8 +528,7 @@ class Project:
     @staticmethod
     def pattern_bolts(pt: dict, geom) -> list:
         """(A, B) of every bolt of a pattern, heads on the ground surface."""
-        xs = pattern_positions(geom, pt["p1"][0], pt["p2"][0], pt["spacing"],
-                               pt.get("offset", 0.0))
+        xs = pattern_positions(geom, pt["p1"][0], pt["p2"][0], pt["spacing"], pt.get("offset", 0.0))
         return [bolt_at(geom, x, pt.get("angle", 15.0), pt["length"]) for x in xs]
 
     def slice_options(self) -> SliceOptions:
@@ -469,26 +537,40 @@ class Project:
         if pore == "water_table" and not self.water_table:
             pore = "none"
         ls = self.load_set()
-        return SliceOptions(n_slices=self.methods.n_slices, gamma_w=gw.gamma_w, pore=pore,
-                            ru=gw.ru, kh=self.seismic.kh, kv=self.seismic.kv,
-                            direction=self.general.failure_direction,
-                            min_depth=self.advanced.min_depth,
-                            loads=None if ls.empty else ls,
-                            crack=self.crack())
+        return SliceOptions(
+            n_slices=self.methods.n_slices,
+            gamma_w=gw.gamma_w,
+            pore=pore,
+            ru=gw.ru,
+            kh=self.seismic.kh,
+            kv=self.seismic.kv,
+            direction=self.general.failure_direction,
+            min_depth=self.advanced.min_depth,
+            loads=None if ls.empty else ls,
+            crack=self.crack(),
+        )
 
     def crack(self) -> TensionCrack | None:
         tc = self.tension_crack
         if not tc or len(tc) < 2:
             return None
-        return TensionCrack(np.array(sorted(map(tuple, tc)), dtype=float),
-                            self.groundwater.crack_water, self.groundwater.gamma_w)
+        return TensionCrack(
+            np.array(sorted(map(tuple, tc)), dtype=float),
+            self.groundwater.crack_water,
+            self.groundwater.gamma_w,
+        )
 
     def solver_kw(self) -> dict:
         m = self.methods
-        return {"tol": m.tolerance * 1e-2, "max_iter": m.max_iter, "interslice": m.interslice,
-                "f_start": m.f_start, "f_end": m.f_end,
-                "m_alpha_min": self.advanced.m_alpha_min,
-                "e_max_ratio": self.advanced.e_max_ratio}
+        return {
+            "tol": m.tolerance * 1e-2,
+            "max_iter": m.max_iter,
+            "interslice": m.interslice,
+            "f_start": m.f_start,
+            "f_end": m.f_end,
+            "m_alpha_min": self.advanced.m_alpha_min,
+            "e_max_ratio": self.advanced.e_max_ratio,
+        }
 
     # ------------------------------------------------------------- JSON
     def to_dict(self) -> dict:
@@ -539,14 +621,21 @@ class Project:
             summary=_from_dict(ProjectSummary, d.get("summary")),
             materials=[_from_dict(MaterialSpec, m) for m in d.get("materials", [])],
             external=[list(map(float, p)) for p in g.get("external", [])],
-            material_boundaries=[[list(map(float, p)) for p in b]
-                                 for b in g.get("material_boundaries", [])],
-            water_table=([list(map(float, p)) for p in g["water_table"]]
-                         if g.get("water_table") else None),
-            tension_crack=([list(map(float, p)) for p in g["tension_crack"]]
-                           if g.get("tension_crack") else None),
-            assignments=[{"point": list(map(float, a["point"])), "material": a["material"]}
-                         for a in g.get("assignments", [])],
+            material_boundaries=[
+                [list(map(float, p)) for p in b] for b in g.get("material_boundaries", [])
+            ],
+            water_table=(
+                [list(map(float, p)) for p in g["water_table"]] if g.get("water_table") else None
+            ),
+            tension_crack=(
+                [list(map(float, p)) for p in g["tension_crack"]]
+                if g.get("tension_crack")
+                else None
+            ),
+            assignments=[
+                {"point": list(map(float, a["point"])), "material": a["material"]}
+                for a in g.get("assignments", [])
+            ],
             general=_from_dict(GeneralSettings, st.get("general")),
             methods=_from_dict(MethodSettings, st.get("methods")),
             groundwater=_from_dict(GroundwaterSettings, st.get("groundwater")),
@@ -555,8 +644,10 @@ class Project:
             surfaces=_from_dict(SurfaceSettings, d.get("surfaces")),
             loads=[dict(ld) for ld in d.get("loads", [])],
             support_types=[_from_dict(SupportType, t) for t in d.get("support_types", [])],
-            supports=[{"a": list(map(float, sp["a"])), "b": list(map(float, sp["b"])),
-                       "type": sp["type"]} for sp in d.get("supports", [])],
+            supports=[
+                {"a": list(map(float, sp["a"])), "b": list(map(float, sp["b"])), "type": sp["type"]}
+                for sp in d.get("supports", [])
+            ],
             support_patterns=[dict(p) for p in d.get("support_patterns", [])],
             facing_types=[_from_dict(FacingType, t) for t in d.get("facing_types", [])],
             facings=[dict(f) for f in d.get("facings", [])],
@@ -570,9 +661,14 @@ class Project:
         payload = json.dumps(self.to_dict(), indent=2, ensure_ascii=False)
         temporary = None
         try:
-            with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
-                                             prefix=f".{path.name}.", suffix=".tmp",
-                                             delete=False) as stream:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=path.parent,
+                prefix=f".{path.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as stream:
                 temporary = Path(stream.name)
                 stream.write(payload)
                 stream.flush()
@@ -594,8 +690,10 @@ def _from_v1(d: dict) -> Project:
 
     g = d["geometry"]
     surface = np.asarray(g["surface"], float)
-    layers = [(lay["material"], None if i == 0 else np.asarray(lay["top"], float))
-              for i, lay in enumerate(g["layers"])]
+    layers = [
+        (lay["material"], None if i == 0 else np.asarray(lay["top"], float))
+        for i, lay in enumerate(g["layers"])
+    ]
     old = layered_geometry(surface, float(g["bottom"]), layers)
     ext = np.asarray(old.domain.exterior.coords)[:-1].tolist()
     x0, x1 = surface[0, 0], surface[-1, 0]
@@ -608,8 +706,10 @@ def _from_v1(d: dict) -> Project:
         if line[-1, 0] < x1:
             line = np.vstack([line, [x1, line[-1, 1]]])
         bounds.append(line.tolist())
-    assigns = [{"point": list(r.polygon.representative_point().coords[0]),
-                "material": r.material} for r in old.regions]
+    assigns = [
+        {"point": list(r.polygon.representative_point().coords[0]), "material": r.material}
+        for r in old.regions
+    ]
     mats = []
     for m in d.get("materials", []):
         spec = _from_dict(MaterialSpec, m)
@@ -617,10 +717,14 @@ def _from_v1(d: dict) -> Project:
         mats.append(spec)
     w = d.get("water", {})
     a = d.get("analysis", {})
-    p = Project(summary=ProjectSummary(title=d.get("name", "Model")), materials=mats,
-                external=ext, material_boundaries=bounds,
-                water_table=w.get("points") if w.get("enabled") else None,
-                assignments=assigns)
+    p = Project(
+        summary=ProjectSummary(title=d.get("name", "Model")),
+        materials=mats,
+        external=ext,
+        material_boundaries=bounds,
+        water_table=w.get("points") if w.get("enabled") else None,
+        assignments=assigns,
+    )
     p.groundwater.gamma_w = float(w.get("gamma_w", 9.81))
     if a.get("method") in METHODS:
         p.methods.methods = [a["method"]]
@@ -630,12 +734,14 @@ def _from_v1(d: dict) -> Project:
 
 # ---------------------------------------------------------------- presets
 def _mk(title, mats, ext, bounds=(), wt=None, assigns=(), methods=None, n_slices=None):
-    p = Project(summary=ProjectSummary(title=title), materials=list(mats),
-                external=[list(map(float, q)) for q in ext],
-                material_boundaries=[[list(map(float, q)) for q in b] for b in bounds],
-                water_table=wt,
-                assignments=[{"point": list(map(float, pt)), "material": m}
-                             for pt, m in assigns])
+    p = Project(
+        summary=ProjectSummary(title=title),
+        materials=list(mats),
+        external=[list(map(float, q)) for q in ext],
+        material_boundaries=[[list(map(float, q)) for q in b] for b in bounds],
+        water_table=wt,
+        assignments=[{"point": list(map(float, pt)), "material": m} for pt, m in assigns],
+    )
     if methods:
         p.methods.methods = list(methods)
     if n_slices:
@@ -645,9 +751,11 @@ def _mk(title, mats, ext, bounds=(), wt=None, assigns=(), methods=None, n_slices
 
 def default_project() -> Project:
     """10 m high 2H:1V homogeneous slope."""
-    return _mk("Simple slope H=10 m, 2H:1V",
-               [MaterialSpec("Soil 1", "MC", 18, 20, False, 10, 30, color=PALETTE[0])],
-               [[0, -10], [55, -10], [55, 10], [35, 10], [15, 0], [0, 0]])
+    return _mk(
+        "Simple slope H=10 m, 2H:1V",
+        [MaterialSpec("Soil 1", "MC", 18, 20, False, 10, 30, color=PALETTE[0])],
+        [[0, -10], [55, -10], [55, 10], [35, 10], [15, 0], [0, 0]],
+    )
 
 
 def empty_project() -> Project:
@@ -655,49 +763,88 @@ def empty_project() -> Project:
 
 
 def acads_1a_project() -> Project:
-    return _mk("ACADS EX1(a) — homogeneous slope",
-               [MaterialSpec("Soil 1", "MC", 20, 20, False, 3, 19.6, color=PALETTE[0])],
-               [[0, -5], [60, -5], [60, 10], [40, 10], [20, 0], [0, 0]],
-               methods=["bishop", "spencer", "gle", "janbu_simplified"], n_slices=30)
+    return _mk(
+        "ACADS EX1(a) — homogeneous slope",
+        [MaterialSpec("Soil 1", "MC", 20, 20, False, 3, 19.6, color=PALETTE[0])],
+        [[0, -5], [60, -5], [60, 10], [40, 10], [20, 0], [0, 0]],
+        methods=["bishop", "spencer", "gle", "janbu_simplified"],
+        n_slices=30,
+    )
 
 
 def layered_example_project() -> Project:
     """Three materials, a weak clay band outcropping on the face, water table."""
     return _mk(
         "Layered slope with water table",
-        [MaterialSpec("Fill", "MC", 19, 20, True, 8, 32, color=PALETTE[0]),
-         MaterialSpec("Soft clay", "MC", 17, 18, True, 15, 18, color=PALETTE[3]),
-         MaterialSpec("Weathered rock", "HB", 23, 24, True, sigma_ci=8_000, gsi=35, mi=8,
-                      d=0.3, color=PALETTE[2])],
+        [
+            MaterialSpec("Fill", "MC", 19, 20, True, 8, 32, color=PALETTE[0]),
+            MaterialSpec("Soft clay", "MC", 17, 18, True, 15, 18, color=PALETTE[3]),
+            MaterialSpec(
+                "Weathered rock",
+                "HB",
+                23,
+                24,
+                True,
+                sigma_ci=8_000,
+                gsi=35,
+                mi=8,
+                d=0.3,
+                color=PALETTE[2],
+            ),
+        ],
         [[0, -12], [70, -12], [70, 14], [50, 12], [40, 12], [20, 0], [0, 0]],
         bounds=[[[0, -1], [70, 5]], [[0, -5], [70, -2]]],
         wt=[[0, -0.5], [20, -0.5], [45, 6], [70, 8]],
         assigns=[((60, 10), "Fill"), ((60, 2), "Soft clay"), ((60, -6), "Weathered rock")],
-        n_slices=30)
+        n_slices=30,
+    )
 
 
 def anchored_example_project() -> Project:
     """Steep cut with a crest surcharge, stabilised by two rows of grouted tiebacks."""
-    p = _mk("Anchored cut with surcharge",
-            [MaterialSpec("Sandy clay", "MC", 19, 20, True, 12, 26, color=PALETTE[0])],
-            [[0, -8], [50, -8], [50, 12], [26, 12], [18, 0], [0, 0]], n_slices=40,
-            methods=["bishop", "spencer", "janbu_corrected"])
-    p.support_types = [SupportType("Tieback 1", "grouted_tieback", spacing=2.0, tensile=400,
-                                   bond_strength=60, bond_length=6, application="active")]
-    p.supports = [{"a": [21.33, 5.0], "b": [37.0, -0.5], "type": "Tieback 1"},
-                  {"a": [24.0, 9.0], "b": [40.0, 3.5], "type": "Tieback 1"}]
-    p.loads = [{"kind": "distributed", "points": [[29, 12], [37, 12]], "q": [20, 20],
-                "orientation": "vertical"},
-               {"kind": "line", "point": [42, 12], "magnitude": 60, "angle": 270.0}]
+    p = _mk(
+        "Anchored cut with surcharge",
+        [MaterialSpec("Sandy clay", "MC", 19, 20, True, 12, 26, color=PALETTE[0])],
+        [[0, -8], [50, -8], [50, 12], [26, 12], [18, 0], [0, 0]],
+        n_slices=40,
+        methods=["bishop", "spencer", "janbu_corrected"],
+    )
+    p.support_types = [
+        SupportType(
+            "Tieback 1",
+            "grouted_tieback",
+            spacing=2.0,
+            tensile=400,
+            bond_strength=60,
+            bond_length=6,
+            application="active",
+        )
+    ]
+    p.supports = [
+        {"a": [21.33, 5.0], "b": [37.0, -0.5], "type": "Tieback 1"},
+        {"a": [24.0, 9.0], "b": [40.0, 3.5], "type": "Tieback 1"},
+    ]
+    p.loads = [
+        {
+            "kind": "distributed",
+            "points": [[29, 12], [37, 12]],
+            "q": [20, 20],
+            "orientation": "vertical",
+        },
+        {"kind": "line", "point": [42, 12], "magnitude": 60, "angle": 270.0},
+    ]
     return p
 
 
 def cracked_example_project() -> Project:
     """Cohesive slope with a water-filled tension crack in the crest zone."""
-    p = _mk("Slope with water-filled tension crack",
-            [MaterialSpec("Stiff clay", "MC", 19, 20, False, 18, 20, color=PALETTE[1])],
-            [[0, -10], [60, -10], [60, 12], [32, 12], [14, 0], [0, 0]], n_slices=40,
-            methods=["bishop", "spencer", "gle"])
+    p = _mk(
+        "Slope with water-filled tension crack",
+        [MaterialSpec("Stiff clay", "MC", 19, 20, False, 18, 20, color=PALETTE[1])],
+        [[0, -10], [60, -10], [60, 12], [32, 12], [14, 0], [0, 0]],
+        n_slices=40,
+        methods=["bishop", "spencer", "gle"],
+    )
     p.tension_crack = [[32.0, 9.0], [60.0, 9.0]]
     p.groundwater.crack_water = 1.0
     return p
@@ -706,30 +853,75 @@ def cracked_example_project() -> Project:
 def nailed_shotcrete_project() -> Project:
     """Steep cut stabilised with a soil-nail pattern (15°) and a shotcrete +
     wire mesh facing on the slope face."""
-    p = _mk("Soil-nailed cut with shotcrete facing",
-            [MaterialSpec("Silty sand", "MC", 19, 20, False, 8, 30, color=PALETTE[0]),
-             MaterialSpec("Weathered rock", "MC", 22, 23, False, 40, 36, color=PALETTE[2])],
-            [[0, -8], [48, -8], [48, 12], [26, 12], [20, 0], [0, 0]], n_slices=40,
-            methods=["bishop", "spencer", "janbu_corrected"])
+    p = _mk(
+        "Soil-nailed cut with shotcrete facing",
+        [
+            MaterialSpec("Silty sand", "MC", 19, 20, False, 8, 30, color=PALETTE[0]),
+            MaterialSpec("Weathered rock", "MC", 22, 23, False, 40, 36, color=PALETTE[2]),
+        ],
+        [[0, -8], [48, -8], [48, 12], [26, 12], [20, 0], [0, 0]],
+        n_slices=40,
+        methods=["bishop", "spencer", "janbu_corrected"],
+    )
     p.material_boundaries = [[[0, -3], [48, -3]]]
-    p.assignments = [{"point": [24, 5], "material": "Silty sand"},
-                     {"point": [24, -6], "material": "Weathered rock"}]
-    p.support_types = [SupportType("Nail Ø28", "soil_nail", spacing=1.5, tensile=240,
-                                   plate=80, bond_strength=40, application="passive",
-                                   color="#1f3d7a", length=9.0)]
-    p.support_patterns = [{"p1": [20.0, 0.0], "p2": [26.0, 12.0], "spacing": 1.5,
-                           "offset": 0.75, "angle": 15.0, "length": 9.0, "type": "Nail Ø28"}]
+    p.assignments = [
+        {"point": [24, 5], "material": "Silty sand"},
+        {"point": [24, -6], "material": "Weathered rock"},
+    ]
+    p.support_types = [
+        SupportType(
+            "Nail Ø28",
+            "soil_nail",
+            spacing=1.5,
+            tensile=240,
+            plate=80,
+            bond_strength=40,
+            application="passive",
+            color="#1f3d7a",
+            length=9.0,
+        )
+    ]
+    p.support_patterns = [
+        {
+            "p1": [20.0, 0.0],
+            "p2": [26.0, 12.0],
+            "spacing": 1.5,
+            "offset": 0.75,
+            "angle": 15.0,
+            "length": 9.0,
+            "type": "Nail Ø28",
+        }
+    ]
     p.facing_types = [FacingType("Shotcrete 10 cm + Q188")]
-    p.facings = [{"x1": 20.0, "x2": 26.0, "type": "Shotcrete 10 cm + Q188",
-                  "points": [[20.0, 0.0], [26.0, 12.0]]}]
-    p.loads = [{"kind": "distributed", "points": [[29, 12], [40, 12]], "q": [15, 15],
-                "orientation": "vertical"}]
-    p.annotations = [{"kind": "text", "pts": [[30.0, 17.0]], "text":
-                      "Soil-nail pattern: 1.5 m spacing, 15°, L = 9 m\n"
-                      "Facing: 10 cm shotcrete + Q188", "color": "#1b2a3a",
-                      "size": 9, "bold": False, "box": True},
-                     {"kind": "arrow", "pts": [[29.5, 16.0], [24.5, 9.5]], "color": "#c0392b",
-                      "width": 1.5}]
+    p.facings = [
+        {
+            "x1": 20.0,
+            "x2": 26.0,
+            "type": "Shotcrete 10 cm + Q188",
+            "points": [[20.0, 0.0], [26.0, 12.0]],
+        }
+    ]
+    p.loads = [
+        {
+            "kind": "distributed",
+            "points": [[29, 12], [40, 12]],
+            "q": [15, 15],
+            "orientation": "vertical",
+        }
+    ]
+    p.annotations = [
+        {
+            "kind": "text",
+            "pts": [[30.0, 17.0]],
+            "text": "Soil-nail pattern: 1.5 m spacing, 15°, L = 9 m\n"
+            "Facing: 10 cm shotcrete + Q188",
+            "color": "#1b2a3a",
+            "size": 9,
+            "bold": False,
+            "box": True,
+        },
+        {"kind": "arrow", "pts": [[29.5, 16.0], [24.5, 9.5]], "color": "#c0392b", "width": 1.5},
+    ]
     p.display["material_labels"] = "full"
     return p
 
@@ -766,9 +958,13 @@ def seismic_example_project():
     return p
 
 
-EXAMPLES.update({"Undrained clay": undrained_example_project,
-                 "Power-law envelope": power_law_example_project,
-                 "Seismic kh=0.15": seismic_example_project})
+EXAMPLES.update(
+    {
+        "Undrained clay": undrained_example_project,
+        "Power-law envelope": power_law_example_project,
+        "Seismic kh=0.15": seismic_example_project,
+    }
+)
 
 # names used before 2026.0.0 (accepted by --example)
 EXAMPLE_ALIASES = {

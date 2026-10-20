@@ -60,7 +60,7 @@ def test_facing_not_counted_when_surface_daylights_elsewhere():
     loads = LoadSet(facings=[Facing(25, 35, FacingType())])
     surf = PolylineSurface([[20, 0], [60, 40 * math.tan(TH)]])
     _, s = analyze(g, surf, mats, n_slices=40, opts=SliceOptions(loads=loads))
-    assert s.support_forces == []                 # toe at x=20 is not faced
+    assert s.support_forces == []  # toe at x=20 is not faced
     assert s.Qy_a.sum() == pytest.approx(-FacingType().weight_per_m * math.hypot(10, 5))
 
 
@@ -68,7 +68,7 @@ def test_facing_capacity_counted_once_when_both_ends_faced():
     """Facing spans the whole slip surface: capacity mobilises once, not at both ends."""
     g, mats = acads()
     loads = LoadSet(facings=[Facing(20, 40, FacingType())])
-    surf = PolylineSurface([[22, 1.0], [30, 3.0], [38, 9.0]])   # both ends on the face
+    surf = PolylineSurface([[22, 1.0], [30, 3.0], [38, 9.0]])  # both ends on the face
     _, s = analyze(g, surf, mats, n_slices=40, opts=SliceOptions(loads=loads))
     assert len(s.support_forces) == 1
     assert s.support_forces[0].T == pytest.approx(FacingType().capacity)
@@ -92,7 +92,7 @@ def test_pattern_positions_follow_arc_length():
     g, _ = acads()
     xs = pattern_positions(g, 20, 40, spacing=math.hypot(4, 2), offset=0.0)
     assert xs == pytest.approx([20, 24, 28, 32, 36, 40])
-    xs = pattern_positions(g, 15, 25, spacing=2.0, offset=1.0)   # across the toe kink
+    xs = pattern_positions(g, 15, 25, spacing=2.0, offset=1.0)  # across the toe kink
     assert xs[0] == pytest.approx(16.0) and xs[2] == pytest.approx(20.0)
     assert xs[3] == pytest.approx(20 + 2 / math.hypot(1, 0.5))
 
@@ -101,11 +101,24 @@ def test_project_patterns_and_facings_roundtrip_and_analysis():
     from slipsurface.analysis import report_text, run_analysis
     from slipsurface.loads import SupportType
     from slipsurface.project import Project, acads_1a_project
+
     p = acads_1a_project()
-    p.support_types = [SupportType("Bulon", "soil_nail", spacing=1.5, tensile=150, plate=60,
-                                   bond_strength=40, length=8)]
-    p.support_patterns = [{"p1": [21, 0.5], "p2": [39, 9.5], "spacing": 2.0, "offset": 1.0,
-                           "angle": 15.0, "length": 8.0, "type": "Bulon"}]
+    p.support_types = [
+        SupportType(
+            "Bulon", "soil_nail", spacing=1.5, tensile=150, plate=60, bond_strength=40, length=8
+        )
+    ]
+    p.support_patterns = [
+        {
+            "p1": [21, 0.5],
+            "p2": [39, 9.5],
+            "spacing": 2.0,
+            "offset": 1.0,
+            "angle": 15.0,
+            "length": 8.0,
+            "type": "Bulon",
+        }
+    ]
     p.facing_types = [FacingType()]
     p.facings = [{"x1": 20.0, "x2": 40.0, "type": FacingType().name}]
     q = Project.from_dict(p.to_dict())

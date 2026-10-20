@@ -18,10 +18,10 @@ import numpy as np
 @dataclass
 class Material:
     name: str
-    gamma: float                   # unit weight above water table
+    gamma: float  # unit weight above water table
     gamma_sat: float | None = None  # below water table (defaults to gamma)
-    use_water: bool = True          # pore pressure from the water table acts on this material
-    hu: float = 1.0                 # piezometric head factor (Slide2 "Hu")
+    use_water: bool = True  # pore pressure from the water table acts on this material
+    hu: float = 1.0  # piezometric head factor (Slide2 "Hu")
 
     def __post_init__(self) -> None:
         if self.gamma <= 0:
@@ -39,8 +39,8 @@ class Material:
 
 @dataclass
 class MohrCoulomb(Material):
-    c: float = 0.0       # kPa
-    phi: float = 30.0    # deg
+    c: float = 0.0  # kPa
+    phi: float = 30.0  # deg
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -49,8 +49,7 @@ class MohrCoulomb(Material):
 
     def strength(self, sigma_n):
         sigma_n = np.asarray(sigma_n, dtype=float)
-        return (np.full_like(sigma_n, self.c),
-                np.full_like(sigma_n, np.tan(np.radians(self.phi))))
+        return (np.full_like(sigma_n, self.c), np.full_like(sigma_n, np.tan(np.radians(self.phi))))
 
 
 @dataclass
@@ -81,10 +80,10 @@ class HoekBrown(Material):
 
     def _build_table(self) -> None:
         sci, mb, s, a = self.sigma_ci, self.mb, self.s, self.a
-        s3_t = -s * sci / mb                       # biaxial tensile strength
+        s3_t = -s * sci / mb  # biaxial tensile strength
         # dense near tension cut-off, up to 0.5*sigma_ci confinement
         s3 = s3_t + (0.5 * sci - s3_t) * np.linspace(0, 1, 400) ** 3
-        s3 = s3[1:]                                # avoid singular slope at s3_t
+        s3 = s3[1:]  # avoid singular slope at s3_t
         base = np.maximum(mb * s3 / sci + s, 1e-12)
         s1 = s3 + sci * base**a
         ds = 1 + a * mb * base ** (a - 1)
@@ -104,6 +103,7 @@ class HoekBrown(Material):
 @dataclass
 class Undrained(Material):
     """Total-stress Tresca strength. Pore pressure must not be subtracted."""
+
     su: float = 25.0
 
     def __post_init__(self):
@@ -125,15 +125,19 @@ class PowerLaw(Material):
     pa is a reference stress in kPa; a is dimensionless, 0 < b <= 1.
     Returns the exact local tangent for the iterative LEM solver.
     """
+
     coefficient: float = 0.2
     exponent: float = 0.5
     reference_pressure: float = 100.0
 
     def __post_init__(self):
         super().__post_init__()
-        if (not np.isfinite([self.coefficient, self.exponent, self.reference_pressure]).all()
-                or self.coefficient < 0 or not 0 < self.exponent <= 1
-                or self.reference_pressure <= 0):
+        if (
+            not np.isfinite([self.coefficient, self.exponent, self.reference_pressure]).all()
+            or self.coefficient < 0
+            or not 0 < self.exponent <= 1
+            or self.reference_pressure <= 0
+        ):
             raise ValueError("a >= 0, 0 < b <= 1 and pa > 0 required")
         self.nonlinear = True
 
@@ -141,7 +145,7 @@ class PowerLaw(Material):
         sn = np.maximum(np.asarray(sigma_n, dtype=float), 0)
         x = 1 + sn / self.reference_pressure
         slope = self.coefficient * self.exponent * x ** (self.exponent - 1)
-        tau = self.coefficient * self.reference_pressure * x ** self.exponent
+        tau = self.coefficient * self.reference_pressure * x**self.exponent
         return tau - sn * slope, slope
 
 
@@ -156,14 +160,19 @@ def _clip_friction(tau, slope, sn, max_phi_deg=70.0):
 @dataclass
 class HoekBrownDirect(HoekBrown):
     """Hoek-Brown with mb, s and a entered directly (Slide2 "Hoek-Brown")."""
+
     mb_in: float = 1.0
     s_in: float = 0.001
     a_in: float = 0.5
 
     def __post_init__(self) -> None:
         Material.__post_init__(self)
-        if self.sigma_ci <= 0 or self.mb_in <= 0 or not 0 <= self.s_in <= 1 \
-                or not 0.5 <= self.a_in < 1:
+        if (
+            self.sigma_ci <= 0
+            or self.mb_in <= 0
+            or not 0 <= self.s_in <= 1
+            or not 0.5 <= self.a_in < 1
+        ):
             raise ValueError("sigma_ci > 0, mb > 0, 0 <= s <= 1, 0.5 <= a < 1 required")
         self.nonlinear = True
         self.mb, self.s, self.a = self.mb_in, self.s_in, self.a_in
@@ -176,6 +185,7 @@ class Shansep(Material):
         su = max(su_min, S * sigma'_v * OCR^m)
     sigma'_v is the effective vertical stress at the slice base (overburden
     minus the pore pressure of the water table)."""
+
     s_ratio: float = 0.22
     m_exp: float = 0.8
     ocr: float = 1.0
@@ -190,7 +200,7 @@ class Shansep(Material):
 
     def su(self, sigma_v_eff):
         sv = np.maximum(np.asarray(sigma_v_eff, dtype=float), 0.0)
-        return np.maximum(self.su_min, self.s_ratio * sv * self.ocr ** self.m_exp)
+        return np.maximum(self.su_min, self.s_ratio * sv * self.ocr**self.m_exp)
 
     def strength(self, sigma_n, sigma_v=None):
         sn = np.asarray(sigma_n, dtype=float)
@@ -203,20 +213,24 @@ class HardeningSoil(MohrCoulomb):
     """Hardening Soil (Schanz et al. 1999). Its failure surface is Mohr-Coulomb
     (c', phi'); in limit equilibrium only this envelope is used. The stiffness
     parameters are stored for reference and are not used by the LEM solver."""
-    psi: float = 0.0             # dilatancy angle [deg]
-    e50_ref: float = 30_000.0    # kPa
-    eoed_ref: float = 30_000.0   # kPa
-    eur_ref: float = 90_000.0    # kPa
+
+    psi: float = 0.0  # dilatancy angle [deg]
+    e50_ref: float = 30_000.0  # kPa
+    eoed_ref: float = 30_000.0  # kPa
+    eur_ref: float = 90_000.0  # kPa
     m_power: float = 0.5
-    p_ref: float = 100.0         # kPa
+    p_ref: float = 100.0  # kPa
     rf: float = 0.9
 
     def __post_init__(self) -> None:
         super().__post_init__()
         if not 0 <= self.psi <= self.phi:
             raise ValueError("0 <= psi <= phi required")
-        if min(self.e50_ref, self.eoed_ref, self.eur_ref, self.p_ref) <= 0 \
-                or not 0 <= self.m_power <= 1 or not 0 < self.rf <= 1:
+        if (
+            min(self.e50_ref, self.eoed_ref, self.eur_ref, self.p_ref) <= 0
+            or not 0 <= self.m_power <= 1
+            or not 0 < self.rf <= 1
+        ):
             raise ValueError("stiffnesses > 0, 0 <= m <= 1 and 0 < Rf <= 1 required")
 
 
@@ -232,6 +246,7 @@ class Sanisand(Material):
     (p' ~ sigma'_n); the instantaneous tangent of tau = sigma'_n tan phi(sigma'_n)
     is returned. phi is limited to [phi_cs - 10, 50] degrees.
     """
+
     m_c: float = 1.25
     void_ratio: float = 0.75
     e_c0: float = 0.934
@@ -242,10 +257,19 @@ class Sanisand(Material):
 
     def __post_init__(self):
         super().__post_init__()
-        if not 0 < self.m_c < 3 or self.void_ratio <= 0 or self.e_c0 <= 0 \
-                or self.lambda_c < 0 or not 0 < self.xi <= 1 or self.n_b < 0 or self.p_at <= 0:
-            raise ValueError("0 < M < 3, e > 0, e_c0 > 0, lambda_c >= 0, 0 < xi <= 1, "
-                             "n_b >= 0, p_at > 0 required")
+        if (
+            not 0 < self.m_c < 3
+            or self.void_ratio <= 0
+            or self.e_c0 <= 0
+            or self.lambda_c < 0
+            or not 0 < self.xi <= 1
+            or self.n_b < 0
+            or self.p_at <= 0
+        ):
+            raise ValueError(
+                "0 < M < 3, e > 0, e_c0 > 0, lambda_c >= 0, 0 < xi <= 1, "
+                "n_b >= 0, p_at > 0 required"
+            )
         self.nonlinear = True
 
     @staticmethod
@@ -266,13 +290,16 @@ class Sanisand(Material):
     def strength(self, sigma_n):
         sn = np.maximum(np.asarray(sigma_n, dtype=float), 0.0)
         h = np.maximum(1e-3 * sn, 1e-3)
-        slope = (self.tau(sn + h) - self.tau(np.maximum(sn - h, 0.0))) / (sn + h - np.maximum(sn - h, 0.0))
+        slope = (self.tau(sn + h) - self.tau(np.maximum(sn - h, 0.0))) / (
+            sn + h - np.maximum(sn - h, 0.0)
+        )
         return _clip_friction(self.tau(sn), slope, sn)
 
 
 @dataclass
 class PowerCurve(Material):
     """Slide2 Power Curve: tau = a (sigma'_n + d)^b + c   [kPa]."""
+
     pc_a: float = 1.5
     pc_b: float = 0.8
     pc_c: float = 0.0
@@ -286,7 +313,7 @@ class PowerCurve(Material):
 
     def tau(self, sigma_n):
         x = np.maximum(np.asarray(sigma_n, dtype=float) + self.pc_d, 0.0)
-        return self.pc_a * x ** self.pc_b + self.pc_c
+        return self.pc_a * x**self.pc_b + self.pc_c
 
     def strength(self, sigma_n):
         sn = np.maximum(np.asarray(sigma_n, dtype=float), 0.0)
@@ -303,16 +330,22 @@ class BartonBandis(Material):
     with the scale corrections
         JRC_n = JRC_0 (L_n/L_0)^(-0.02 JRC_0),  JCS_n = JCS_0 (L_n/L_0)^(-0.03 JRC_0)
     and the total friction angle limited to 70 degrees."""
+
     phi_r: float = 25.0
     jrc: float = 10.0
-    jcs: float = 50_000.0        # kPa
-    l0: float = 0.1              # laboratory sample length [m]
-    ln: float = 0.1              # field block size [m]
+    jcs: float = 50_000.0  # kPa
+    l0: float = 0.1  # laboratory sample length [m]
+    ln: float = 0.1  # field block size [m]
 
     def __post_init__(self):
         super().__post_init__()
-        if not 0 <= self.phi_r < 90 or not 0 <= self.jrc <= 20 or self.jcs <= 0 \
-                or self.l0 <= 0 or self.ln <= 0:
+        if (
+            not 0 <= self.phi_r < 90
+            or not 0 <= self.jrc <= 20
+            or self.jcs <= 0
+            or self.l0 <= 0
+            or self.ln <= 0
+        ):
             raise ValueError("0 <= phi_r < 90, 0 <= JRC <= 20, JCS > 0, L0 > 0, Ln > 0 required")
         self.nonlinear = True
         r = self.ln / self.l0
@@ -331,8 +364,7 @@ class BartonBandis(Material):
         ang = self._angle(sn)
         t = np.tan(np.radians(ang))
         capped = ang >= 70.0
-        slope = t - np.where(capped, 0.0,
-                             np.pi * self.jrc_n / (180 * np.log(10)) * (t ** 2 + 1))
+        slope = t - np.where(capped, 0.0, np.pi * self.jrc_n / (180 * np.log(10)) * (t**2 + 1))
         return _clip_friction(sn * t, slope, sn)
 
 
@@ -344,6 +376,7 @@ class CNIRockMass(Material):
     sigma_c rock mass compressive strength [kPa], a strength magnitude
     coefficient, n curvature coefficient, T0 direct tensile strength (entered
     as a positive magnitude, used as -T0). Instantaneous phi capped at 70 deg."""
+
     sigma_cm: float = 10_000.0
     cni_a: float = 0.6
     cni_n: float = 0.75
@@ -357,7 +390,7 @@ class CNIRockMass(Material):
 
     def tau(self, sigma_n):
         x = np.maximum((np.asarray(sigma_n, dtype=float) + self.tensile) / self.sigma_cm, 0.0)
-        return self.cni_a * self.sigma_cm * x ** self.cni_n
+        return self.cni_a * self.sigma_cm * x**self.cni_n
 
     def strength(self, sigma_n):
         sn = np.maximum(np.asarray(sigma_n, dtype=float), 0.0)

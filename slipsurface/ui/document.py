@@ -24,7 +24,7 @@ class _Snapshot(QUndoCommand):
         self._first = True
 
     def redo(self) -> None:
-        if self._first:            # already applied by Document.edit
+        if self._first:  # already applied by Document.edit
             self._first = False
             return
         self.doc._restore(self.after)
@@ -34,12 +34,12 @@ class _Snapshot(QUndoCommand):
 
 
 class Document(QObject):
-    changed = Signal()                 # any change (project replaced or edited)
+    changed = Signal()  # any change (project replaced or edited)
 
     def __init__(self, project: Project | None = None) -> None:
         super().__init__()
         self.undo_stack = QUndoStack(self)
-        self.undo_stack.setUndoLimit(100)   # snapshots are whole projects; keep memory bounded
+        self.undo_stack.setUndoLimit(100)  # snapshots are whole projects; keep memory bounded
         self.project = project or Project()
         self.path = None
         self.geometry: SlopeGeometry | None = None
@@ -73,6 +73,7 @@ class Document(QObject):
         self.project = p
         self._rebuild()
         from slipsurface.ui.i18n import tr
+
         self.undo_stack.push(_Snapshot(self, tr(text), before, after))
         self.changed.emit()
         return True
