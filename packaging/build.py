@@ -121,15 +121,16 @@ DEB_REQUIRES = (
     "libc6 (>= 2.39), libgl1, libegl1, libxkbcommon-x11-0, libfontconfig1, "
     "libdbus-1-3, libglib2.0-0t64, libx11-6, libxcb-cursor0, libxcb-icccm4, "
     "libxcb-image0, libxcb-keysyms1, libxcb-render-util0, libxcb-xinerama0, libxcb-xkb1, "
-    "libxcb-shape0"
+    "libxcb-shape0, libgssapi-krb5-2"
 )
 RPM_REQUIRES = {
     "fedora": "glibc >= 2.39, libglvnd-egl, libglvnd-glx, libxkbcommon-x11, fontconfig, "
     "dbus-libs, glib2, libX11, xcb-util-cursor, xcb-util-wm, xcb-util-image, "
-    "xcb-util-keysyms, xcb-util-renderutil",
+    "xcb-util-keysyms, xcb-util-renderutil, krb5-libs",
     "opensuse": "glibc >= 2.39, libglvnd, libxkbcommon-x11-0, fontconfig, libdbus-1-3, "
     "libglib-2_0-0, libX11-6, libxcb-cursor0, libxcb-icccm4, libxcb-image0, "
-    "libxcb-keysyms1, libxcb-render-util0, libxcb-xinerama0, libxcb-xkb1, libxcb-shape0",
+    "libxcb-keysyms1, libxcb-render-util0, libxcb-xinerama0, libxcb-xkb1, libxcb-shape0, "
+    "libgssapi_krb5.so.2()(64bit)",
 }
 
 

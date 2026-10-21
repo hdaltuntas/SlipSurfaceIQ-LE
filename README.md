@@ -115,10 +115,10 @@ On Linux the Qt runtime libraries must be present (they normally are on a deskto
 system). On minimal installations install them with your package manager, e.g.
 
 ```bash
-sudo apt install libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3     # Debian / Ubuntu
-sudo dnf install libglvnd-egl libglvnd-opengl libxkbcommon fontconfig dbus-libs  # Fedora
-sudo pacman -S libglvnd libxkbcommon fontconfig dbus                            # Arch Linux
-sudo zypper install libglvnd libxkbcommon0 fontconfig libdbus-1-3              # openSUSE
+sudo apt install libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3 libgssapi-krb5-2  # Debian / Ubuntu
+sudo dnf install libglvnd-egl libglvnd-opengl libxkbcommon fontconfig dbus-libs krb5-libs  # Fedora
+sudo pacman -S libglvnd libxkbcommon fontconfig dbus krb5                               # Arch Linux
+sudo zypper install libglvnd libxkbcommon0 fontconfig libdbus-1-3 krb5                  # openSUSE
 ```
 
 ### Manual set-up
