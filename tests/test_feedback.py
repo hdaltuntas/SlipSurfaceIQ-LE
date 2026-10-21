@@ -35,7 +35,8 @@ def _tau(m, s):
 def test_every_catalogue_model_builds_and_round_trips(key):
     spec = MaterialSpec(name="M", model=key)
     m = spec.to_material()
-    c, tp = m.strength(np.array([0.0, 50.0, 500.0]))
+    stress = np.array([0.0, 50.0, 500.0])
+    c, tp = m.strength(stress, sigma_v=stress) if key == "SH" else m.strength(stress)
     assert np.all(np.isfinite(c)) and np.all(c >= 0) and np.all(tp >= 0)
     assert parameter_text(spec)
     p = acads_1a_project()
@@ -95,7 +96,7 @@ def test_hoek_brown_direct_matches_generalized():
 
 def test_shansep_uses_effective_vertical_stress():
     m = Shansep("s", gamma=18, s_ratio=0.25, m_exp=0.8, ocr=2.0, su_min=5.0)
-    su = 0.25 * 100 * 2**0.8
+    su = 5.0 + 0.25 * 100 * 2**0.8
     c, tp = m.strength(np.array([10.0]), sigma_v=np.array([100.0]))
     assert c[0] == pytest.approx(su) and tp[0] == 0
     c, _ = m.strength(np.array([10.0]), sigma_v=np.array([0.0]))

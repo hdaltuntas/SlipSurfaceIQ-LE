@@ -33,15 +33,17 @@ MODELS: dict[str, ModelInfo] = {
     ),
     "SH": ModelInfo(
         "SHANSEP",
-        "su = max(su,min ; S · σ′v · OCR^m)   (Ladd & Foott)",
+        "τ = su = A + S · σ′v · OCR^m",
         (
             ("shansep_s", "S (normal konsolide su/σ′v)", 0.001, 5, 4),
             ("shansep_m", "m (üs)", 0, 2, 3),
             ("ocr", "OCR (aşırı konsolidasyon oranı)", 1, 100, 3),
-            ("shansep_su_min", "Minimum su (kPa)", 0, 1e6, 3),
+            ("shansep_su_min", "A — minimum drenajsız dayanım (kPa)", 0, 1e6, 3),
         ),
         total_stress=True,
-        note="σ′v: dilim tabanında efektif düşey gerilme (W/b − u).",
+        note="A formüle eklenir. σ′v = max(W/b − u, 0): efektif düşey örtü gerilmesi; "
+        "m genellikle 0.75–1 aralığındadır. Kısa süreli dolgu için yükleme öncesi "
+        "efektif gerilme esas alınmalıdır; B-bar/kademeli inşaat modellenmez.",
     ),
     "HS": ModelInfo(
         "Hardening Soil",
@@ -151,8 +153,8 @@ def parameter_text(spec) -> str:
         "MC": lambda m: f"c = {m.c:g} kPa, φ = {m.phi:g}°",
         "UD": lambda m: f"su = {m.su:g} kPa",
         "SH": lambda m: (
-            f"S = {m.shansep_s:g}, m = {m.shansep_m:g}, OCR = {m.ocr:g}"
-            + (f", su,min = {m.shansep_su_min:g} kPa" if m.shansep_su_min else "")
+            f"A = {m.shansep_su_min:g} kPa, S = {m.shansep_s:g}, "
+            f"m = {m.shansep_m:g}, OCR = {m.ocr:g}"
         ),
         "HS": lambda m: f"c′ = {m.c:g} kPa, φ′ = {m.phi:g}°, ψ = {m.hs_psi:g}°",
         "SS": lambda m: f"M = {m.ss_m:g}, e = {m.ss_e:g}, ec0 = {m.ss_ec0:g}, nb = {m.ss_nb:g}",

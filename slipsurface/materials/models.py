@@ -4,6 +4,7 @@ Every material answers one question for the LEM engine:
     strength(sigma_n_eff) -> (c, tan_phi)
 i.e. the (instantaneous) Mohr-Coulomb parameters at the given effective
 normal stress on the slice base. Linear models ignore sigma_n.
+SHANSEP additionally requires sigma_v, the reference effective vertical stress.
 
 Units: stresses kPa, angles degrees, unit weights kN/m3.
 """
@@ -182,30 +183,42 @@ class HoekBrownDirect(HoekBrown):
 @dataclass
 class Shansep(Material):
     """SHANSEP undrained strength (Ladd & Foott 1974), total stress:
-        su = max(su_min, S * sigma'_v * OCR^m)
+        su = A + S * max(sigma'_v, 0) * OCR^m
+    A is stored as su_min for compatibility with existing projects/scripts.
+    It is an additive intercept, not a lower-bound clamp on the stress term.
     sigma'_v is the effective vertical stress at the slice base (overburden
-    minus the pore pressure of the water table)."""
+    minus pore pressure), independent of the trial base normal stress.
+    The reference stress must represent the consolidation state of the soil;
+    the model does not simulate excess pore pressure or staged construction.
+    """
 
     s_ratio: float = 0.22
     m_exp: float = 0.8
     ocr: float = 1.0
-    su_min: float = 0.0
+    su_min: float = 0.0  # A, additive minimum undrained strength [kPa]
     uses_vertical_stress: bool = field(default=True, init=False, repr=False)
 
     def __post_init__(self):
         super().__post_init__()
-        if self.s_ratio <= 0 or self.m_exp < 0 or self.ocr < 1 or self.su_min < 0:
-            raise ValueError("S > 0, m >= 0, OCR >= 1 and su_min >= 0 required")
+        if (
+            not np.isfinite([self.s_ratio, self.m_exp, self.ocr, self.su_min]).all()
+            or self.s_ratio <= 0
+            or self.m_exp < 0
+            or self.ocr < 1
+            or self.su_min < 0
+        ):
+            raise ValueError("Finite S > 0, m >= 0, OCR >= 1 and A (su_min) >= 0 required")
         self.total_stress = True
 
     def su(self, sigma_v_eff):
         sv = np.maximum(np.asarray(sigma_v_eff, dtype=float), 0.0)
-        return np.maximum(self.su_min, self.s_ratio * sv * self.ocr**self.m_exp)
+        return self.su_min + self.s_ratio * sv * self.ocr**self.m_exp
 
     def strength(self, sigma_n, sigma_v=None):
+        if sigma_v is None:
+            raise ValueError("SHANSEP requires effective vertical stress sigma_v; use su(sigma_v)")
         sn = np.asarray(sigma_n, dtype=float)
-        sv = sn if sigma_v is None else sigma_v
-        return self.su(sv) * np.ones_like(sn), np.zeros_like(sn)
+        return self.su(sigma_v) * np.ones_like(sn), np.zeros_like(sn)
 
 
 @dataclass

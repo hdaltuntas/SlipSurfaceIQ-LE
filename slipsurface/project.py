@@ -174,7 +174,7 @@ class MaterialSpec:
     shansep_s: float = 0.22
     shansep_m: float = 0.8
     ocr: float = 1.0
-    shansep_su_min: float = 0.0
+    shansep_su_min: float = 0.0  # additive intercept A [kPa]; keep the JSON key
     # Hardening Soil (failure envelope c, phi above)
     hs_psi: float = 0.0
     hs_e50: float = 30_000.0

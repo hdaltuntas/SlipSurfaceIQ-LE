@@ -266,7 +266,7 @@ table acts on it and the piezometric factor Hu).
 |---|---|---|
 | **Mohr-Coulomb** | τ = c′ + σ′n tan φ′ | |
 | **Undrained (Tresca)** | τ = su | total stress, pore pressure not used |
-| **SHANSEP** | su = max(su,min ; S · σ′v · OCR^m) | Ladd & Foott; σ′v is the effective vertical stress at the slice base (W/b − u), total-stress analysis |
+| **SHANSEP** | τ = su = A + S · σ′v · OCR^m | A is additive; σ′v = max(W/b − u, 0) is the reference effective vertical overburden stress; total-stress analysis. [Details and limitations](docs/SHANSEP.md). |
 | **Hardening Soil** | τ = c′ + σ′n tan φ′ | Mohr-Coulomb failure surface of the HS model; E50,ref, Eoed,ref, Eur,ref, m, pref, Rf and ψ are stored for reference — LEM uses only the failure envelope |
 | **SANISAND** | τ = σ′n tan φ(ψ), sin φ = 3Mb / (6 + Mb), Mb = M exp(−nb ψ) | state parameter ψ = e − ec, critical state line ec = ec0 − λc (p′/pat)^ξ (Dafalias & Manzari 2004); in LEM p′ ≈ σ′n |
 | **Power-law envelope** | τ = a · pa · (1 + σ′n/pa)^b | concave envelope for granular materials |

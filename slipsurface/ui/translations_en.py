@@ -250,10 +250,11 @@ EXTRA = {
     "Undrained (Tresca)": "Undrained (Tresca)",
     "Genelleştirilmiş Hoek-Brown": "Generalized Hoek-Brown",
     "τ = su (toplam gerilme; boşluk suyu basıncı kullanılmaz)": "τ = su (total stress; pore pressure not used)",
-    "su = max(su,min ; S · σ′v · OCR^m)   (Ladd & Foott)": "su = max(su,min ; S · σ′v · OCR^m)   (Ladd & Foott)",
     "τ = c′ + σ′n · tan φ′   (göçme yüzeyi Mohr-Coulomb)": "τ = c′ + σ′n · tan φ′   (Mohr-Coulomb failure surface)",
     "σ1 = σ3 + σci (mb σ3/σci + s)^a   (genelleştirilmiş Hoek-Brown, 2002)": "σ1 = σ3 + σci (mb σ3/σci + s)^a   (generalized Hoek-Brown, 2002)",
-    "σ′v: dilim tabanında efektif düşey gerilme (W/b − u).": "σ′v: effective vertical stress at the slice base (W/b − u).",
+    "A formüle eklenir. σ′v = max(W/b − u, 0): efektif düşey örtü gerilmesi; m genellikle 0.75–1 aralığındadır. Kısa süreli dolgu için yükleme öncesi efektif gerilme esas alınmalıdır; B-bar/kademeli inşaat modellenmez.": "A is additive. σ′v = max(W/b − u, 0): effective vertical overburden stress; "
+    "m is typically 0.75–1. Short-term fill requires the pre-loading effective stress; "
+    "B-bar/staged construction is not modelled.",
     "Limit dengede yalnızca göçme zarfı (c′, φ′) kullanılır; rijitlik parametreleri bilgi amaçlı saklanır.": "Limit equilibrium uses only the failure envelope (c′, φ′); the stiffness parameters "
     "are stored for reference.",
     "ψ = e − ec,  ec = ec0 − λc (p′/pat)^ξ;  LEM'de p′ ≈ σ′n alınır.": "ψ = e − ec,  ec = ec0 − λc (p′/pat)^ξ;  p′ ≈ σ′n in LEM.",
@@ -268,7 +269,7 @@ EXTRA = {
     "S (normal konsolide su/σ′v)": "S (normally consolidated su/σ′v)",
     "m (üs)": "m (exponent)",
     "OCR (aşırı konsolidasyon oranı)": "OCR (overconsolidation ratio)",
-    "Minimum su (kPa)": "Minimum su (kPa)",
+    "A — minimum drenajsız dayanım (kPa)": "A — minimum undrained strength (kPa)",
     "Dilatasyon açısı ψ (°)": "Dilatancy angle ψ (°)",
     "m (gerilme bağımlılığı üssü)": "m (stress dependency exponent)",
     "Rf (göçme oranı)": "Rf (failure ratio)",

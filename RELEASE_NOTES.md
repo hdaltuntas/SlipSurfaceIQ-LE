@@ -1,3 +1,22 @@
+# Unreleased
+
+## SHANSEP correction
+
+- Corrected the strength law to `su = A + S * sigma'_v * OCR^m`. The minimum
+  undrained strength A is an additive intercept; it was previously applied as
+  `max(A, S * sigma'_v * OCR^m)`, which underestimated strength when A > 0.
+- The materials dialog and report parameter summaries now identify A explicitly.
+  The existing `shansep_su_min` project field and `su_min` Python parameter store A;
+  project format remains version 3. Existing projects still load, but analyses
+  with nonzero A must be rerun and their changed factors of safety reviewed.
+- SHANSEP's Python `strength` method now requires explicit `sigma_v`, preventing
+  accidental use of slip-base normal stress. Use `su(sigma_v_eff)` for direct
+  strength evaluation. Non-finite SHANSEP parameters are rejected.
+- Documented the reference stress and short-term fill limitations: B-bar,
+  staged construction and depth-dependent OCR are not implemented.
+- Added analytical force/moment-equilibrium, groundwater, reference-strength,
+  project compatibility and Turkish/English dialog regressions.
+
 # SlipSurfaceIQ LE 2026.1.0
 
 Released: 2026-10-20
