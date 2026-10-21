@@ -1,4 +1,9 @@
-# Unreleased
+# SlipSurfaceIQ LE 2026.1.1
+
+Released: 2026-10-21
+
+This patch corrects the SHANSEP undrained-strength equation and clarifies its
+reference effective vertical stress in the calculation API, interface and reports.
 
 ## SHANSEP correction
 
@@ -16,6 +21,22 @@
   staged construction and depth-dependent OCR are not implemented.
 - Added analytical force/moment-equilibrium, groundwater, reference-strength,
   project compatibility and Turkish/English dialog regressions.
+
+## Verification and compatibility
+
+- 41 new SHANSEP regression cases; 403 tests passed on the corrected source.
+  GitHub CI passed on Windows and Ubuntu with Python 3.10, 3.13 and 3.14, plus
+  Arch Linux, Fedora and openSUSE. Ruff and mypy checks passed.
+- Project format remains version 3. **Rerun existing SHANSEP analyses with A > 0**
+  and review their changed factors of safety. A = 0 retains the same strength law.
+- Python scripts calling `Shansep.strength` must provide `sigma_v`; the GUI and
+  LEM solvers supply it automatically.
+- Native x86-64 packages target Windows (MSI), Ubuntu (DEB), Fedora/openSUSE (RPM)
+  and Arch Linux. Packages are attached after installation, calculation,
+  GUI/reporting and uninstallation checks pass on all five targets.
+
+See [SHANSEP formulation and limitations](docs/SHANSEP.md) for the equation,
+worked examples and short-term embankment limitations.
 
 # SlipSurfaceIQ LE 2026.1.0
 
