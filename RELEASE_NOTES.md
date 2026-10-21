@@ -1,3 +1,17 @@
+# Unreleased
+
+- Optional local Ollama assistant under Tools / Araçlar, with Turkish/English UI
+  and setup help, local model selection, streamed plain-text replies and Stop.
+- Project context is opt-in and previewable; identifying summary fields and
+  annotations are excluded. Only results matching current solver inputs are sent.
+- Loopback-only connection, no HTTP proxy/redirects or cloud fallback, and local
+  model metadata checks before each chat. Model installation is separate.
+- Read-only explanations: no model edits, solver execution, Python execution or
+  access to external files. Chats are in memory and reset on project changes.
+- Protocol and GUI regression tests cover cancellation, errors, malformed streams,
+  cloud aliases, bounded prompts and actual solver-result context. Real-model
+  scientific answer quality has not yet been validated.
+
 # SlipSurfaceIQ LE 2026.1.0
 
 Released: 2026-10-20

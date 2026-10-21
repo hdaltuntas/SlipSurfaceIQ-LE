@@ -5,6 +5,10 @@
 [2026.1.0 release notes](RELEASE_NOTES.md) — input validation, passive-support equilibrium,
 geotextile units and support-force reporting fixes.
 
+**In development:** an optional [local AI assistant](docs/LOCAL_AI.md) using Ollama,
+with Turkish/English usage help and read-only project/result explanations. No AI
+subscription or API key is needed. This feature is not in the published 2026.1.0 installers.
+
 SlipSurfaceIQ LE is an open-source program for checking the stability of soil and rock
 slopes, cuts and embankments with the limit equilibrium method (LEM). You draw the slope
 cross-section, assign materials, add groundwater, loads and supports, and the program
@@ -111,10 +115,10 @@ On Linux the Qt runtime libraries must be present (they normally are on a deskto
 system). On minimal installations install them with your package manager, e.g.
 
 ```bash
-sudo apt install libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3     # Debian / Ubuntu
-sudo dnf install libglvnd-egl libglvnd-opengl libxkbcommon fontconfig dbus-libs  # Fedora
-sudo pacman -S libglvnd libxkbcommon fontconfig dbus                            # Arch Linux
-sudo zypper install libglvnd libxkbcommon0 fontconfig libdbus-1-3              # openSUSE
+sudo apt install libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3 libgssapi-krb5-2  # Debian / Ubuntu
+sudo dnf install libglvnd-egl libglvnd-opengl libxkbcommon fontconfig dbus-libs krb5-libs  # Fedora
+sudo pacman -S libglvnd libxkbcommon fontconfig dbus krb5                               # Arch Linux
+sudo zypper install libglvnd libxkbcommon0 fontconfig libdbus-1-3 krb5                  # openSUSE
 ```
 
 ### Manual set-up

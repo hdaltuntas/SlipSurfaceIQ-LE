@@ -50,6 +50,11 @@ def smoke_test(output: Path) -> None:
             raise RuntimeError("PDF generation failed")
     window = ModelerWindow(project)
     window.show()
+    # Import and construct the optional network panel in every native package.
+    # No Ollama installation, model weights or network request is needed here.
+    window.assistant_dock.show()
+    if window.assistant.client.busy or window.assistant.share.isChecked():
+        raise RuntimeError("Local assistant must start idle with project sharing disabled")
     QTimer.singleShot(1000, app.quit)
     app.exec()
     window.doc.mark_clean()
@@ -60,7 +65,7 @@ def smoke_test(output: Path) -> None:
                 "version": __version__,
                 "fos": result.fos,
                 "qt_platform": app.platformName(),
-                "checks": ["solver", "project", "dxf", "pdf", "fonts", "icons", "gui"],
+                "checks": ["solver", "project", "dxf", "pdf", "fonts", "icons", "gui", "local_ai"],
             },
             indent=2,
         )
