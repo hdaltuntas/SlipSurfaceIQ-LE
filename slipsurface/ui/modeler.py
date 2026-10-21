@@ -105,6 +105,15 @@ class ModelerWindow(QMainWindow):
         self.resizeDocks([dock], [290], Qt.Horizontal)
         self.dock = dock
 
+        from slipsurface.ui.assistant import AssistantPanel
+
+        self.assistant = AssistantPanel(self)
+        self.assistant_dock = QDockWidget(tr("Yerel AI Asistanı"), self)
+        self.assistant_dock.setObjectName("local_ai_dock")
+        self.assistant_dock.setWidget(self.assistant)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.assistant_dock)
+        self.assistant_dock.hide()
+
         # ------------------------------------------- actions/menus/toolbars
         self._build_actions()
         self._build_menus()
@@ -411,6 +420,7 @@ class ModelerWindow(QMainWindow):
         self.a_show_dock = self.dock.toggleViewAction()
         self.a_show_dock.setText(tr("Belge Görüntüleyici / Görüntü Seçenekleri"))
         m.addAction(self.a_show_dock)
+        m.addAction(self.assistant_dock.toggleViewAction())
 
         m = mb.addMenu(tr("&Analiz"))
         m.addAction(self.a_settings)
@@ -460,6 +470,7 @@ class ModelerWindow(QMainWindow):
         m.addAction(self.a_facing_face)
 
         m = mb.addMenu(tr("&Araçlar"))
+        m.addAction(self.assistant_dock.toggleViewAction())
         m.addAction("Python scripting…", self.script_editor)
         m.addAction(self.t_measure)
         am = m.addMenu(icon("annot_text"), tr("Not Ekle (Yazı / Şekil)"))
@@ -611,6 +622,7 @@ class ModelerWindow(QMainWindow):
 
     # ============================================================ document
     def _on_doc_changed(self) -> None:
+        self.assistant.context_changed()
         p, g = self.doc.project, self.doc.geometry
         if (
             self.last_results is not None
@@ -1208,6 +1220,7 @@ class ModelerWindow(QMainWindow):
         # Summary edits may have been made while the worker was solving.
         results.project.summary = copy.deepcopy(self.doc.project.summary)
         self.last_results = results
+        self.assistant.context_changed()
         self._update_actions()
         gm = results.global_minimum()
         if gm:
@@ -1237,6 +1250,7 @@ class ModelerWindow(QMainWindow):
 
     def _invalidate_results(self) -> None:
         self.last_results = None
+        self.assistant.context_changed()
         self._prune_interpret_windows()
         for window in list(self.interpret_windows):
             window.close()
@@ -1367,6 +1381,7 @@ class ModelerWindow(QMainWindow):
             ev.ignore()
             return
         self._closing = True
+        self.assistant.reset_conversation()
         try:
             self.doc.undo_stack.cleanChanged.disconnect()
         except (RuntimeError, TypeError):

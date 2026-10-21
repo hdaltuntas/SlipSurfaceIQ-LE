@@ -5,6 +5,10 @@
 [2026.1.0 release notes](RELEASE_NOTES.md) — input validation, passive-support equilibrium,
 geotextile units and support-force reporting fixes.
 
+**In development:** an optional [local AI assistant](docs/LOCAL_AI.md) using Ollama,
+with Turkish/English usage help and read-only project/result explanations. No AI
+subscription or API key is needed. This feature is not in the published 2026.1.0 installers.
+
 SlipSurfaceIQ LE is an open-source program for checking the stability of soil and rock
 slopes, cuts and embankments with the limit equilibrium method (LEM). You draw the slope
 cross-section, assign materials, add groundwater, loads and supports, and the program
