@@ -1,0 +1,27 @@
+{
+  "title": "SlipSurfaceIQ LE: 2D limit equilibrium slope stability analysis with a desktop CAD interface",
+  "upload_type": "software",
+  "description": "<p>SlipSurfaceIQ LE is an open-source Python program for two-dimensional limit equilibrium slope stability analysis of soil and rock slopes, cuts and embankments, with a bilingual (English/Turkish) desktop CAD interface, a global critical-surface search and PDF reporting.</p>",
+  "creators": [
+    {
+      "name": "Altuntaş, Hasan Deniz",
+      "affiliation": "General Directorate of Highways (KGM), 13th Regional Directorate, Antalya, Türkiye"
+    }
+  ],
+  "license": "AGPL-3.0-or-later",
+  "keywords": [
+    "slope stability",
+    "limit equilibrium method",
+    "method of slices",
+    "geotechnical engineering",
+    "rock slopes",
+    "Python"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/hdaltuntas/SlipSurfaceIQ-LE",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    }
+  ]
+}

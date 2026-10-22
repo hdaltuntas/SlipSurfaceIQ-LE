@@ -1,0 +1,137 @@
+{
+  "description": "SlipSurfaceIQ LE verification cases. See verification/README.md for the format.",
+  "cases": [
+    {
+      "id": "planar-block",
+      "title": "Rigid planar block through the toe (theta = 15 deg)",
+      "kind": "analytic",
+      "function": "planar_block",
+      "kwargs": {"theta_deg": 15.0},
+      "reference_type": "closed form",
+      "source": "Rigid-block force equilibrium",
+      "tolerance": {"rel": 1e-6},
+      "status": "active"
+    },
+    {
+      "id": "hoek-bray-crack-dry",
+      "title": "Plane failure with a dry vertical tension crack (z = 4 m)",
+      "kind": "analytic",
+      "function": "hoek_bray_tension_crack",
+      "kwargs": {"depth": 4.0, "water": 0.0},
+      "reference_type": "closed form",
+      "source": "Hoek & Bray (1981), Rock Slope Engineering, plane failure",
+      "tolerance": {"rel": 1e-6},
+      "status": "active"
+    },
+    {
+      "id": "hoek-bray-crack-half",
+      "title": "Plane failure with a half water-filled tension crack (z = 4 m, zw = 2 m)",
+      "kind": "analytic",
+      "function": "hoek_bray_tension_crack",
+      "kwargs": {"depth": 4.0, "water": 0.5},
+      "reference_type": "closed form",
+      "source": "Hoek & Bray (1981), Rock Slope Engineering, plane failure",
+      "tolerance": {"rel": 1e-6},
+      "status": "active"
+    },
+    {
+      "id": "hoek-bray-crack-full",
+      "title": "Plane failure with a water-filled tension crack (z = zw = 4 m)",
+      "kind": "analytic",
+      "function": "hoek_bray_tension_crack",
+      "kwargs": {"depth": 4.0, "water": 1.0},
+      "reference_type": "closed form",
+      "source": "Hoek & Bray (1981), Rock Slope Engineering, plane failure",
+      "tolerance": {"rel": 1e-6},
+      "status": "active"
+    },
+    {
+      "id": "infinite-slope",
+      "title": "Dry cohesionless slope, shallow circle vs. infinite slope tan(phi)/tan(beta)",
+      "kind": "analytic",
+      "function": "infinite_slope_limit",
+      "kwargs": {"phi": 30.0},
+      "reference_type": "closed form (limit)",
+      "source": "Infinite slope theory, e.g. Duncan, Wright & Brandon (2014)",
+      "tolerance": {"rel": 0.02},
+      "status": "active"
+    },
+    {
+      "id": "acads-1a",
+      "title": "ACADS EX1(a): homogeneous slope, circular search",
+      "kind": "project",
+      "project": "examples/acads_1a.slp.json",
+      "reference_type": "published benchmark",
+      "source": "Giam & Donald (1989), ACADS example EX1(a)",
+      "benchmark_fs": 1.0,
+      "reference": {"bishop": 0.987, "spencer": 0.986, "gle": 0.986},
+      "reference_note": "Comparison values: Rocscience Slide2 verification manual, problem #1",
+      "tolerance": {"abs": 0.01},
+      "status": "active"
+    },
+    {
+      "id": "acads-1b",
+      "title": "ACADS EX1(b): three-layer slope",
+      "kind": "project",
+      "reference_type": "published benchmark",
+      "source": "Giam & Donald (1989), ACADS example EX1(b)",
+      "status": "planned"
+    },
+    {
+      "id": "acads-1c",
+      "title": "ACADS EX1(c): layered slope with a water table",
+      "kind": "project",
+      "reference_type": "published benchmark",
+      "source": "Giam & Donald (1989), ACADS example EX1(c)",
+      "status": "planned"
+    },
+    {
+      "id": "acads-1d",
+      "title": "ACADS EX1(d): layered slope with a water table and external load",
+      "kind": "project",
+      "reference_type": "published benchmark",
+      "source": "Giam & Donald (1989), ACADS example EX1(d)",
+      "status": "planned"
+    },
+    {
+      "id": "acads-ex2-ex4",
+      "title": "ACADS EX2-EX4: weak seams and non-circular surfaces",
+      "kind": "project",
+      "reference_type": "published benchmark",
+      "source": "Giam & Donald (1989), ACADS examples EX2-EX4",
+      "status": "planned"
+    },
+    {
+      "id": "fredlund-krahn-1977",
+      "title": "Fredlund & Krahn (1977) comparison of methods, circular and composite surfaces",
+      "kind": "project",
+      "reference_type": "published benchmark",
+      "source": "Fredlund & Krahn (1977), Canadian Geotechnical Journal 14(3)",
+      "status": "planned"
+    },
+    {
+      "id": "arai-tagyo-1985",
+      "title": "Arai & Tagyo (1985) non-circular critical surface in a layered slope",
+      "kind": "project",
+      "reference_type": "published benchmark",
+      "source": "Arai & Tagyo (1985), Soils and Foundations 25(1)",
+      "status": "planned"
+    },
+    {
+      "id": "hoek-brown-rock-slope",
+      "title": "Rock slope with the generalised Hoek-Brown criterion",
+      "kind": "project",
+      "reference_type": "commercial software",
+      "source": "Rocscience Slide2 / GeoStudio SLOPE/W comparison model",
+      "status": "planned"
+    },
+    {
+      "id": "reinforced-slope",
+      "title": "Slope reinforced with soil nails / grouted tiebacks",
+      "kind": "project",
+      "reference_type": "commercial software",
+      "source": "Rocscience Slide2 / GeoStudio SLOPE/W comparison model",
+      "status": "planned"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: >-
+  If you use SlipSurfaceIQ LE in your work, please cite it using the metadata
+  below. Please also cite the limit equilibrium methods you used (for example
+  Bishop 1955, Spencer 1967, Morgenstern and Price 1965).
+type: software
+title: "SlipSurfaceIQ LE: 2D limit equilibrium slope stability analysis with a desktop CAD interface"
+abstract: >-
+  SlipSurfaceIQ LE is an open-source Python program for two-dimensional limit
+  equilibrium slope stability analysis of soil and rock slopes, cuts and
+  embankments. It implements the classic methods of slices (Ordinary, Bishop
+  simplified, Janbu simplified and corrected, Corps of Engineers, Lowe-Karafiath,
+  Spencer and Morgenstern-Price/GLE) for circular and non-circular slip surfaces,
+  linear and non-linear strength models (Mohr-Coulomb, Hoek-Brown,
+  Barton-Bandis, power-law, undrained and SHANSEP), groundwater, pseudo-static
+  seismic loading, tension cracks, external loads and reinforcement, a global
+  critical-surface search, a bilingual (English/Turkish) desktop interface and
+  PDF reporting.
+authors:
+  - family-names: "Altuntaş"
+    given-names: "Hasan Deniz"
+    email: "hdaltuntas@gmail.com"
+    affiliation: "General Directorate of Highways (KGM), 13th Regional Directorate, Antalya, Türkiye"
+    # TODO: add your ORCID iD, e.g.
+    # orcid: "https://orcid.org/0000-0000-0000-0000"
+version: "2026.1.1"
+date-released: "2026-10-21"
+license: AGPL-3.0-or-later
+repository-code: "https://github.com/hdaltuntas/SlipSurfaceIQ-LE"
+url: "https://slipsurface.dev"
+keywords:
+  - slope stability
+  - limit equilibrium method
+  - method of slices
+  - geotechnical engineering
+  - rock slopes
+  - Bishop
+  - Spencer
+  - Morgenstern-Price
+  - Python

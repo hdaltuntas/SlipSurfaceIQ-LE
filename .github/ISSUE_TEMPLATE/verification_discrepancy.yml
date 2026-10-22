@@ -1,0 +1,77 @@
+name: Verification discrepancy / Sonuç farkı
+description: The factor of safety differs from another program, a published benchmark or a hand calculation.
+title: "[Verification] "
+labels: ["verification"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you — independent checks are the most valuable feedback this project gets.
+        Türkçe yazabilirsiniz.
+  - type: input
+    id: version
+    attributes:
+      label: SlipSurfaceIQ LE version
+      description: Help → About, or `python -c "import slipsurface; print(slipsurface.__version__)"`
+      placeholder: "2026.1.1"
+    validations:
+      required: true
+  - type: input
+    id: reference
+    attributes:
+      label: Reference
+      description: Program and version, published benchmark (with citation) or hand calculation you compared with.
+      placeholder: "Slide2 9.0 / ACADS EX1(b), Giam & Donald (1989) / hand calculation"
+    validations:
+      required: true
+  - type: dropdown
+    id: method
+    attributes:
+      label: Method(s)
+      multiple: true
+      options:
+        - Bishop simplified
+        - Ordinary / Fellenius
+        - Janbu simplified
+        - Janbu corrected
+        - Corps of Engineers #1
+        - Corps of Engineers #2
+        - Lowe-Karafiath
+        - Spencer
+        - GLE / Morgenstern-Price
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - Circular search
+        - Non-circular search (polyline)
+        - Non-circular search (spline)
+        - User-defined surface (same surface in both programs)
+    validations:
+      required: true
+  - type: textarea
+    id: values
+    attributes:
+      label: Factors of safety
+      description: Both values per method. If you compared a fixed surface, give its coordinates.
+      placeholder: |
+        Spencer: SlipSurfaceIQ LE 1.312, Slide2 1.274
+    validations:
+      required: true
+  - type: textarea
+    id: model
+    attributes:
+      label: Model
+      description: |
+        Attach the project file (`*.slp.json`, rename to `.txt` or zip it if GitHub refuses it)
+        and, if possible, the other program's input or report. Describe anything special
+        (water, loads, supports, non-linear strength).
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else?
