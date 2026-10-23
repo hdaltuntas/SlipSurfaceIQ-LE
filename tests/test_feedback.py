@@ -231,7 +231,9 @@ def test_fs_contour_grid():
     assert fs_contour.build_grid(centres[:5]) is None
     # unsampled cells stay empty; smoothing must not invent a factor of safety
     # two separated columns, each tall enough to fill several cells, with a gap between
-    left = np.column_stack([np.full(40, 0.0), np.linspace(0, 40, 40), np.full(40, 10.0), np.full(40, 1.1)])
+    left = np.column_stack(
+        [np.full(40, 0.0), np.linspace(0, 40, 40), np.full(40, 10.0), np.full(40, 1.1)]
+    )
     right = np.column_stack(
         [np.full(40, 80.0), np.linspace(0, 40, 40), np.full(40, 10.0), np.full(40, 2.2)]
     )
@@ -239,6 +241,20 @@ def test_fs_contour_grid():
     assert gap is not None and not gap["mask"].all()
     assert np.isnan(gap["values"][~gap["mask"]]).all()
     assert np.all(gap["values"][gap["mask"]] >= 1.1 - 1e-12)
+    # the drawing blends across a shared edge, and a wide gap stays clear
+    block = np.ones((8, 8))
+    block[:, 4:] = 3.0
+    smooth = {
+        "values": block,
+        "mask": np.ones((8, 8), dtype=bool),
+        "nx": 8,
+        "ny": 8,
+        "crit": (0.0, 0.0, 1.0),
+    }
+    blended, _ = fs_contour._fine_fields(smooth, 8)
+    assert np.all((blended[:, 32] > 1.2) & (blended[:, 32] < 2.8))
+    _, gap_w = fs_contour._fine_fields(gap, 4)
+    assert float(np.median(gap_w[:, gap_w.shape[1] // 2])) < 0.2
 
 
 # ---------------------------------------------------------------- GUI parts

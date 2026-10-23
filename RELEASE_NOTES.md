@@ -1,3 +1,70 @@
+# SlipSurfaceIQ LE 2026.1.3
+
+Released: 2026-10-23
+
+## Layered search performance
+
+- Spencer/GLE now solves each fixed-strength equilibrium system to an internal
+  step tolerance of at most 10⁻⁹. The project tolerance still controls the outer
+  nonlinear strength iteration. Previously, the default tolerance of 0.005
+  could stop the inner solver before force and moment balance passed, sending
+  an almost converged solution through expensive nested fallback searches.
+- Force, moment, free-end shear and admissibility checks remain in place. Search
+  population sizes, iteration budgets and surface refinement are unchanged.
+- Added six regression cases for Spencer and two Morgenstern-Price functions.
+  They compare against a tight-tolerance solution and limit residual evaluations
+  rather than wall time, so slow CI machines can still detect the regression.
+- The unchanged layered circular/noncircular search regression completed in
+  64.65 seconds locally; the previous run had not finished after about 40 minutes.
+  A representative layered candidate fell from 4,164 residual evaluations to 21
+  while retaining the same factor of safety.
+- Package version and installer examples are now 2026.1.3. Project format remains
+  version 3.
+
+# SlipSurfaceIQ LE 2026.1.2
+
+Released: 2026-10-23
+
+This patch keeps reported factors of safety inside what the solver computed,
+and states the vertical seismic sign used by the program.
+
+## Calculation and reporting
+
+- The slip-centre FS map stores only centres the search evaluated. The drawing
+  blends neighbouring samples into smooth contours; a wide gap with no sampled
+  centre stays empty. The legend states that every radius is not scanned.
+  Critical centres on the right or upper grid edge are included in the last cell.
+- Geosynthetic pullout uses effective overburden, σ′v = max(σv − u, 0). A water
+  table uses the material's Hu; the Ru model uses ru·σv.
+- Positive kv is upward, so the vertical force is (1 − kv)·W. In Slide2 a
+  positive kv acts downward. When kv is not zero, both directions are solved and
+  the lower factor of safety is kept. Reports name the governing kv.
+  If either requested direction fails, that method is excluded from the critical
+  results and the failed kv and reason are reported; both failures are retained.
+- Spencer/GLE checks horizontal and vertical force balance, free-end shear and
+  moment balance before accepting a solution, including fallback roots. Singular
+  cases that cannot satisfy equilibrium now report a solution failure instead of
+  an unbalanced factor of safety.
+- The solver tolerance is the number entered in the dialog. The previous hidden
+  scale of 10⁻² is removed.
+- Janbu's 1973 correction factor no longer falls below 1 when d/L is outside
+  the chart.
+- Hardening Soil is labelled as its Mohr-Coulomb envelope, and SANISAND as an
+  approximate peak friction angle. The stored model keys are unchanged.
+- The horizontal seismic coefficient is entered from 0 to 1. Project-settings
+  labels used by the English interface are in the translation catalogue.
+
+## Verification and compatibility
+
+- Added 25 regression cases covering equilibrium and mirrored slopes, failed
+  vertical seismic directions, and critical samples at the contour-grid edges.
+- Project format remains version 3. Existing files load. `both_vertical` defaults
+  to on, so a saved analysis with kv ≠ 0 should be rerun: the governing direction
+  may differ from the single sign stored before. A = 0 SHANSEP strength is unchanged.
+- Pullout resistance below the water table is lower than the previous total-stress
+  value. Deep circles whose Janbu factor would have dropped below 1 now stay at
+  the simplified Janbu result.
+
 # SlipSurfaceIQ LE 2026.1.1
 
 Released: 2026-10-21

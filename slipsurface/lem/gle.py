@@ -167,7 +167,32 @@ def _moment(F, Np, fr: _Frame, c, tp) -> float:
 
 def _residuals(F, lam, fr: _Frame, c, tp, fint):
     E, Np, ma = _state(F, lam * fint, fr, c, tp)
-    return E[-1] / fr.scale_f, _moment(F, Np, fr, c, tp) / fr.scale_m, ma
+    # The free end requires both E_n = 0 and X_n = lambda*f_n*E_n = 0.
+    # With an unbounded lambda, E_n alone can tend to zero while X_n stays
+    # finite. Scale the signed residual by the resultant's inclination.
+    force = E[-1] * np.hypot(1.0, lam * fint[-1]) / fr.scale_f
+    return force, _moment(F, Np, fr, c, tp) / fr.scale_m, ma
+
+
+def _balanced(F, lam, fr: _Frame, c, tp, fint, tolerance=1e-7):
+    """Check actual global forces and moment, including the free-end shear."""
+    if not np.isfinite(F) or F <= 0 or not np.isfinite(lam):
+        return False
+    E, Np, _ = _state(F, lam * fint, fr, c, tp)
+    N = Np + fr.U
+    S = (c * fr.l + Np * tp) / F
+    qx = fr.Qx_a + fr.Qx_p / F
+    qy = fr.Qy_a + fr.Qy_p / F
+    residuals = np.array(
+        [
+            E[-1] / fr.scale_f,
+            lam * fint[-1] * E[-1] / fr.scale_f,
+            np.sum(-N * fr.sin + S * fr.cos - fr.Fh + qx) / fr.scale_f,
+            np.sum(N * fr.cos + S * fr.sin - fr.Wv + qy) / fr.scale_f,
+            _moment(F, Np, fr, c, tp) / fr.scale_m,
+        ]
+    )
+    return bool(np.all(np.isfinite(residuals)) and np.all(np.abs(residuals) <= tolerance))
 
 
 def _root_1d(fn, F_guess, span=(0.2, 5.0), n=17, resid_tol=1e-6):
@@ -221,8 +246,12 @@ def _solve_linear(fr, c, tp, fint, F0, lam0, tol):
 
     def try_hybr(f_start, lams):
         for l0 in lams:
-            sol = root(fun, [f_start, l0], method="hybr", options={"xtol": tol})
-            if sol.success and sol.x[0] > 0 and np.all(np.abs(fun(sol.x)) < 1e-7):
+            # The project tolerance controls the outer strength iteration.
+            # A loose inner step tolerance can stop before force balance is
+            # satisfied, needlessly sending an almost converged root through
+            # the expensive nested Brent fallback.
+            sol = root(fun, [f_start, l0], method="hybr", options={"xtol": min(tol, 1e-9)})
+            if sol.success and _balanced(*sol.x, fr, c, tp, fint):
                 return float(sol.x[0]), float(sol.x[1])
         return None
 
@@ -260,7 +289,7 @@ def _solve_linear(fr, c, tp, fint, F0, lam0, tol):
             lam = _safe_brentq(h, lams[k], lams[k + 1])
             if np.isfinite(lam):
                 F = float(f_force(lam))
-                if lo <= F <= hi:
+                if lo <= F <= hi and _balanced(F, lam, fr, c, tp, fint):
                     return F, float(lam)
     return np.nan, np.nan
 
@@ -336,8 +365,10 @@ def _solve_gle(
 
     E, Np, ma = _state(F, lam * fint, fr, c, tp)
     lam_rep = -lam  # usual sign convention (Slide2 / GeoStudio)
-    if _singular(E, fr, e_max_ratio):
+    if _singular(E, fr, e_max_ratio) or _singular(lam * fint * E, fr, e_max_ratio):
         return LEMResult(np.nan, name, False, it, message="singular interslice forces")
+    if not _balanced(F, lam, fr, c, tp, fint, max(tol, 1e-7)):
+        return LEMResult(np.nan, name, False, it, message="unbalanced forces or moment")
     if np.any(ma <= 1e-9):
         return LEMResult(
             np.nan,

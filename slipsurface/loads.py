@@ -393,12 +393,8 @@ def slice_forces(
         L_in, L_out = float(np.hypot(*(p - A))), float(np.hypot(*(B - p)))
         po_in = po_out = None
         if sup.stype.kind == "geosynthetic":
-            po_in = geosynthetic_pullout(
-                sup.stype, geom, A, p, pore, gamma_w, ru, materials
-            )
-            po_out = geosynthetic_pullout(
-                sup.stype, geom, p, B, pore, gamma_w, ru, materials
-            )
+            po_in = geosynthetic_pullout(sup.stype, geom, A, p, pore, gamma_w, ru, materials)
+            po_out = geosynthetic_pullout(sup.stype, geom, p, B, pore, gamma_w, ru, materials)
         T, gov = support_capacity(sup.stype, L_in, L_out, po_in, po_out)
         spacing = 1.0 if sup.stype.kind in ("geotextile", "geosynthetic") else sup.stype.spacing
         T = max(T, 0.0) / max(spacing, 1e-9)

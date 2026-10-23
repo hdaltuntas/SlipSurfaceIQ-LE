@@ -147,6 +147,21 @@ def run_analysis(
         stat["done"][method] = kept.fos
         stat["best"] = kept.fos
 
+    def finish_cases(method: str, failures: list[tuple[float, str]]) -> None:
+        if not failures:
+            return
+        # A minimum over only the successful directions is not the governing
+        # result of the requested analysis. Preserve every failed direction.
+        out.results.pop(method, None)
+        message = (
+            "; ".join(f"kv = {kv:g}: {reason}" for kv, reason in failures)
+            if len(cases) > 1
+            else failures[0][1]
+        )
+        out.errors[method] = message
+        stat["done"][method] = message
+        stat["best"] = float("nan")
+
     if p.surfaces.surface_type == "user":
         pts = p.surfaces.user_surface
         if not pts or len(pts) < 2:
@@ -160,8 +175,7 @@ def run_analysis(
                 out.errors[m] = "Bishop yalnızca dairesel yüzeyler için geçerlidir."
                 stat["done"][m] = out.errors[m]
                 continue
-            failure = "çözüm yok"
-            solved = False
+            failures: list[tuple[float, str]] = []
             for kv in cases:
                 if progress and progress(i, n, m, 0, stat.get("best", np.nan)):
                     raise SearchCancelled()
@@ -171,20 +185,17 @@ def run_analysis(
                     geom, surf, mats, method=m, opts=trial.slice_options(), **trial.solver_kw()
                 )
                 if s is None or not res.ok:
-                    failure = res.message or "çözüm yok"
+                    failures.append((kv, res.message or "çözüm yok"))
                     continue
                 if trial.advanced.check_admissibility and not res.admissible:
-                    failure = res.issue or "Kabul edilebilir olmayan çözüm."
+                    failures.append((kv, res.issue or "Kabul edilebilir olmayan çözüm."))
                     continue
                 keep(
                     m,
                     SearchResult(surf, res.fos, res, s, 1, [], "kullanıcı yüzeyi", m),
                     kv,
                 )
-                solved = True
-            if not solved:
-                out.errors[m] = failure
-                stat["done"][m] = failure
+            finish_cases(m, failures)
     else:
         for i, m in enumerate(methods):
             stat.update(method=m, index=i, n_methods=n)
@@ -196,8 +207,7 @@ def run_analysis(
                 stat["done"][m] = out.errors[m]
                 continue
 
-            failure = "çözüm yok"
-            solved = False
+            failures = []
             for kv in cases:
                 trial = _at_kv(p, kv)
                 stat["kv"] = kv
@@ -210,13 +220,10 @@ def run_analysis(
                 except SearchCancelled:
                     raise
                 except (RuntimeError, ValueError) as exc:
-                    failure = str(exc)
+                    failures.append((kv, str(exc)))
                     continue
                 keep(m, found, kv)
-                solved = True
-            if not solved:
-                out.errors[m] = failure
-                stat["done"][m] = failure
+            finish_cases(m, failures)
 
     out.elapsed = time.perf_counter() - t0
     out.finished = _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")

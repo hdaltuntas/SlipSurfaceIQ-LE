@@ -47,9 +47,9 @@ def test_geosynthetic_pullout_uses_effective_overburden():
     dry = 2.0 * 20.0 * 5.0 * tan * 10.0
     wet = 2.0 * (20.0 * 5.0 - 10.0 * 5.0) * tan * 10.0
     assert geosynthetic_pullout(st, geom, p0, p1, pore="none") == pytest.approx(dry)
-    assert geosynthetic_pullout(st, geom, p0, p1, pore="water_table", gamma_w=10.0) == pytest.approx(
-        wet
-    )
+    assert geosynthetic_pullout(
+        st, geom, p0, p1, pore="water_table", gamma_w=10.0
+    ) == pytest.approx(wet)
     clay = {"Zemin": MohrCoulomb("Zemin", gamma=20, hu=0.0)}
     assert geosynthetic_pullout(
         st, geom, p0, p1, pore="water_table", gamma_w=10.0, materials=clay

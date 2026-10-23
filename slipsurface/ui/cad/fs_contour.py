@@ -1,10 +1,12 @@
 """Slip-centre FS map for circular searches.
 
 Every admissible circle the search evaluated is one sample (xc, yc, r, FS).
-Samples are binned; a cell shows the lowest FS among circles whose centre
-fell in that cell. Empty cells stay empty. The field is not interpolated and
-not smoothed, so the map cannot invent a factor of safety the search did not
-compute and cannot pull a sampled cell below its own minimum.
+Samples are binned; a cell stores the lowest FS among circles whose centre
+fell in that cell. The stored grid keeps unsampled cells empty.
+
+The picture blends neighbouring samples so the colour and the contour lines
+are smooth. A wide gap, where the search placed no centre, stays transparent.
+The blend cannot fall outside the sampled FS range.
 
 This is not a radius grid. A centre that was tried at only one radius can
 look safer than the radius that would actually govern there.
@@ -79,7 +81,11 @@ def build_grid(centres: np.ndarray | None, n: int = 26) -> dict | None:
     ny = max(4, int(math.ceil((y1 - y0) / side)))
     ix = np.floor((c[:, 0] - x0) / side).astype(int)
     iy = np.floor((c[:, 1] - y0) / side).astype(int)
-    ok = (ix >= 0) & (ix < nx) & (iy >= 0) & (iy < ny)
+    # Include the closed upper edge in the last cell. Filter by coordinates
+    # first so clamping cannot fold far-away outliers into the border cells.
+    ok = (c[:, 0] >= x0) & (c[:, 0] <= x1) & (c[:, 1] >= y0) & (c[:, 1] <= y1)
+    ix = np.clip(ix, 0, nx - 1)
+    iy = np.clip(iy, 0, ny - 1)
     grid = np.full((ny, nx), np.inf)
     np.minimum.at(grid, (iy[ok], ix[ok]), c[ok, 3])
     filled = np.isfinite(grid)
@@ -109,17 +115,63 @@ def band_of(v, vmax: float):
     return np.clip(np.floor(np.asarray(v) / vmax * N_BANDS), 0, N_BANDS - 1).astype(int)
 
 
+# Gaussian width in cell units. Wide enough to erase the block mosaic,
+# narrow enough that a gap of several cells stays clear.
+_SMOOTH_SIGMA = 1.05
+# Fine-grid weight below this is transparent. The band just above it is the
+# anti-aliased outline.
+_VISIBLE = 0.22
+
+
+def _resample(field: np.ndarray, upsample: int) -> np.ndarray:
+    """Bilinear samples at the centre of every fine pixel.
+
+    Coarse index iy is the centre of cell iy, so fine pixel i maps to
+    (i + 0.5) / upsample - 0.5. Order 1 stays inside the neighbouring values.
+    """
+    from scipy.ndimage import map_coordinates
+
+    ny, nx = field.shape
+    y = (np.arange(ny * upsample) + 0.5) / upsample - 0.5
+    x = (np.arange(nx * upsample) + 0.5) / upsample - 0.5
+    yy, xx = np.meshgrid(y, x, indexing="ij")
+    return map_coordinates(field, np.stack([yy, xx]), order=1, mode="nearest")
+
+
+def _display_field(g: dict) -> tuple[np.ndarray, np.ndarray]:
+    """Smoothed FS and sample weight on the coarse grid.
+
+    Normalized convolution uses only sampled cells, then clips to the sampled
+    range so the picture cannot undercut the minimum the search found.
+    """
+    key = "display"
+    if key not in g:
+        from scipy.ndimage import gaussian_filter
+
+        mask = g["mask"].astype(float)
+        sampled = np.where(g["mask"], g["values"], 0.0)
+        weight = gaussian_filter(mask, _SMOOTH_SIGMA, mode="constant", cval=0.0)
+        total = gaussian_filter(sampled, _SMOOTH_SIGMA, mode="constant", cval=0.0)
+        lo = float(np.nanmin(g["values"]))
+        hi = float(np.nanmax(g["values"]))
+        field = np.full(mask.shape, float(g["crit"][2]), dtype=float)
+        hit = weight > 1e-8
+        field[hit] = np.clip(total[hit] / weight[hit], lo, hi)
+        g[key] = (field, weight)
+    return g[key]
+
+
 def _fine_fields(g: dict, upsample: int):
-    """Block-replicate the sampled cells. Nearest-neighbour only: bicubic
-    zoom would invent FS values between samples and can undershoot a cell."""
+    """Smooth FS and sample-weight on the drawing grid."""
     key = ("fine", upsample)
     if key not in g:
-        sampled = g["mask"].astype(float)
-        vsrc = np.where(g["mask"], g["values"], g["crit"][2])
-        # order-0 block replication: each cell becomes an upsample x upsample block
-        v = np.repeat(np.repeat(vsrc, upsample, axis=0), upsample, axis=1)
-        m = np.repeat(np.repeat(sampled, upsample, axis=0), upsample, axis=1)
-        g[key] = (np.where(m >= 0.5, v, g["crit"][2]), m)
+        field, weight = _display_field(g)
+        lo = float(np.nanmin(g["values"]))
+        hi = float(np.nanmax(g["values"]))
+        g[key] = (
+            np.clip(_resample(field, upsample), lo, hi),
+            np.clip(_resample(weight, upsample), 0.0, 1.0),
+        )
     return g[key]
 
 
@@ -129,7 +181,8 @@ def render_image(g: dict, upsample: int = 16) -> QImage:
     bands = band_of(v, g["vmax"])
     pal = np.array([QColor(c).getRgb()[:3] for c in PALETTE], dtype=np.uint8)
     rgb = pal[bands]
-    alpha = (np.clip((m - 0.5) * 20.0 + 0.5, 0.0, 1.0) * 255).astype(np.uint8)
+    # soft edge: weight rises from clear to opaque across a fraction of a cell
+    alpha = (np.clip((m - _VISIBLE) / 0.35, 0.0, 1.0) * 255).astype(np.uint8)
     rgba = np.dstack([rgb, alpha])[::-1].copy()  # flip: image row 0 = top
     h, w = rgba.shape[:2]
     img = QImage(rgba.data, w, h, 4 * w, QImage.Format_RGBA8888)
@@ -194,8 +247,8 @@ def contour_segments(g: dict, upsample: int = 16) -> np.ndarray:
     if "segments" in g:
         return g["segments"]
     v, m = _fine_fields(g, upsample)
-    inside = m >= 0.5
-    out = [_march(m, 0.5)]
+    inside = m >= _VISIBLE + 0.08
+    out = [_march(m, _VISIBLE + 0.08)]
     step = g["vmax"] / N_BANDS
     for k in range(1, N_BANDS):
         level = k * step

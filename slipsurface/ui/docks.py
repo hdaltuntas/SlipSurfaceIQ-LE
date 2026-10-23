@@ -182,11 +182,7 @@ class DocumentViewer(QWidget):
                     it.setData(0, Qt.UserRole, ("entity", ("load", i)))
                     lds.addChild(it)
                 if project.seismic.kh or project.seismic.kv:
-                    lds.addChild(
-                        QTreeWidgetItem(
-                            [f"Sismik: {project.seismic.clause()}"]
-                        )
-                    )
+                    lds.addChild(QTreeWidgetItem([f"Sismik: {project.seismic.clause()}"]))
             self._add_notes(scen, project)
             meth = QTreeWidgetItem(
                 [
