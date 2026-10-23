@@ -47,6 +47,8 @@ switched at any time without losing work. The program runs on Windows, Linux and
 - [Development](#development)
 - [Project layout](#project-layout)
 - [Roadmap](#roadmap)
+- [Contributing and support](#contributing-and-support)
+- [Citing SlipSurfaceIQ LE](#citing-slipsurfaceiq-le)
 - [License](#license)
 
 ---
@@ -443,7 +445,11 @@ Available under *File → Examples* and from the command line with `--example "<
 
 ## Verification
 
-The test suite checks the engine against reference solutions, among them:
+The [verification suite](verification/README.md) compares the program with closed-form
+solutions and published benchmarks and runs in CI on every push; the latest results are in
+[docs/verification.md](docs/verification.md). Run it locally with
+`python verification/run.py`. In addition, the test suite checks the engine against
+reference solutions, among them:
 
 - **ACADS EX1(a):** Bishop 0.985, Spencer 0.984, GLE 0.984 (Slide2: 0.987 / 0.986 / 0.986).
 - **Planar block:** every force-equilibrium method reproduces the closed-form rigid-block
@@ -485,6 +491,7 @@ python -m pip install -r requirements-dev.txt
 python -m pytest -p no:cacheprovider --durations=15    # Qt tests run headless
 python -m ruff check .
 python -m mypy                                         # computation core
+python verification/run.py                             # benchmark suite
 ```
 
 The full suite takes a few minutes because of the non-circular searches and the PDF and GUI
@@ -524,6 +531,27 @@ tests/               test suite
 - Probabilistic analysis (Monte Carlo)
 - Sarma method
 - Back analysis
+
+---
+
+## Contributing and support
+
+Contributions are welcome — independent checks of results are especially valuable, and
+you do not need to write code to help. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to
+report a discrepancy, add a verification case or set up a development environment, and
+[GOVERNANCE.md](GOVERNANCE.md) for how the project is run and where to get help.
+Questions and ideas belong in
+[Discussions](https://github.com/hdaltuntas/SlipSurfaceIQ-LE/discussions). Everyone
+taking part is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+---
+
+## Citing SlipSurfaceIQ LE
+
+If you use SlipSurfaceIQ LE in research or teaching, please cite it. GitHub's
+*Cite this repository* button (from [CITATION.cff](CITATION.cff)) gives the citation in
+APA and BibTeX; each release is also archived on Zenodo with its own DOI. Please also cite
+the limit equilibrium methods you used.
 
 ---
 

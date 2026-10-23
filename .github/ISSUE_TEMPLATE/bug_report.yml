@@ -1,0 +1,55 @@
+name: Bug report / Hata bildirimi
+description: Something crashes, misbehaves or looks wrong in the interface, files or report.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If the problem is a factor of safety that you think is wrong, please use the
+        **Verification discrepancy** template instead. Türkçe yazabilirsiniz.
+  - type: input
+    id: version
+    attributes:
+      label: SlipSurfaceIQ LE version
+      placeholder: "2026.1.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it?
+      options:
+        - Native installer (Windows / Linux / macOS)
+        - From source (run_windows.bat / run_linux_mac.sh)
+        - pip install
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "Windows 11 / Ubuntu 24.04 / macOS 15"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Steps to reproduce, what you expected and what you saw.
+      placeholder: |
+        1. Open examples/anchored_cut.slp.json
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error message or traceback
+      render: text
+  - type: textarea
+    id: files
+    attributes:
+      label: Project file / screenshots
+      description: Attach the `*.slp.json` file (zip or rename to `.txt` if needed) and screenshots if they help.

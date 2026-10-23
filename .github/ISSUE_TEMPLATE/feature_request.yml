@@ -1,0 +1,30 @@
+name: Feature request / Özellik isteği
+description: Suggest a new capability, method, material model or workflow improvement.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would it solve?
+      description: Describe the engineering, teaching or research task you are trying to do.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How should it work? Include references (papers, standards, manuals) for new methods or models.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: How could it be verified?
+      description: Closed-form solutions, published examples or other software results that a test could check against.
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to help implement or test this.

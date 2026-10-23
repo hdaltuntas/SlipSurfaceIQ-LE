@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions, ideas and showcases / Sorular ve fikirler
+    url: https://github.com/hdaltuntas/SlipSurfaceIQ-LE/discussions
+    about: Ask how to model something, share a project or discuss ideas.
+  - name: Security or code of conduct report
+    url: mailto:slipsurface@proton.me
+    about: Please report these privately by e-mail, not in a public issue.
