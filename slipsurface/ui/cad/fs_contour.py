@@ -1,15 +1,13 @@
-"""Slip-centre FS contour map (Slide2 "grid" view) for circular searches.
+"""Slip-centre FS map for circular searches.
 
-Every admissible circle the search evaluated is a sample (xc, yc, r, FS).
-The centres are binned on a regular grid; each cell keeps the minimum FS of
-the circles centred in it (as a Slide2 slip-centre grid reports the lowest FS
-over all radii). Empty cells next to filled ones take the nearest value, the
-grid is interpolated bilinearly and drawn in discrete FS bands with red
-contour lines between the bands.
+Every admissible circle the search evaluated is one sample (xc, yc, r, FS).
+Samples are binned; a cell shows the lowest FS among circles whose centre
+fell in that cell. Empty cells stay empty. The field is not interpolated and
+not smoothed, so the map cannot invent a factor of safety the search did not
+compute and cannot pull a sampled cell below its own minimum.
 
-The field is smoothed (Gaussian), upsampled bicubically and its outline is
-anti-aliased; the band boundaries and the outline are drawn as vector iso-lines
-(marching squares) so the map stays smooth at any zoom.
+This is not a radius grid. A centre that was tried at only one radius can
+look safer than the radius that would actually govern there.
 """
 
 from __future__ import annotations
@@ -85,34 +83,25 @@ def build_grid(centres: np.ndarray | None, n: int = 26) -> dict | None:
     grid = np.full((ny, nx), np.inf)
     np.minimum.at(grid, (iy[ok], ix[ok]), c[ok, 3])
     filled = np.isfinite(grid)
-    if filled.sum() < 4:
+    if int(filled.sum()) < 4:
         return None
-    from scipy import ndimage
-
-    mask = ndimage.binary_fill_holes(ndimage.binary_closing(filled, iterations=2) | filled)
-    _, (jy, jx) = ndimage.distance_transform_edt(~filled, return_indices=True)
-    full = grid[jy, jx]
-    # colour scale 0 .. ~6.4 x the minimum (as in Slide2's default FS legend), so
-    # the critical zone is dark red and flat or nearly vertical circles, whose FS
-    # is huge and meaningless, saturate in the top band
+    # colour scale 0 .. ~6.4 x the minimum, so the critical zone is dark red
+    # and very high, meaningless FS values saturate in the top band
     fmin = max(float(crit[3]), 1e-3)
     vmax = _nice_max(6.4 * fmin)
-    full = np.minimum(full, 1.2 * vmax)
-    # smooth the scattered sampled minimum into a continuous field (never below
-    # the critical value); the soft mask gives a rounded outline
-    full = np.maximum(ndimage.gaussian_filter(full, 1.3, mode="nearest"), crit[3])
-    soft = ndimage.gaussian_filter(mask.astype(float), 1.0, mode="constant")
+    values = np.where(filled, np.minimum(grid, 1.2 * vmax), np.nan)
     return {
         "x0": x0,
         "y0": y0,
         "side": side,
         "nx": nx,
         "ny": ny,
-        "values": full,
-        "mask": mask,
-        "soft_mask": soft,
+        "values": values,
+        "mask": filled,
+        "soft_mask": filled.astype(float),
         "vmax": vmax,
         "crit": (float(crit[0]), float(crit[1]), float(crit[3])),
+        "sampled_only": True,
     }
 
 
@@ -121,20 +110,16 @@ def band_of(v, vmax: float):
 
 
 def _fine_fields(g: dict, upsample: int):
-    """Smooth (bicubic) upsampled FS and mask fields, cached in the grid dict."""
+    """Block-replicate the sampled cells. Nearest-neighbour only: bicubic
+    zoom would invent FS values between samples and can undershoot a cell."""
     key = ("fine", upsample)
     if key not in g:
-        from scipy import ndimage
-
-        v = ndimage.zoom(g["values"], upsample, order=3, mode="nearest", grid_mode=True)
-        m = ndimage.zoom(g["soft_mask"], upsample, order=3, mode="grid-constant", grid_mode=True)
-        # keep only the main region (cubic overshoot leaves small specks)
-        lab, n = ndimage.label(m >= 0.5)
-        if n > 1:
-            sizes = ndimage.sum(np.ones_like(m), lab, index=np.arange(1, n + 1))
-            main = lab == 1 + int(np.argmax(sizes))
-            m = np.where(ndimage.binary_dilation(main, iterations=3), m, 0.0)
-        g[key] = (np.maximum(v, g["crit"][2]), m)
+        sampled = g["mask"].astype(float)
+        vsrc = np.where(g["mask"], g["values"], g["crit"][2])
+        # order-0 block replication: each cell becomes an upsample x upsample block
+        v = np.repeat(np.repeat(vsrc, upsample, axis=0), upsample, axis=1)
+        m = np.repeat(np.repeat(sampled, upsample, axis=0), upsample, axis=1)
+        g[key] = (np.where(m >= 0.5, v, g["crit"][2]), m)
     return g[key]
 
 

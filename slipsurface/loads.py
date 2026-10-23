@@ -26,8 +26,9 @@ supports; geotextile/geosynthetic strengths are already per metre width.
   soil_nail        T = min(tensile, bond * L_out, plate + bond * L_in)
   geotextile       T = min(tensile, pullout * min(L_in, L_out))
   geosynthetic     Slide2 style, per metre width with strip coverage C:
-                   pullout on one side = 2 C int (adhesion + sigma_v tan delta) ds,
-                   sigma_v = gamma_ob * depth below the ground; anchorage
+                   pullout on one side = 2 C int (adhesion + sigma'_v tan delta) ds,
+                   sigma_v = gamma_ob * depth below the ground,
+                   sigma'_v = max(sigma_v - u, 0); anchorage
                      none     T = min(C tensile, P_in, P_out)
                      face     T = min(C tensile, P_out)   (anchored at the slope face)
                      embedded T = min(C tensile, P_in)    (embedded end anchored)
@@ -43,6 +44,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
+import shapely
 from scipy.optimize import brentq
 
 SUPPORT_KINDS = {
@@ -226,8 +228,47 @@ def support_intersection(sup: Support, surf, x_exit: float, x_entry: float):
     return None
 
 
-def geosynthetic_pullout(st: SupportType, geom, p0, p1) -> float:
-    """Pullout resistance [kN/m] of the geosynthetic segment p0 -> p1 (both faces)."""
+def _pore_pressure(geom, materials, x, y, sigma_v, pore, gamma_w, ru):
+    """Pore pressure on a reinforcement, consistent with the slope groundwater model."""
+    x = np.asarray(x, float)
+    y = np.asarray(y, float)
+    sigma_v = np.asarray(sigma_v, float)
+    if pore == "ru":
+        return np.maximum(ru, 0.0) * sigma_v
+    if pore != "water_table" or getattr(geom, "water_table", None) is None:
+        return np.zeros(np.shape(x), dtype=float)
+    head = np.maximum(np.asarray(geom.water_y(x), float) - y, 0.0)
+    hu = np.ones(np.shape(x), dtype=float)
+    uses = np.ones(np.shape(x), dtype=bool)
+    if materials:
+        pending = np.ones(np.shape(x), dtype=bool)
+        for region in geom.regions:
+            mat = materials.get(region.material)
+            if mat is None:
+                continue
+            hit = pending & shapely.contains_xy(region.polygon, x, y)
+            if np.any(hit):
+                hu[hit] = float(getattr(mat, "hu", 1.0))
+                uses[hit] = bool(getattr(mat, "use_water", True))
+                pending[hit] = False
+    return np.where(uses, hu * gamma_w * head, 0.0)
+
+
+def geosynthetic_pullout(
+    st: SupportType,
+    geom,
+    p0,
+    p1,
+    pore: str = "none",
+    gamma_w: float = 9.81,
+    ru: float = 0.0,
+    materials=None,
+) -> float:
+    """Pullout resistance [kN/m] of the geosynthetic segment p0 -> p1 (both faces).
+
+    Interface friction acts on the effective overburden. `pore` follows the
+    slope analysis: hydrostatic head below the water table, a global Ru, or dry.
+    """
     p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
     L = float(np.hypot(*(p1 - p0)))
     if L <= 0:
@@ -235,7 +276,9 @@ def geosynthetic_pullout(st: SupportType, geom, p0, p1) -> float:
     t = (np.arange(20) + 0.5) / 20
     pts = p0[None, :] + t[:, None] * (p1 - p0)[None, :]
     depth = np.maximum(np.asarray(geom.ground_y(pts[:, 0]), float) - pts[:, 1], 0.0)
-    shear = st.adhesion + st.overburden_gamma * depth * np.tan(np.radians(st.interface_friction))
+    sigma_v = st.overburden_gamma * depth
+    u = _pore_pressure(geom, materials, pts[:, 0], pts[:, 1], sigma_v, pore, gamma_w, ru)
+    shear = st.adhesion + np.maximum(sigma_v - u, 0.0) * np.tan(np.radians(st.interface_friction))
     return float(2.0 * st.coverage / 100.0 * shear.mean() * L)
 
 
@@ -279,7 +322,20 @@ def _ground_slope(geom, x, h=1e-4):
     return (geom.ground_y(x + h) - geom.ground_y(x - h)) / (2 * h)
 
 
-def slice_forces(loads: LoadSet, geom, surf, xl, xr, x_exit, x_entry, direction: int):
+def slice_forces(
+    loads: LoadSet,
+    geom,
+    surf,
+    xl,
+    xr,
+    x_exit,
+    x_entry,
+    direction: int,
+    pore: str = "none",
+    gamma_w: float = 9.81,
+    ru: float = 0.0,
+    materials=None,
+):
     """Per-slice active/passive force arrays and support details.
 
     Returns dict with Qx_a, Qy_a, M_a, Qx_p, Qy_p, M_p (world coordinates) and
@@ -337,8 +393,12 @@ def slice_forces(loads: LoadSet, geom, surf, xl, xr, x_exit, x_entry, direction:
         L_in, L_out = float(np.hypot(*(p - A))), float(np.hypot(*(B - p)))
         po_in = po_out = None
         if sup.stype.kind == "geosynthetic":
-            po_in = geosynthetic_pullout(sup.stype, geom, A, p)
-            po_out = geosynthetic_pullout(sup.stype, geom, p, B)
+            po_in = geosynthetic_pullout(
+                sup.stype, geom, A, p, pore, gamma_w, ru, materials
+            )
+            po_out = geosynthetic_pullout(
+                sup.stype, geom, p, B, pore, gamma_w, ru, materials
+            )
         T, gov = support_capacity(sup.stype, L_in, L_out, po_in, po_out)
         spacing = 1.0 if sup.stype.kind in ("geotextile", "geosynthetic") else sup.stype.spacing
         T = max(T, 0.0) / max(spacing, 1e-9)

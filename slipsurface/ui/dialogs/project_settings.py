@@ -37,6 +37,7 @@ from slipsurface.project import (
     GroundwaterSettings,
     MethodSettings,
     Project,
+    SEISMIC_NOTE,
     SeismicSettings,
 )
 
@@ -163,8 +164,8 @@ class ProjectSettingsDialog(QDialog):
         units = QGroupBox(tr("Ölçü birimleri"))
         f = QFormLayout(units)
         self.units = QComboBox()
-        self.units.addItem("Metrik (kN, kPa, m)", "metric")
-        f.addRow("Gerilme birimleri:", self.units)
+        self.units.addItem(tr("Metrik (kN, kPa, m)"), "metric")
+        f.addRow(tr("Gerilme birimleri:"), self.units)
         lay.addWidget(units)
 
         row = QHBoxLayout()
@@ -216,7 +217,7 @@ class ProjectSettingsDialog(QDialog):
             cb.setChecked(key in m.methods)
             self.method_checks[key] = cb
             bl.addWidget(cb)
-        sarma = QCheckBox("Sarma")
+        sarma = QCheckBox(tr("Sarma"))
         sarma.setEnabled(False)
         sarma.setToolTip(tr("Bu sürümde desteklenmiyor."))
         bl.addWidget(sarma)
@@ -230,12 +231,15 @@ class ProjectSettingsDialog(QDialog):
         self.n_slices.setRange(5, 500)
         self.n_slices.setValue(m.n_slices)
         self.tol = _dspin(1e-6, 0.1, 6, 0.001, m.tolerance)
+        self.tol.setToolTip(
+            tr("Göreli yakınsama toleransı. Çözücü bu sayıyı olduğu gibi kullanır.")
+        )
         self.max_iter = QSpinBox()
         self.max_iter.setRange(5, 1000)
         self.max_iter.setValue(m.max_iter)
         cf.addRow(tr("Dilim sayısı:"), self.n_slices)
-        cf.addRow("Tolerans:", self.tol)
-        cf.addRow("Maksimum iterasyon:", self.max_iter)
+        cf.addRow(tr("Tolerans:"), self.tol)
+        cf.addRow(tr("Maksimum iterasyon:"), self.max_iter)
         right.addWidget(conv)
         inter = QGroupBox(tr("Arayüz kuvvet fonksiyonu (GLE/Morgenstern-Price)"))
         il = QFormLayout(inter)
@@ -252,7 +256,7 @@ class ProjectSettingsDialog(QDialog):
         )
         self.f_start = _dspin(0, 1, 3, 0.05, m.f_start)
         self.f_end = _dspin(0, 1, 3, 0.05, m.f_end)
-        il.addRow("Fonksiyon:", self.interslice)
+        il.addRow(tr("Fonksiyon:"), self.interslice)
         il.addRow(tr("Başlangıç değeri:"), self.f_start)
         il.addRow(tr("Bitiş değeri:"), self.f_end)
         self.inter_box = inter
@@ -280,7 +284,7 @@ class ProjectSettingsDialog(QDialog):
         box = QGroupBox(tr("Boşluk suyu basıncı"))
         f = QFormLayout(box)
         self.gw_method = QComboBox()
-        self.gw_method.addItem("Su tablosu (YASS)", "water_table")
+        self.gw_method.addItem(tr("Su tablosu (YASS)"), "water_table")
         self.gw_method.addItem(tr("Ru katsayısı"), "ru")
         self.gw_method.addItem(tr("Kuru (boşluk suyu yok)"), "none")
         self.gw_method.setCurrentIndex(["water_table", "ru", "none"].index(gw.method))
@@ -293,21 +297,24 @@ class ProjectSettingsDialog(QDialog):
         cbox = QGroupBox(tr("Gerilme çatlağı suyu"))
         cf = QFormLayout(cbox)
         self.crack_mode = QComboBox()
-        self.crack_mode.addItem("Kuru", "dry")
-        self.crack_mode.addItem("Dolu", "full")
+        self.crack_mode.addItem(tr("Kuru"), "dry")
+        self.crack_mode.addItem(tr("Dolu"), "full")
         self.crack_mode.addItem(tr("Kısmen dolu (%)"), "percent")
         cw = gw.crack_water
         self.crack_mode.setCurrentIndex(0 if cw == 0 else 1 if cw == 1 else 2)
         self.crack_pct = _dspin(0, 100, 1, 5, 100 * cw, " %")
         self.crack_mode.currentIndexChanged.connect(self._crack_mode_changed)
         cf.addRow(tr("Çatlaktaki su:"), self.crack_mode)
-        cf.addRow("Doluluk:", self.crack_pct)
+        cf.addRow(tr("Doluluk:"), self.crack_pct)
         lay.addWidget(cbox)
         self._crack_mode_changed()
         note = QLabel(
-            "Su tablosu: u = Hu · γw · (YASS kotu − taban kotu); Hu ve suyun etkisi "
-            "malzeme bazında Malzeme Özellikleri → Su Parametreleri'nden ayarlanır.\n"
-            "Ru: u = Ru · σv (dilim tabanındaki toplam düşey gerilme)."
+            tr(
+                "Su tablosu: u = Hu · γw · (YASS kotu − taban kotu); Hu ve suyun etkisi "
+                "malzeme bazında Malzeme Özellikleri → Su Parametreleri'nden ayarlanır."
+            )
+            + "\n"
+            + tr("Ru: u = Ru · σv (dilim tabanındaki toplam düşey gerilme).")
         )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
@@ -332,15 +339,19 @@ class ProjectSettingsDialog(QDialog):
         s = self.p.seismic
         box = QGroupBox(tr("Psödo-statik sismik yük katsayıları"))
         f = QFormLayout(box)
-        self.kh = _dspin(-1, 1, 4, 0.01, s.kh)
+        self.kh = _dspin(0, 1, 4, 0.01, max(s.kh, 0.0))
+        self.kh.setToolTip(tr("kh her zaman göçme yönündedir."))
         self.kv = _dspin(-1, 1, 4, 0.01, s.kv)
         f.addRow(tr("Yatay katsayı kh:"), self.kh)
         f.addRow(tr("Düşey katsayı kv:"), self.kv)
-        lay.addWidget(box)
-        note = QLabel(
-            "Yatay kuvvet kh·W göçme yönünde, dilim ağırlık merkezinde etkir. "
-            "kv pozitif yukarı: düşey yük (1 − kv)·W."
+        self.both_kv = QCheckBox(tr("Her iki düşey yönü tara ve kritik olanı kullan"))
+        self.both_kv.setChecked(s.both_vertical)
+        self.both_kv.setToolTip(
+            tr("kv ve -kv ayrı çözülür; düşük olan FS alınır. kv = 0 ise ikinci çözüm yapılmaz.")
         )
+        f.addRow(self.both_kv)
+        lay.addWidget(box)
+        note = QLabel(tr(SEISMIC_NOTE))
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
         lay.addWidget(note)
@@ -397,6 +408,7 @@ class ProjectSettingsDialog(QDialog):
         p.groundwater.crack_water = self.crack_pct.value() / 100.0
         p.seismic.kh = self.kh.value()
         p.seismic.kv = self.kv.value()
+        p.seismic.both_vertical = self.both_kv.isChecked()
         p.advanced.check_admissibility = self.check_adm.isChecked()
         p.advanced.min_depth = self.min_depth.value()
         p.advanced.m_alpha_min = self.m_alpha_min.value()

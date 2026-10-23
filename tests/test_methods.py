@@ -82,6 +82,24 @@ def test_force_methods_mirror_invariant(method):
     assert b.fos == pytest.approx(a.fos, rel=1e-6)
 
 
+def test_janbu_correction_does_not_fall_below_one():
+    """d/L above Janbu's chart must not reduce the simplified factor of safety."""
+    from shapely.geometry import Polygon
+
+    from slipsurface.geometry.slope import Region, SlopeGeometry
+    from slipsurface.lem.gle import janbu_correction_factor
+    from slipsurface.lem.slicing import make_slices
+
+    geom = SlopeGeometry(
+        np.array([[0.0, 0.0], [30.0, 0.0]]),
+        [Region(Polygon([(0.0, -25.0), (30.0, -25.0), (30.0, 0.0), (0.0, 0.0)]), "Zemin 1")],
+    )
+    surf = PolylineSurface(np.array([[2.0, 0.0], [8.0, -12.0], [14.0, 0.0]]))
+    mats = {"Zemin 1": MohrCoulomb("Zemin 1", gamma=20, c=5, phi=25)}
+    slices = make_slices(geom, surf, mats, opts=SliceOptions(pore="none"))
+    assert janbu_correction_factor(slices) == 1.0
+
+
 def test_janbu_correction_increases_fos():
     g, mats = acads()
     surf = CircularSurface(20, 28, 28)

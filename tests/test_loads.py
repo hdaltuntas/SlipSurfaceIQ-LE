@@ -23,6 +23,40 @@ TH = math.radians(15)
 TP = math.tan(math.radians(19.6))
 
 
+def test_geosynthetic_pullout_uses_effective_overburden():
+    from shapely.geometry import Polygon
+
+    from slipsurface.geometry.slope import Region, SlopeGeometry
+    from slipsurface.loads import geosynthetic_pullout
+    from slipsurface.materials import MohrCoulomb
+
+    geom = SlopeGeometry(
+        np.array([[0.0, 10.0], [20.0, 10.0]]),
+        [Region(Polygon([(0.0, 0.0), (20.0, 0.0), (20.0, 10.0), (0.0, 10.0)]), "Zemin")],
+        water_table=np.array([[0.0, 10.0], [20.0, 10.0]]),
+    )
+    st = SupportType(
+        kind="geosynthetic",
+        adhesion=0.0,
+        interface_friction=30.0,
+        overburden_gamma=20.0,
+        coverage=100.0,
+    )
+    p0, p1 = np.array([2.0, 5.0]), np.array([12.0, 5.0])
+    tan = math.tan(math.radians(30.0))
+    dry = 2.0 * 20.0 * 5.0 * tan * 10.0
+    wet = 2.0 * (20.0 * 5.0 - 10.0 * 5.0) * tan * 10.0
+    assert geosynthetic_pullout(st, geom, p0, p1, pore="none") == pytest.approx(dry)
+    assert geosynthetic_pullout(st, geom, p0, p1, pore="water_table", gamma_w=10.0) == pytest.approx(
+        wet
+    )
+    clay = {"Zemin": MohrCoulomb("Zemin", gamma=20, hu=0.0)}
+    assert geosynthetic_pullout(
+        st, geom, p0, p1, pore="water_table", gamma_w=10.0, materials=clay
+    ) == pytest.approx(dry)
+    assert geosynthetic_pullout(st, geom, p0, p1, pore="ru", ru=0.5) == pytest.approx(wet)
+
+
 def acads():
     g = simple_slope(10, 2, toe_x=20, left_bench=20, right_bench=20, depth_below_toe=5)
     return g, {"Zemin 1": MohrCoulomb("Zemin 1", gamma=20, c=3, phi=19.6)}

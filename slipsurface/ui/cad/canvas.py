@@ -1022,20 +1022,30 @@ class CadCanvas(QWidget):
         labels = fc.legend_labels(g["vmax"])
         f = QFont("Source Sans 3", 8)
         fb = QFont("Source Sans 3", 9, QFont.Bold)
+        fs = QFont("Source Sans 3", 7)
         fm = QFontMetrics(f)
+        title = tr("FS (aranan merkezler)")
+        note = tr("Her yarıçap taranmaz")
         band_h = 6
         sw = 16
         lw = max(fm.horizontalAdvance(t) for t in labels) + 8
-        w = max(sw + lw + 22, QFontMetrics(fb).horizontalAdvance("FS") + 20)
-        h = 24 + band_h * fc.N_BANDS + fm.height() // 2 + 10
+        w = max(
+            sw + lw + 22,
+            QFontMetrics(fb).horizontalAdvance(title) + 16,
+            QFontMetrics(fs).horizontalAdvance(note) + 16,
+        )
+        h = 38 + band_h * fc.N_BANDS + fm.height() // 2 + 10
         x0, y0 = self.width() - w - 12, 10
         p.setPen(QPen(QColor(150, 150, 150), 1))
         p.setBrush(QColor(255, 255, 255, 240))
         p.drawRect(QRectF(x0, y0, w, h))
         p.setFont(fb)
         p.setPen(QColor("#e01e1e"))
-        p.drawText(QRectF(x0, y0 + 3, w, 18), Qt.AlignHCenter | Qt.AlignVCenter, "FS")
-        top = y0 + 24 + fm.height() // 4
+        p.drawText(QRectF(x0, y0 + 2, w, 16), Qt.AlignHCenter | Qt.AlignVCenter, title)
+        p.setFont(fs)
+        p.setPen(QColor("#555555"))
+        p.drawText(QRectF(x0, y0 + 16, w, 14), Qt.AlignHCenter | Qt.AlignVCenter, note)
+        top = y0 + 34 + fm.height() // 4
         bx = x0 + 8
         for k in range(fc.N_BANDS):  # highest band on top
             col = QColor(fc.PALETTE[fc.N_BANDS - 1 - k])

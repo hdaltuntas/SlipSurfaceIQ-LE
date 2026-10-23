@@ -233,4 +233,20 @@ PDF_EN = {
     "Kabul edilebilir kayma yüzeyi bulunamadı (uç aralıklarını ve geometriyi kontrol edin).": "No admissible slip surface found (check the end ranges and the geometry).",
 }
 
+from slipsurface.materials.catalog import MODELS as _MODELS  # noqa: E402
+from slipsurface.project import SEISMIC_BOTH, SEISMIC_ONE  # noqa: E402
+
+PDF_EN[SEISMIC_BOTH] = (
+    "kh = {}, kv = \u00b1{} (positive upward, vertical load (1 \u2212 kv)\u00b7W; "
+    "in Slide2 a positive kv acts downward)"
+)
+PDF_EN[SEISMIC_ONE] = "kh = {}, kv = {} ({}; Slide2 kv = {}; vertical load (1 \u2212 kv)\u00b7W)"
+PDF_EN["Kritik düşey - {}: kv = {} ({})"] = "Critical vertical - {}: kv = {} ({})"
+PDF_EN["Kritik düşey"] = "Critical vertical"
+PDF_EN["yukarı"] = "upward"
+PDF_EN["aşağı"] = "downward"
+PDF_EN["sıfır"] = "zero"
+PDF_EN[_MODELS["HS"].name] = "Mohr-Coulomb (HS envelope)"
+PDF_EN[_MODELS["SS"].name] = "Approximate peak \u03c6 (SANISAND)"
+
 CATALOG = Catalog(PDF_EN)

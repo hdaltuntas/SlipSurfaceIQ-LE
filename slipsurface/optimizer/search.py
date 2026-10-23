@@ -180,6 +180,7 @@ class SearchResult:
     top: list[tuple[float, object]] = field(default_factory=list)
     message: str = ""
     method: str = "bishop"
+    kv: float | None = None  # governing vertical coefficient; positive is upward
     # every admissible circle tried by the search: columns xc, yc, r, FoS
     # (circular searches only; drawn as the slip-centre FS contour map)
     centres: np.ndarray | None = None

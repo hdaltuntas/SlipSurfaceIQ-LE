@@ -46,7 +46,7 @@ MODELS: dict[str, ModelInfo] = {
         "efektif gerilme esas alınmalıdır; B-bar/kademeli inşaat modellenmez.",
     ),
     "HS": ModelInfo(
-        "Hardening Soil",
+        "Mohr-Coulomb (HS zarfı)",
         "τ = c′ + σ′n · tan φ′   (göçme yüzeyi Mohr-Coulomb)",
         (
             ("c", "Kohezyon c′ (kPa)", 0, 1e6, 3),
@@ -63,7 +63,7 @@ MODELS: dict[str, ModelInfo] = {
         "parametreleri bilgi amaçlı saklanır.",
     ),
     "SS": ModelInfo(
-        "SANISAND",
+        "Yaklaşık pik φ (SANISAND)",
         "τ = σ′n tan φ(ψ),  sin φ = 3Mb/(6+Mb),  Mb = M·exp(−nb ψ)",
         (
             ("ss_m", "M (kritik durum gerilme oranı)", 0.01, 2.99, 4),
@@ -74,7 +74,8 @@ MODELS: dict[str, ModelInfo] = {
             ("ss_nb", "nb", 0, 10, 3),
             ("ss_pat", "pat (kPa)", 0.001, 1e4, 3),
         ),
-        note="ψ = e − ec,  ec = ec0 − λc (p′/pat)^ξ;  LEM'de p′ ≈ σ′n alınır.",
+        note="Bünye modeli çözülmez. Pik φ, üç eksenli sıkışma ve p′ ≈ σ′n ile yaklaşık bulunur; "
+        "düzlem deformasyon kullanılmaz.",
     ),
     "PL": ModelInfo(
         "Power-law envelope",

@@ -257,7 +257,7 @@ EXTRA = {
     "B-bar/staged construction is not modelled.",
     "Limit dengede yalnızca göçme zarfı (c′, φ′) kullanılır; rijitlik parametreleri bilgi amaçlı saklanır.": "Limit equilibrium uses only the failure envelope (c′, φ′); the stiffness parameters "
     "are stored for reference.",
-    "ψ = e − ec,  ec = ec0 − λc (p′/pat)^ξ;  LEM'de p′ ≈ σ′n alınır.": "ψ = e − ec,  ec = ec0 − λc (p′/pat)^ξ;  p′ ≈ σ′n in LEM.",
+    "Bünye modeli çözülmez. Pik φ, üç eksenli sıkışma ve p′ ≈ σ′n ile yaklaşık bulunur; düzlem deformasyon kullanılmaz.": "The constitutive model is not solved. Peak φ is approximated from triaxial compression with p′ ≈ σ′n; plane strain is not used.",
     "JRCn = JRC0 (Ln/L0)^(−0.02 JRC0), JCSn = JCS0 (Ln/L0)^(−0.03 JRC0); toplam sürtünme açısı ≤ 70°.": "JRCn = JRC0 (Ln/L0)^(−0.02 JRC0), JCSn = JCS0 (Ln/L0)^(−0.03 JRC0); total friction "
     "angle ≤ 70°.",
     "Cylwik, Killian & Cicchini (2023). Anlık φ ≤ 70°.": "Cylwik, Killian & Cicchini (2023). Instantaneous φ ≤ 70°.",
@@ -371,7 +371,9 @@ EXTRA = {
     "Yük {}: tekil {} kN/m": "Load {}: line {} kN/m",
     "Destek {}: {}": "Support {}: {}",
     "Bulon paterni {}: {}, @{} m, {}°": "Bolt pattern {}: {}, @{} m, {}°",
-    "Sismik: kh = {}, kv = {}": "Seismic: kh = {}, kv = {}",
+    "yukarı": "upward",
+    "aşağı": "downward",
+    "sıfır": "zero",
     "{}   FS = {}": "{}   FS = {}",
     "Senaryo 1 – {}": "Scenario 1 – {}",
     "{} ({} köşe)": "{} ({} vertices)",
@@ -539,7 +541,7 @@ EXTRA = {
     "Tolerans / maks. it: {} / {}": "Tolerance / max it : {} / {}",
     "Arayüz fonksiyonu  : {} (GLE)": "Interslice function: {} (GLE)",
     "Yeraltı suyu       : {}, γw = {}": "Groundwater        : {}, γw = {}",
-    "Sismik             : kh = {}, kv = {}": "Seismic            : kh = {}, kv = {}",
+    "Kritik düşey - {}: kv = {} ({})": "Critical vertical - {}: kv = {} ({})",
     "Yüzey tipi         : {}": "Surface type       : {}",
     "Malzemeler": "Materials",
     "Çatlak çizgisi x = {} – {}, çatlak suyu: %{} dolu": "Crack line x = {} – {}, crack water: {}% full",
@@ -573,3 +575,59 @@ EXTRA = {
     "{} {}: T = {}  (L_iç = {} m, L_dış = {} m, {}, {})": "{} {}: T = {}  (L_in = {} m, L_out = {} m, {}, {})",
     "Global minimum: {} FS = {}": "Global minimum: {} FS = {}",
 }
+
+from slipsurface.materials.catalog import MODELS as _MODELS  # noqa: E402
+from slipsurface.project import SEISMIC_BOTH, SEISMIC_NOTE, SEISMIC_ONE  # noqa: E402
+
+_BOTH_EN = (
+    "kh = {}, kv = \u00b1{} (positive upward, vertical load (1 \u2212 kv)\u00b7W; "
+    "in Slide2 a positive kv acts downward)"
+)
+_ONE_EN = "kh = {}, kv = {} ({}; Slide2 kv = {}; vertical load (1 \u2212 kv)\u00b7W)"
+_REPORT = "Sismik" + " " * 13 + ": "
+EXTRA[SEISMIC_BOTH] = _BOTH_EN
+EXTRA[SEISMIC_ONE] = _ONE_EN
+EXTRA["Sismik: " + SEISMIC_BOTH] = "Seismic: " + _BOTH_EN
+EXTRA["Sismik: " + SEISMIC_ONE] = "Seismic: " + _ONE_EN
+EXTRA[_REPORT + SEISMIC_BOTH] = "Seismic            : " + _BOTH_EN
+EXTRA[_REPORT + SEISMIC_ONE] = "Seismic            : " + _ONE_EN
+EXTRA[SEISMIC_NOTE] = (
+    "The horizontal force kh\u00b7W acts in the failure direction at the slice centroid. "
+    "Positive kv is upward: vertical load (1 \u2212 kv)\u00b7W. "
+    "In Slide2 a positive kv acts downward (the sign is opposite)."
+)
+EXTRA[_MODELS["HS"].name] = "Mohr-Coulomb (HS envelope)"
+EXTRA[_MODELS["SS"].name] = "Approximate peak \u03c6 (SANISAND)"
+EXTRA[_MODELS["SS"].note] = (
+    "The constitutive model is not solved. Peak \u03c6 is approximated from triaxial "
+    "compression with p\u2032 \u2248 \u03c3\u2032n; plane strain is not used."
+)
+EXTRA.update(
+    {
+        "FS (aranan merkezler)": "FS (searched centres)",
+        "Her yarıçap taranmaz": "Not every radius is tried",
+        "Kayma merkezi FS konturları (aranan örnekler)": "Slip-centre FS contours (searched samples)",
+        "Her iki düşey yönü tara ve kritik olanı kullan": (
+            "Check both vertical directions and use the critical one"
+        ),
+        "kv ve -kv ayrı çözülür; düşük olan FS alınır. kv = 0 ise ikinci çözüm yapılmaz.": (
+            "kv and -kv are solved separately; the lower FS is kept. "
+            "No second solution is run when kv = 0."
+        ),
+        "kh her zaman göçme yönündedir.": "kh always acts in the failure direction.",
+        "Göreli yakınsama toleransı. Çözücü bu sayıyı olduğu gibi kullanır.": (
+            "Relative convergence tolerance. The solver uses this number as entered."
+        ),
+        "Gerilme birimleri:": "Stress units:",
+        "Metrik (kN, kPa, m)": "Metric (kN, kPa, m)",
+        "Sarma": "Sarma",
+        "Tolerans:": "Tolerance:",
+        "Maksimum iterasyon:": "Maximum iterations:",
+        "Fonksiyon:": "Function:",
+        "Su tablosu (YASS)": "Water table (phreatic)",
+        "Kuru": "Dry",
+        "Dolu": "Full",
+        "Doluluk:": "Fill level:",
+        "Kritik düşey": "Critical vertical",
+    }
+)

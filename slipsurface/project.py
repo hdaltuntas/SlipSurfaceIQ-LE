@@ -329,10 +329,33 @@ class GroundwaterSettings:
     crack_water: float = 0.0  # tension crack filled fraction (0 dry .. 1 full)
 
 
+# Positive kv is upward (vertical load (1-kv)W). Slide2's positive kv is downward.
+SEISMIC_BOTH = (
+    "kh = {}, kv = \u00b1{} (pozitif yukarı, düşey yük (1 \u2212 kv)\u00b7W; "
+    "Slide2'de pozitif kv aşağıdır)"
+)
+SEISMIC_ONE = "kh = {}, kv = {} ({}; Slide2 kv = {}; düşey yük (1 \u2212 kv)\u00b7W)"
+SEISMIC_NOTE = (
+    "Yatay kuvvet kh\u00b7W göçme yönünde, dilim ağırlık merkezinde etkir. "
+    "kv pozitif yukarıdır: düşey yük (1 \u2212 kv)\u00b7W. "
+    "Slide2'de pozitif kv aşağıdır (işaret tersi)."
+)
+
+
 @dataclass
 class SeismicSettings:
     kh: float = 0.0
-    kv: float = 0.0
+    kv: float = 0.0  # positive upward: vertical load is (1 - kv) W
+    # Solve -kv as well and keep the lower factor of safety.
+    both_vertical: bool = True
+
+    def clause(self) -> str:
+        """Turkish seismic line. Positive kv is upward; Slide2's positive kv is downward."""
+        kh, kv = self.kh, self.kv
+        if self.both_vertical and kv != 0.0:
+            return SEISMIC_BOTH.format(f"{kh:g}", f"{abs(kv):g}")
+        sense = "yukarı" if kv > 0 else ("aşağı" if kv < 0 else "sıfır")
+        return SEISMIC_ONE.format(f"{kh:g}", f"{kv:g}", sense, f"{-kv:g}")
 
 
 @dataclass
@@ -650,7 +673,7 @@ class Project:
     def solver_kw(self) -> dict:
         m = self.methods
         return {
-            "tol": m.tolerance * 1e-2,
+            "tol": m.tolerance,
             "max_iter": m.max_iter,
             "interslice": m.interslice,
             "f_start": m.f_start,

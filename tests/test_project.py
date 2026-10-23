@@ -121,6 +121,58 @@ def test_run_analysis_multiple_methods():
     assert "Global minimum" in txt and "Spencer" in txt
 
 
+def test_solver_tolerance_is_the_dialog_value():
+    p = acads_1a_project()
+    p.methods.tolerance = 0.005
+    assert p.solver_kw()["tol"] == 0.005
+
+
+def test_seismic_clause_states_the_slide2_sign():
+    from slipsurface.ui.i18n import _CATALOG
+
+    p = acads_1a_project()
+    p.seismic.kv = 0.2
+    p.seismic.both_vertical = False
+    upward = _CATALOG.translate(p.seismic.clause())
+    assert "Slide2" in upward and "upward" in upward
+    p.seismic.both_vertical = True
+    both = _CATALOG.translate(p.seismic.clause())
+    assert "Slide2" in both and "downward" in both
+    assert "\u00b1" in p.seismic.clause()
+
+
+def test_both_vertical_directions_keep_the_lower_fos():
+    from slipsurface.analysis import extend_to_ground
+    from slipsurface.geometry import PolylineSurface
+
+    p = acads_1a_project()
+    p.methods.methods = ["spencer"]
+    p.surfaces.surface_type = "user"
+    circ = CircularSurface(20, 28, 28)
+    xs = np.linspace(20, 41.4476, 25)
+    p.surfaces.user_surface = np.column_stack([xs, circ.y(xs)]).tolist()
+    p.seismic.kh = 0.15
+    p.seismic.kv = 0.25
+    p.seismic.both_vertical = True
+    g = p.build_geometry()
+    surf = PolylineSurface(extend_to_ground(g, p.surfaces.user_surface))
+    mats = p.build_materials()
+    up, _ = analyze(g, surf, mats, method="spencer", opts=p.slice_options(), **p.solver_kw())
+    down_p = p.copy()
+    down_p.seismic.kv = -0.25
+    down, _ = analyze(
+        g, surf, mats, method="spencer", opts=down_p.slice_options(), **down_p.solver_kw()
+    )
+    assert up.ok and down.ok
+    assert up.fos != pytest.approx(down.fos, rel=1e-3)
+    best = up if up.fos <= down.fos else down
+    r = run_analysis(p)
+    assert r.results["spencer"].fos == pytest.approx(best.fos, rel=1e-6)
+    assert r.results["spencer"].kv == pytest.approx(0.25 if up.fos <= down.fos else -0.25)
+    text = report_text(r)
+    assert "Slide2" in text and "Kritik düşey" in text
+
+
 def test_user_defined_surface():
     p = acads_1a_project()
     p.surfaces.surface_type = "user"

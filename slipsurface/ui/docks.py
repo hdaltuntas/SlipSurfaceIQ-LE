@@ -184,7 +184,7 @@ class DocumentViewer(QWidget):
                 if project.seismic.kh or project.seismic.kv:
                     lds.addChild(
                         QTreeWidgetItem(
-                            [f"Sismik: kh = {project.seismic.kh:g}, kv = {project.seismic.kv:g}"]
+                            [f"Sismik: {project.seismic.clause()}"]
                         )
                     )
             self._add_notes(scen, project)
@@ -294,7 +294,7 @@ INTERPRET_OPTIONS = {
             tr("Arama"),
             [
                 ("show_slope_limits", tr("Kayma sınırları"), "bool"),
-                ("show_fs_contours", tr("Kayma merkezi FS konturları"), "bool"),
+                ("show_fs_contours", tr("Kayma merkezi FS konturları (aranan örnekler)"), "bool"),
                 ("show_fs_legend", tr("FS lejantı (sağ alt)"), "bool"),
             ],
         ),

@@ -62,6 +62,36 @@ def extend_to_ground(geom: SlopeGeometry, pts) -> np.ndarray:
     return np.asarray(out)
 
 
+def _kv_cases(p: Project) -> list[float]:
+    """Vertical coefficients to solve. Positive kv is upward."""
+    kv = float(p.seismic.kv)
+    if p.seismic.both_vertical and kv != 0.0:
+        return [kv, -kv]
+    return [kv]
+
+
+def _at_kv(p: Project, kv: float) -> Project:
+    if float(p.seismic.kv) == kv:
+        return p
+    trial = p.copy()
+    trial.seismic.kv = kv
+    return trial
+
+
+def governing_kv_lines(p: Project, results: dict) -> list[str]:
+    """One Turkish line per method when both vertical directions were solved."""
+    if not (p.seismic.both_vertical and p.seismic.kv != 0.0):
+        return []
+    lines = []
+    for key, res in results.items():
+        gkv = getattr(res, "kv", None)
+        if gkv is None:
+            continue
+        sense = "yukarı" if gkv > 0 else ("aşağı" if gkv < 0 else "sıfır")
+        lines.append(f"Kritik düşey - {method_name(key)}: kv = {gkv:g} ({sense})")
+    return lines
+
+
 def search_settings(p: Project, method: str) -> SearchSettings:
     s = p.surfaces
     pop, it = EFFORT.get(s.effort, EFFORT["normal"])
@@ -106,6 +136,16 @@ def run_analysis(
         raise ValueError("Proje Ayarları → Yöntemler: en az bir yöntem seçin.")
     out = AnalysisResults(p.copy(), geom)
     n = len(methods)
+    cases = _kv_cases(p)
+
+    def keep(method: str, found: SearchResult, kv: float) -> None:
+        found.kv = kv
+        prev = out.results.get(method)
+        if prev is None or found.fos < prev.fos:
+            out.results[method] = found
+        kept = out.results[method]
+        stat["done"][method] = kept.fos
+        stat["best"] = kept.fos
 
     if p.surfaces.surface_type == "user":
         pts = p.surfaces.user_surface
@@ -120,15 +160,31 @@ def run_analysis(
                 out.errors[m] = "Bishop yalnızca dairesel yüzeyler için geçerlidir."
                 stat["done"][m] = out.errors[m]
                 continue
-            res, s = analyze(geom, surf, mats, method=m, opts=p.slice_options(), **p.solver_kw())
-            if s is None or not res.ok:
-                out.errors[m] = res.message or "çözüm yok"
-                continue
-            if p.advanced.check_admissibility and not res.admissible:
-                out.errors[m] = res.issue or "Kabul edilebilir olmayan çözüm."
-                continue
-            out.results[m] = SearchResult(surf, res.fos, res, s, 1, [], "kullanıcı yüzeyi", m)
-            stat["done"][m] = res.fos
+            failure = "çözüm yok"
+            solved = False
+            for kv in cases:
+                if progress and progress(i, n, m, 0, stat.get("best", np.nan)):
+                    raise SearchCancelled()
+                trial = _at_kv(p, kv)
+                stat["kv"] = kv
+                res, s = analyze(
+                    geom, surf, mats, method=m, opts=trial.slice_options(), **trial.solver_kw()
+                )
+                if s is None or not res.ok:
+                    failure = res.message or "çözüm yok"
+                    continue
+                if trial.advanced.check_admissibility and not res.admissible:
+                    failure = res.issue or "Kabul edilebilir olmayan çözüm."
+                    continue
+                keep(
+                    m,
+                    SearchResult(surf, res.fos, res, s, 1, [], "kullanıcı yüzeyi", m),
+                    kv,
+                )
+                solved = True
+            if not solved:
+                out.errors[m] = failure
+                stat["done"][m] = failure
     else:
         for i, m in enumerate(methods):
             stat.update(method=m, index=i, n_methods=n)
@@ -140,17 +196,27 @@ def run_analysis(
                 stat["done"][m] = out.errors[m]
                 continue
 
-            def prog(gen, best, i=i, m=m):
-                return progress(i, n, m, gen, best) if progress else None
+            failure = "çözüm yok"
+            solved = False
+            for kv in cases:
+                trial = _at_kv(p, kv)
+                stat["kv"] = kv
 
-            try:
-                out.results[m] = search(geom, mats, search_settings(p, m), prog, stat)
-                stat["done"][m] = out.results[m].fos
-            except SearchCancelled:
-                raise
-            except (RuntimeError, ValueError) as exc:
-                out.errors[m] = str(exc)
-                stat["done"][m] = str(exc)
+                def prog(gen, best, i=i, m=m):
+                    return progress(i, n, m, gen, best) if progress else None
+
+                try:
+                    found = search(geom, mats, search_settings(trial, m), prog, stat)
+                except SearchCancelled:
+                    raise
+                except (RuntimeError, ValueError) as exc:
+                    failure = str(exc)
+                    continue
+                keep(m, found, kv)
+                solved = True
+            if not solved:
+                out.errors[m] = failure
+                stat["done"][m] = failure
 
     out.elapsed = time.perf_counter() - t0
     out.finished = _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -186,10 +252,12 @@ def report_text(r: AnalysisResults, tr: Callable[[str], str] = lambda s: s) -> s
         f"Tolerans / maks. it: {p.methods.tolerance} / {p.methods.max_iter}",
         f"Arayüz fonksiyonu  : {p.methods.interslice} (GLE)",
         f"Yeraltı suyu       : {p.groundwater.method}, γw = {p.groundwater.gamma_w}",
-        f"Sismik             : kh = {p.seismic.kh}, kv = {p.seismic.kv}",
+        f"Sismik             : {p.seismic.clause()}",
         f"Yüzey tipi         : {p.surfaces.surface_type}",
         "",
     ]
+    for line in governing_kv_lines(p, r.results):
+        L.insert(-1, line)
     L += ["Malzemeler", "-" * 60]
     from slipsurface.materials.catalog import model_name, parameter_text
 

@@ -51,6 +51,7 @@ from reportlab.platypus import (
 from reportlab.platypus.tableofcontents import TableOfContents
 
 from slipsurface import __version__
+from slipsurface.analysis import governing_kv_lines
 from slipsurface.lem import method_name
 
 # ------------------------------------------------------------------ fonts
@@ -1035,7 +1036,7 @@ class _Builder:
                         [
                             "",
                             _e(m.name),
-                            _e(model_name(m.model)),
+                            _e(T(model_name(m.model))),
                             _g(m.gamma),
                             _g(m.gamma_sat) if m.use_sat else "—",
                             _e(parameter_text(m)),
@@ -1123,11 +1124,11 @@ class _Builder:
                 else "Kapalı",
             ),
             ("Boşluk suyu basıncı", T(gwt) + f", γ<sub>w</sub> = {gw.gamma_w:g} kN/m³"),
-            (
-                "Sismik katsayılar",
-                f"k<sub>h</sub> = {p.seismic.kh:g}, k<sub>v</sub> = {p.seismic.kv:g}",
-            ),
+            ("Sismik katsayılar", p.seismic.clause()),
         ]
+        critical_kv = governing_kv_lines(p, self.r.results)
+        if critical_kv:
+            rows.append(("Kritik düşey", "\n".join(critical_kv)))
         if p.tension_crack:
             rows.append(("Gerilme çatlağı", f"Çatlak suyu %{100 * gw.crack_water:.0f} dolu"))
         self.kv_table(rows, "Analiz ve arama parametreleri")

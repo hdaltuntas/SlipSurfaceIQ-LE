@@ -294,7 +294,20 @@ def make_slices(
     if o.loads is not None and not o.loads.empty:
         from slipsurface.loads import slice_forces
 
-        forces, info = slice_forces(o.loads, geom, surf, xl, xr, x_exit, x_entry, direction)
+        forces, info = slice_forces(
+            o.loads,
+            geom,
+            surf,
+            xl,
+            xr,
+            x_exit,
+            x_entry,
+            direction,
+            pore=o.pore,
+            gamma_w=o.gamma_w,
+            ru=o.ru,
+            materials=materials,
+        )
 
     crack = None
     if crack_cut is not None:

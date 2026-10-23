@@ -451,7 +451,10 @@ def janbu_correction_factor(s: SliceSet) -> float:
     else:
         b1 = 0.50
     r = d / L
-    return 1.0 + b1 * (r - 1.4 * r * r)
+    f0 = 1.0 + b1 * (r - 1.4 * r * r)
+    # Janbu's 1973 chart is not valid once this expression falls below 1
+    # (d/L > 1/1.4). Do not report a corrected FS below the simplified value.
+    return float(max(f0, 1.0))
 
 
 def janbu_corrected(s: SliceSet, **kw) -> LEMResult:

@@ -229,6 +229,16 @@ def test_fs_contour_grid():
     labels = fs_contour.legend_labels(g["vmax"])
     assert labels[0] == "0" and labels[-1].endswith("+")
     assert fs_contour.build_grid(centres[:5]) is None
+    # unsampled cells stay empty; smoothing must not invent a factor of safety
+    # two separated columns, each tall enough to fill several cells, with a gap between
+    left = np.column_stack([np.full(40, 0.0), np.linspace(0, 40, 40), np.full(40, 10.0), np.full(40, 1.1)])
+    right = np.column_stack(
+        [np.full(40, 80.0), np.linspace(0, 40, 40), np.full(40, 10.0), np.full(40, 2.2)]
+    )
+    gap = fs_contour.build_grid(np.vstack([left, right]))
+    assert gap is not None and not gap["mask"].all()
+    assert np.isnan(gap["values"][~gap["mask"]]).all()
+    assert np.all(gap["values"][gap["mask"]] >= 1.1 - 1e-12)
 
 
 # ---------------------------------------------------------------- GUI parts
