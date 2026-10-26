@@ -443,6 +443,15 @@ Available under *File → Examples* and from the command line with `--example "<
 
 ## Verification
 
+A reproducible 29-slice **GeoStudio / Seequent hand-calculation reference**
+now checks the Ordinary and Simplified Bishop equilibrium equations and the
+existing LE solver independently. It records why published Ordinary and LE
+Ordinary pore-pressure formulations do **not** produce the same FS for the
+identical slice table. See
+[GeoStudio Hand Calculations Verification](docs/GEOSTUDIO_HANDCALCS_VERIFICATION.md);
+run `python -m pytest tests/test_geostudio_handcalcs.py -q`.
+
+
 The test suite checks the engine against reference solutions, among them:
 
 - **ACADS EX1(a):** Bishop 0.985, Spencer 0.984, GLE 0.984 (Slide2: 0.987 / 0.986 / 0.986).
