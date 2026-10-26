@@ -4,6 +4,10 @@ Ordinary (Fellenius); plus shared helpers (strength lookup, admissibility).
 Simplified Bishop (1955), moment equilibrium about the circle centre,
 interslice shear neglected, pseudo-static loads included:
 
+The base pore pressure u is in kPa; U=u*l is the base pore-force in kN/m.
+Bishop uses u*b in the compact F equation because b=l*cos(a). The same
+pore pressure must NOT be subtracted again from the effective base normal.
+
         sum[ (c b + (Wv - u b) tan(phi)) / m_a ]
   F  =  --------------------------------------------------,
          sum[ Wv sin(a) ] + sum[ Fh (yc - y_cg) ] / R
@@ -99,6 +103,28 @@ def _initial_sigma_n(s: SliceSet) -> np.ndarray:
     return np.maximum(s.Wv / s.b - s.u, 0.0) * np.cos(s.alpha) ** 2
 
 
+def bishop_base_normal_forces(
+    s: SliceSet, fos: float, c: np.ndarray, tan_phi: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """GeoStudio hand-calculation Eq. 10: (total N, effective N').
+
+    The pore-water force is U=u*l at the base of each slice. The
+    interslice-normal Bishop approximation gives the *total* base N,
+    then effective N'=N-U. Both use the same u as the compact u*b
+    resistance equation: they are alternative algebraic forms, not
+    additive corrections. c and tan_phi are the local material
+    strengths (arrays), including non-linear tangent values if used.
+    """
+    alpha = s.alpha
+    ma = np.cos(alpha) + np.sin(alpha) * tan_phi / fos
+    _, qy, _ = frame_ext(s, fos)
+    pore_force = s.u * s.l
+    normal_total = (
+        s.Wv - qy - (c * s.l - pore_force * tan_phi) * np.sin(alpha) / fos
+    ) / ma
+    return normal_total, normal_total - pore_force
+
+
 def frame_ext(s: SliceSet, F: float = 1.0):
     """External loads in the solving frame (mass moves toward -x):
     (Qx', Qy, M0') with x' = sign x, Fx' = sign Fx, M0' = sign M0."""
@@ -165,7 +191,12 @@ def ordinary(s: SliceSet, tol: float = 1e-9, max_iter: int = 50) -> LEMResult:
             driving = _driving_moment_over_R(s, F)
         else:
             driving = np.sum(V * sin_a - Hx * cos_a)
-        n_eff = np.maximum(V * cos_a + Hx * sin_a - s.u * s.l, 0.0)
+        # Seequent GeoStudio hand-calculation Eq. 3: the pore-pressure
+        # contribution to the Ordinary moment-equilibrium base normal
+        # is u*L*cos²(alpha), not a full u*L. Retain zero-tension cap.
+        n_eff = np.maximum(
+            V * cos_a + Hx * sin_a - s.u * s.l * cos_a**2, 0.0
+        )
         c, tp = _strength(s, n_eff / s.l)
         return driving, float(np.sum(c * s.l + n_eff * tp))
 
@@ -202,7 +233,7 @@ def bishop_simplified(
             0,
             message="Simplified Bishop is defined for circular surfaces only",
         )
-    sin_a, cos_a, tan_a = np.sin(s.alpha), np.cos(s.alpha), np.tan(s.alpha)
+    sin_a, cos_a = np.sin(s.alpha), np.cos(s.alpha)
     if _driving_moment_over_R(s, 1.0 if not s.has_passive else np.inf) <= 0:
         return LEMResult(np.nan, "Bishop", False, 0, message="non-positive driving moment")
 
@@ -244,7 +275,7 @@ def bishop_simplified(
             return LEMResult(np.nan, "Bishop", False, it, message="non-positive driving moment")
         f_new = np.sum((c * s.b + eff_w * tp) / m_a) / driving
         if nonlinear:
-            n_eff = (eff_w - c * s.b * tan_a / f_new) / m_a
+            _, n_eff = bishop_base_normal_forces(s, f_new, c, tp)
             sigma_n = np.maximum(n_eff / s.l, 0.0)
             c, tp = _strength(s, sigma_n)
         done = abs(f_new - f) < tol * max(1.0, abs(f))
@@ -253,7 +284,7 @@ def bishop_simplified(
             done = done and abs(passive_balance(f_new)) <= max(tol, 1e-10) * max(1.0, f_new)
         if done:
             m_a = cos_a + sin_a * tp / f_new
-            n_eff = (eff_w - c * s.b * tan_a / f_new) / m_a
+            _, n_eff = bishop_base_normal_forces(s, f_new, c, tp)
             res = LEMResult(float(f_new), "Bishop", True, it, float(m_a.min()))
             return check_admissibility(res, m_a, c * s.l + n_eff * tp, s.W, m_alpha_min)
         f = f_new
