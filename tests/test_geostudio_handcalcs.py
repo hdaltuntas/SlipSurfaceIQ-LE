@@ -5,6 +5,7 @@ independently reconstructed ground geometry or critical-surface search.
 The source's Ordinary pore-force convention differs from the native LE solver.
 Do not "fix" the solver merely to force those two distinct formulas to agree.
 """
+
 from __future__ import annotations
 
 import json
