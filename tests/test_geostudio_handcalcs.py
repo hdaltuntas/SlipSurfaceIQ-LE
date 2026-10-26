@@ -204,9 +204,7 @@ def test_bishop_total_and_effective_normals_match_geostudio_slice_five():
     assert N_eff[4] == pytest.approx(N[4] - 25.571 * 1.323, abs=1e-12)
     # Algebraic equivalence to the existing compact Bishop u*b term.
     ma = np.cos(s.alpha) + np.sin(s.alpha) * tp / 1.170
-    compact = (
-        s.W - s.u * s.b - c * s.b * np.tan(s.alpha) / 1.170
-    ) / ma
+    compact = (s.W - s.u * s.b - c * s.b * np.tan(s.alpha) / 1.170) / ma
     np.testing.assert_allclose(N_eff, compact, rtol=0, atol=1e-10)
 
 
