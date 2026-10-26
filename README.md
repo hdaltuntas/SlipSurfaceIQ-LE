@@ -521,6 +521,14 @@ tests/               test suite
 
 ## Roadmap
 
+SlipSurfaceIQ LE remains an **independent application**, not a SlipSurfaceIQ
+Suite module. Its native CAD modeler, Interpret results, numerical engine,
+project files, packaging, licenses, releases and version numbers stay under
+this repository. See the [standalone development plan](docs/STANDALONE_DEVELOPMENT_PLAN.md)
+for the staged reliability, CAD, solver-verification and release-quality work.
+
+Longer-term research features:
+
 - Probabilistic analysis (Monte Carlo)
 - Sarma method
 - Back analysis
