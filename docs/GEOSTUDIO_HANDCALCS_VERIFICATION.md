@@ -38,11 +38,14 @@ are expected. The iterative Bishop test checks the intermediate 1.236 and
 projects the pore pressure into the base normal according to
 `(W cos α − u L cos² α) tan φ′`. LE previously used the unprojected
 `u L` term and consequently produced approximately **1.0668** for these
-same rounded slices. The corrected `ordinary()` now uses `u L cos² α`
-(with its existing effective-normal non-tension cap) and matches the
-published **1.170** factor of safety on the same slice inputs. This is an
-intentional numerical change: existing water-bearing Ordinary analyses
-must be rerun, with method assumptions reviewed before design decisions.
+same rounded slices. The corrected `ordinary()` now uses `u L cos² α` **for circular
+moment equilibrium only** (with its existing effective-normal non-tension
+cap) and matches the published **1.170** factor of safety on the same
+slice inputs. Non-circular Ordinary uses force equilibrium and retains
+`u L`, as verified by the independently derived submerged planar-block
+test. This is an intentional numerical change: existing water-bearing
+**circular** Ordinary analyses must be rerun, with method assumptions
+reviewed before design decisions.
 
 **Bishop:** LE already included pore pressure through the conventional
 `(c b + (W − u b) tan φ) / mα` relation with
@@ -91,3 +94,9 @@ python -m pytest tests/test_geostudio_handcalcs.py -q
 This case is independent of the existing ACADS 1(a) benchmark and protects
 against future changes to the selected LE solver's slice-level equilibrium.
 The scope remains slice-level, not GeoStudio CAD geometry or full slip search.
+
+**Precision caveat:** PDF Table 1 rounds base width `b` and length `L`
+independently. The identity `b=L*cos α` is exact for consistent geometry
+but not exact for the published rounded values. Tests compare the Bishop
+normal-force formula against the equivalent compact equation after deriving
+`b` from `L*cos α`, rather than diluting physical checks with loose tolerances.
