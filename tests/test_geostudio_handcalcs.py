@@ -202,9 +202,14 @@ def test_bishop_total_and_effective_normals_match_geostudio_slice_five():
     N, N_eff = bishop_base_normal_forces(s, 1.170, c, tp)
     assert N[4] == pytest.approx(103.916, abs=0.04)
     assert N_eff[4] == pytest.approx(N[4] - 25.571 * 1.323, abs=1e-12)
-    # Algebraic equivalence to the existing compact Bishop u*b term.
+    # The source Table 1 rounds b and L independently to three decimals,
+    # so b differs slightly from L*cos(alpha). Use a geometrically consistent
+    # b for this *algebraic* identity rather than hiding the discrepancy in
+    # an arbitrary loose numerical tolerance.
     ma = np.cos(s.alpha) + np.sin(s.alpha) * tp / 1.170
-    compact = (s.W - s.u * s.b - c * s.b * np.tan(s.alpha) / 1.170) / ma
+    consistent_b = s.l * np.cos(s.alpha)
+    np.testing.assert_allclose(s.b, consistent_b, rtol=0, atol=0.0012)
+    compact = (s.W - s.u * consistent_b - c * consistent_b * np.tan(s.alpha) / 1.170) / ma
     np.testing.assert_allclose(N_eff, compact, rtol=0, atol=1e-10)
 
 
