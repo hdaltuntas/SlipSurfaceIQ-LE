@@ -1,9 +1,11 @@
 # SlipSurfaceIQ LE
 
-**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.1.3**
+**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.1.4**
 
-[2026.1.3 release notes](RELEASE_NOTES.md) — faster layered Spencer/GLE searches
-with force and moment balance checks preserved.
+[2026.1.4 release notes](RELEASE_NOTES.md) — Ordinary/Fellenius pore-pressure
+projection aligned with GeoStudio hand calculations and explicit verification
+of Bishop total/effective base normal forces. Existing water-bearing Ordinary
+projects should be reanalysed because their calculated FS may change.
 
 SlipSurfaceIQ LE is an open-source program for checking the stability of soil and rock
 slopes, cuts and embankments with the limit equilibrium method (LEM). You draw the slope
@@ -445,9 +447,10 @@ Available under *File → Examples* and from the command line with `--example "<
 
 A reproducible 29-slice **GeoStudio / Seequent hand-calculation reference**
 now checks the Ordinary and Simplified Bishop equilibrium equations and the
-existing LE solver independently. It records why published Ordinary and LE
-Ordinary pore-pressure formulations do **not** produce the same FS for the
-identical slice table. See
+existing LE solver independently. In 2026.1.4, Ordinary's pore-pressure
+projection was aligned with the published `u L cos² α` formulation and the
+Bishop pore-water normal-force decomposition was added as a checked solver
+relation. See
 [GeoStudio Hand Calculations Verification](docs/GEOSTUDIO_HANDCALCS_VERIFICATION.md);
 run `python -m pytest tests/test_geostudio_handcalcs.py -q`.
 
