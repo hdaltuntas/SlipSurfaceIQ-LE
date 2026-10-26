@@ -9,11 +9,13 @@ Released: 2026-10-26
   `N′ = max(V cos α + Hx sin α − u L cos² α, 0)`. Previously LE
   subtracted the unprojected `u L`. On the published 29-slice case this
   changes Ordinary FS from ~1.0668 to **1.170**, matching the reference.
-- The difference affects **water-bearing** Ordinary circular and
-  non-circular calculations. **Rerun any prior Ordinary analyses with
-  groundwater, pore-pressure or Ru enabled before relying on the FS.**
-  Dry reference solutions and other methods' equilibrium equations are
-  unchanged.
+- This correction affects the **circular moment-equilibrium** Ordinary
+  method. Non-circular Ordinary uses the separate base-force formulation
+  and retains the physical normal pore force `u L`; its analytical
+  planar-block checks remain unchanged. **Rerun prior water-bearing
+  Ordinary circular-surface analyses** (groundwater, pore pressure, Ru)
+  before relying on the FS. Dry reference solutions and other methods'
+  equilibrium equations are unchanged.
 
 ## Bishop water-force verification
 
