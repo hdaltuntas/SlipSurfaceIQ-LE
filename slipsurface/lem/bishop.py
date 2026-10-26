@@ -119,9 +119,7 @@ def bishop_base_normal_forces(
     ma = np.cos(alpha) + np.sin(alpha) * tan_phi / fos
     _, qy, _ = frame_ext(s, fos)
     pore_force = s.u * s.l
-    normal_total = (
-        s.Wv - qy - (c * s.l - pore_force * tan_phi) * np.sin(alpha) / fos
-    ) / ma
+    normal_total = (s.Wv - qy - (c * s.l - pore_force * tan_phi) * np.sin(alpha) / fos) / ma
     return normal_total, normal_total - pore_force
 
 
@@ -194,9 +192,7 @@ def ordinary(s: SliceSet, tol: float = 1e-9, max_iter: int = 50) -> LEMResult:
         # Seequent GeoStudio hand-calculation Eq. 3: the pore-pressure
         # contribution to the Ordinary moment-equilibrium base normal
         # is u*L*cos²(alpha), not a full u*L. Retain zero-tension cap.
-        n_eff = np.maximum(
-            V * cos_a + Hx * sin_a - s.u * s.l * cos_a**2, 0.0
-        )
+        n_eff = np.maximum(V * cos_a + Hx * sin_a - s.u * s.l * cos_a**2, 0.0)
         c, tp = _strength(s, n_eff / s.l)
         return driving, float(np.sum(c * s.l + n_eff * tp))
 
