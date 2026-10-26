@@ -17,6 +17,7 @@ import pytest
 
 from slipsurface.geometry import CircularSurface
 from slipsurface.lem import bishop_simplified, ordinary
+from slipsurface.lem.bishop import bishop_base_normal_forces
 from slipsurface.lem.slicing import SliceSet
 from slipsurface.materials import MohrCoulomb
 
@@ -172,29 +173,53 @@ def test_actual_le_bishop_solver_agrees_with_external_hand_reference():
     assert result.iterations > 1
 
 
-def test_ordinary_conventions_must_not_be_silently_mixed():
-    """Document and pin a real formula distinction, not a solver 'failure'.
-
-    PDF Eq. 3: u L cos² alpha; LE ordinary(): u L, effective normal capped
-    at zero if needed. Thus they need NOT have the same FoS.
-    """
+def test_actual_le_ordinary_matches_external_geostudio_hand_reference():
+    """Corrected Ordinary projects u*L*cos²(alpha), as in PDF Eq. 3."""
     s = _prepared_slices()
     result = ordinary(s)
     assert result.ok
     source_fs = _ordinary_reference(_terms()) / _driving(_terms())
     assert source_fs == pytest.approx(1.170, abs=0.001)
-    # LE's explicitly different pore-pressure treatment: analytical reference.
-    tan_phi = math.tan(math.radians(30))
-    resistance = sum(
-        5 * r["base_length_m"]
-        + max(
-            r["weight_kn"] * math.cos(math.radians(r["alpha_deg"]))
-            - r["pore_pressure_kpa"] * r["base_length_m"],
-            0.0,
-        )
-        * tan_phi
-        for r in _terms()
-    )
-    assert result.fos == pytest.approx(resistance / _driving(_terms()), abs=1e-10)
-    assert result.fos == pytest.approx(1.066824, abs=0.001)
-    assert abs(result.fos - source_fs) > 0.09
+    assert result.fos == pytest.approx(source_fs, abs=1e-10)
+
+
+def test_actual_le_ordinary_pore_pressure_effect_is_not_doubled():
+    s = _prepared_slices()
+    wet = ordinary(s)
+    dry_s = _prepared_slices()
+    dry_s.u[:] = 0
+    dry = ordinary(dry_s)
+    assert wet.ok and dry.ok
+    assert wet.fos < dry.fos
+    assert wet.fos == pytest.approx(1.170, abs=0.001)
+
+
+def test_bishop_total_and_effective_normals_match_geostudio_slice_five():
+    """Explicit Eq. 10: u is *base pressure*, U=u*L is the pore force."""
+    s = _prepared_slices()
+    c = np.full(s.n, 5.0)
+    tp = np.full(s.n, math.tan(math.radians(30)))
+    N, N_eff = bishop_base_normal_forces(s, 1.170, c, tp)
+    assert N[4] == pytest.approx(103.916, abs=0.04)
+    assert N_eff[4] == pytest.approx(N[4] - 25.571 * 1.323, abs=1e-12)
+    # Algebraic equivalence to the existing compact Bishop u*b term.
+    ma = np.cos(s.alpha) + np.sin(s.alpha) * tp / 1.170
+    compact = (
+        s.W - s.u * s.b - c * s.b * np.tan(s.alpha) / 1.170
+    ) / ma
+    np.testing.assert_allclose(N_eff, compact, rtol=0, atol=1e-10)
+
+
+def test_bishop_wet_dry_and_null_pressure_are_consistent():
+    s = _prepared_slices()
+    wet = bishop_simplified(s, tol=1e-10, f0=1.170)
+    dry_s = _prepared_slices()
+    dry_s.u[:] = 0
+    dry = bishop_simplified(dry_s, tol=1e-10, f0=1.170)
+    assert wet.ok and dry.ok
+    assert wet.fos == pytest.approx(1.249, abs=0.001)
+    assert wet.fos < dry.fos
+    c = np.full(s.n, 5.0)
+    tp = np.full(s.n, math.tan(math.radians(30)))
+    N, N_eff = bishop_base_normal_forces(dry_s, dry.fos, c, tp)
+    np.testing.assert_allclose(N, N_eff, rtol=0, atol=1e-12)
