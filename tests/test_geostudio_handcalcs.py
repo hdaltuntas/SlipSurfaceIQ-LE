@@ -35,9 +35,7 @@ def _terms():
 def _driving(slices):
     # GeoStudio Table 1 uses alpha negative for the downslope left half;
     # the slide moves towards -x, as in LE's solver frame.
-    return sum(
-        -r["weight_kn"] * math.sin(math.radians(r["alpha_deg"])) for r in slices
-    )
+    return sum(-r["weight_kn"] * math.sin(math.radians(r["alpha_deg"])) for r in slices)
 
 
 def _ordinary_reference(slices):
@@ -82,14 +80,21 @@ def _prepared_slices():
     W = np.array([r["weight_kn"] for r in rows])
     u = np.array([r["pore_pressure_kpa"] for r in rows])
     return SliceSet(
-        xl=xl, xr=xr, xm=(xl + xr) / 2, b=b,
-        y_base=np.zeros(len(rows)), y_top=np.array([r["height_m"] for r in rows]),
+        xl=xl,
+        xr=xr,
+        xm=(xl + xr) / 2,
+        b=b,
+        y_base=np.zeros(len(rows)),
+        y_top=np.array([r["height_m"] for r in rows]),
         alpha=np.radians([-r["alpha_deg"] for r in rows]),
         l=np.array([r["base_length_m"] for r in rows]),
-        W=W, u=u, mat_idx=np.zeros(len(rows), dtype=int),
+        W=W,
+        u=u,
+        mat_idx=np.zeros(len(rows), dtype=int),
         materials=[MohrCoulomb("GeoStudio single material", gamma=20, c=5, phi=30)],
         surface=CircularSurface(0, 50, 55),
-        x_exit=0.0, x_entry=float(xr[-1]),
+        x_exit=0.0,
+        x_entry=float(xr[-1]),
     )
 
 
@@ -106,9 +111,7 @@ def test_geostudio_slice_data_and_driving_sum():
     }
     assert _driving(slices) == pytest.approx(795.340, abs=0.02)
     for r in slices:
-        assert r["weight_kn"] == pytest.approx(
-            20 * r["height_m"] * r["width_m"], abs=0.065
-        )
+        assert r["weight_kn"] == pytest.approx(20 * r["height_m"] * r["width_m"], abs=0.065)
         assert r["base_length_m"] == pytest.approx(
             r["width_m"] / math.cos(math.radians(r["alpha_deg"])), abs=0.0012
         )
@@ -124,7 +127,9 @@ def test_geostudio_ordinary_reference_and_slice5_normal():
     alpha = math.radians(r["alpha_deg"])
     # The text uses L=1.3232 m, whereas Table 1 rounds it to 1.323 m.
     L = 1.3232
-    sigma_n_eff = r["weight_kn"] * math.cos(alpha) / L - r["pore_pressure_kpa"] * math.cos(alpha) ** 2
+    sigma_n_eff = (
+        r["weight_kn"] * math.cos(alpha) / L - r["pore_pressure_kpa"] * math.cos(alpha) ** 2
+    )
     total_normal = (sigma_n_eff + r["pore_pressure_kpa"]) * L
     assert sigma_n_eff == pytest.approx(42.6320, abs=0.02)
     assert total_normal == pytest.approx(90.2462, abs=0.02)
@@ -185,7 +190,8 @@ def test_ordinary_conventions_must_not_be_silently_mixed():
             r["weight_kn"] * math.cos(math.radians(r["alpha_deg"]))
             - r["pore_pressure_kpa"] * r["base_length_m"],
             0.0,
-        ) * tan_phi
+        )
+        * tan_phi
         for r in _terms()
     )
     assert result.fos == pytest.approx(resistance / _driving(_terms()), abs=1e-10)
