@@ -1,3 +1,46 @@
+# SlipSurfaceIQ LE 2026.1.4
+
+Released: 2026-10-26
+
+## Ordinary/Fellenius pore-pressure correction
+
+- Align the pore-water contribution to the base normal with the Seequent
+  GeoStudio *Verification – Hand Calculations* Ordinary Eq. 3:
+  `N′ = max(V cos α + Hx sin α − u L cos² α, 0)`. Previously LE
+  subtracted the unprojected `u L`. On the published 29-slice case this
+  changes Ordinary FS from ~1.0668 to **1.170**, matching the reference.
+- The difference affects **water-bearing** Ordinary circular and
+  non-circular calculations. **Rerun any prior Ordinary analyses with
+  groundwater, pore-pressure or Ru enabled before relying on the FS.**
+  Dry reference solutions and other methods' equilibrium equations are
+  unchanged.
+
+## Bishop water-force verification
+
+- Simplified Bishop already includes pore pressure using `u b` in its
+  compact moment balance. Version 2026.1.4 makes the equivalent hand-
+  calculation base-normal decomposition explicit: `U=u L`,
+  `N=[V−(c L−U tanφ)sinα/F]/mα`, and `N′=N−U`.
+- Verify the 29 published slice normals, the worked slice-5 Bishop
+  total normal force (~103.916 kN at trial FS=1.170), effective normal
+  force, wet/dry behaviour and `u b` algebraic equivalence. This
+  prevents missing or double-counted pore pressure. No second pore
+  pressure force is added to Bishop and the verified Bishop FS stays
+  approximately **1.249**.
+
+## Regression and compatibility
+
+- Extend external GeoStudio 29-slice hand-calculation regressions to
+  assert the **actual** LE Ordinary/Bishop solver results.
+- Keep the standalone native PySide6 application, all nine methods,
+  `.slp.json` format version 3, project migrations, and existing
+  independent packaging structure.
+- No SlipSurfaceIQ Suite integration or module version changes.
+- The source project/installer version is **2026.1.4**; native artifacts
+  are published separately after the cross-platform release gates.
+
+---
+
 # SlipSurfaceIQ LE 2026.1.3
 
 Released: 2026-10-23
