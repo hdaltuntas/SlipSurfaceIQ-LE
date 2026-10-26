@@ -32,6 +32,7 @@ def tutorial_model():
     """Convert published descending slope to LE's increasing-crest x direction."""
     case = source_case()["tutorial"]
     points = {int(k): v for k, v in case["geometry_points"].items()}
+
     # GeoStudio's left-to-right slide is mirrored once, not sign-changed in
     # the numerical solver. The x and y dimensions and material zones persist.
     def flip(point):
@@ -39,9 +40,7 @@ def tutorial_model():
 
     # Reorder coordinates ascending after mirroring the vendor drawing.
     surface = np.array([flip(points[k]) for k in (6, 5, 3, 2, 1)], dtype=float)
-    groundwater = np.array(
-        [flip(p) for p in reversed(case["piezometric_points"])], dtype=float
-    )
+    groundwater = np.array([flip(p) for p in reversed(case["piezometric_points"])], dtype=float)
     geom = layered_geometry(
         surface,
         bottom=0.0,
@@ -77,12 +76,8 @@ def test_tutorial_all_eight_geometry_points_are_reconstructed():
     assert not case["exact_vendor_circle_and_radius_samples_in_pdf"]
 
     geom, mats = tutorial_model()
-    np.testing.assert_allclose(
-        geom.surface, [[0, 4], [10, 4], [20, 9], [30, 14], [40, 14]]
-    )
-    np.testing.assert_allclose(
-        geom.water_table, [[0, 7], [16, 7], [24, 8], [40, 10]]
-    )
+    np.testing.assert_allclose(geom.surface, [[0, 4], [10, 4], [20, 9], [30, 14], [40, 14]])
+    np.testing.assert_allclose(geom.water_table, [[0, 7], [16, 7], [24, 8], [40, 10]])
     assert [r.material for r in geom.regions]  # layered model actually created
     assert len(mats) == 2
     for label, expected in (
@@ -132,9 +127,7 @@ def test_tutorial_two_materials_and_water_reach_real_le_solvers():
 def limit_equilibrium_analogue():
     """Controlled 2H:1V slope with the *published* c, phi, gamma (not source geometry)."""
     inputs = source_case()["limit_equilibrium_formulation"]["soil"]
-    geom = simple_slope(
-        10, 2, toe_x=20, left_bench=20, right_bench=20, depth_below_toe=5
-    )
+    geom = simple_slope(10, 2, toe_x=20, left_bench=20, right_bench=20, depth_below_toe=5)
     mats = {
         "Zemin 1": MohrCoulomb(
             "Zemin 1",
@@ -153,17 +146,16 @@ def test_limit_equilibrium_planar_translational_force_balance(method):
     theta = math.radians(15)
     surface = PolylineSurface([[20, 0], [60, 40 * math.tan(theta)]])
     result, slices = analyze(
-        geom, surface, mats, n_slices=40, method=method,
-        opts=SliceOptions(pore="none")
+        geom, surface, mats, n_slices=40, method=method, opts=SliceOptions(pore="none")
     )
     assert result.ok and result.admissible, (method, result)
     assert slices is not None
     x_entry = 20 + 10 / math.tan(theta)
     weight = 20 * (x_entry - 40) * 10 / 2
     length = math.hypot(x_entry - 20, 10)
-    expected = (
-        10 * length + weight * math.cos(theta) * math.tan(math.radians(26))
-    ) / (weight * math.sin(theta))
+    expected = (10 * length + weight * math.cos(theta) * math.tan(math.radians(26))) / (
+        weight * math.sin(theta)
+    )
     assert result.fos == pytest.approx(expected, rel=1e-6)
 
 
@@ -203,6 +195,7 @@ def test_source_reference_numbers_remain_separate_from_fixed_surface_verificatio
     assert not tutorial["exact_vendor_circle_and_radius_samples_in_pdf"]
     formula = sources["limit_equilibrium_formulation"]
     assert formula["published_figure_values"] == {
-        "circular_fs": 1.523, "planar_fs": 2.613,
+        "circular_fs": 1.523,
+        "planar_fs": 2.613,
     }
     assert not formula["exact_surface_geometry_available"]
