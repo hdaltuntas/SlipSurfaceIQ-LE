@@ -73,12 +73,12 @@
       8
     ],
     "materials": {
-      "upper": {
+      "Upper Layer": {
         "gamma_kn_m3": 17,
         "c_kpa": 4,
         "phi_deg": 20
       },
-      "lower": {
+      "Lower Layer": {
         "gamma_kn_m3": 18,
         "c_kpa": 8,
         "phi_deg": 25
