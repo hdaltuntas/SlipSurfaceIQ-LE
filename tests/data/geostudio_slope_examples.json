@@ -1,0 +1,152 @@
+{
+  "sources": [
+    {
+      "name": "Seequent GeoStudio Example – SLOPE/W Tutorial – Getting Started",
+      "url": "https://files.seequent.com/GeoStudio/SlopeW/SLOPE%20Tutorial.pdf",
+      "pages": {
+        "geometry_and_material": 5,
+        "water_line": 6,
+        "search_definition_and_minimum": 7,
+        "method_results": 8,
+        "janbu_method": 9
+      }
+    },
+    {
+      "name": "Seequent GeoStudio Example – Limit Equilibrium Formulation",
+      "url": "https://files.seequent.com/GeoStudio/SlopeW/Limit%20Equilibrium%20Formulation.pdf",
+      "pages": {
+        "geometry": 6,
+        "circular_result": 7,
+        "circular_method_behavior": 8,
+        "planar_method_behavior": 9
+      }
+    }
+  ],
+  "tutorial": {
+    "coordinate_system": "As published: slope descending left to right, converted by x'=40-x only for LE solver frame",
+    "geometry_points": {
+      "1": [
+        0,
+        14
+      ],
+      "2": [
+        10,
+        14
+      ],
+      "3": [
+        20,
+        9
+      ],
+      "4": [
+        0,
+        9
+      ],
+      "5": [
+        30,
+        4
+      ],
+      "6": [
+        40,
+        4
+      ],
+      "7": [
+        40,
+        0
+      ],
+      "8": [
+        0,
+        0
+      ]
+    },
+    "upper_region_point_ids": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "lower_region_point_ids": [
+      4,
+      3,
+      5,
+      6,
+      7,
+      8
+    ],
+    "materials": {
+      "upper": {
+        "gamma_kn_m3": 17,
+        "c_kpa": 4,
+        "phi_deg": 20
+      },
+      "lower": {
+        "gamma_kn_m3": 18,
+        "c_kpa": 8,
+        "phi_deg": 25
+      }
+    },
+    "piezometric_points": [
+      [
+        0,
+        10
+      ],
+      [
+        16,
+        8
+      ],
+      [
+        24,
+        7
+      ],
+      [
+        40,
+        7
+      ]
+    ],
+    "entry_exit": {
+      "left_from": [
+        2,
+        14
+      ],
+      "left_to": [
+        9,
+        14
+      ],
+      "right_from": [
+        28,
+        5
+      ],
+      "right_to": [
+        35,
+        4
+      ],
+      "entry_increments": 5,
+      "exit_increments": 5,
+      "radius_increments": 10,
+      "trial_surfaces": 396
+    },
+    "published_reference": {
+      "method": "Spencer",
+      "minimum_fs": 1.37,
+      "bishop_same_surface_fs": 1.366,
+      "janbu_same_surface_fs": 1.269,
+      "lambda": 0.28
+    },
+    "exact_vendor_circle_and_radius_samples_in_pdf": false
+  },
+  "limit_equilibrium_formulation": {
+    "soil": {
+      "gamma_kn_m3": 20,
+      "c_kpa": 10,
+      "phi_deg": 26
+    },
+    "published_figure_values": {
+      "circular_fs": 1.523,
+      "planar_fs": 2.613
+    },
+    "published_method_relations": [
+      "On circular surface: Spencer and Bishop similar; Janbu simplified lower",
+      "On planar surface: Spencer and Janbu simplified agree; Bishop moment-only may overpredict"
+    ],
+    "exact_surface_geometry_available": false
+  }
+}
