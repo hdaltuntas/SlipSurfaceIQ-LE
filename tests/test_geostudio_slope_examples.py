@@ -34,7 +34,9 @@ def tutorial_model():
     points = {int(k): v for k, v in case["geometry_points"].items()}
     # GeoStudio's left-to-right slide is mirrored once, not sign-changed in
     # the numerical solver. The x and y dimensions and material zones persist.
-    flip = lambda point: [40 - point[0], point[1]]
+    def flip(point):
+        return [40 - point[0], point[1]]
+
     # Reorder coordinates ascending after mirroring the vendor drawing.
     surface = np.array([flip(points[k]) for k in (6, 5, 3, 2, 1)], dtype=float)
     groundwater = np.array(
