@@ -34,22 +34,29 @@ The small deviations result from Table 1's three-decimal rounded inputs, and
 are expected. The iterative Bishop test checks the intermediate 1.236 and
 1.247/1.248 steps, not only the final FS.
 
-**Important formulation distinction:** Source Eq. 3 (PDF page 3) calculates
-Ordinary friction resistance as
-`(W cos α − u L cos² α) tan φ′`. LE's `ordinary()` currently uses
-`max(W cos α − u L, 0) tan φ′`. The latter yields roughly **1.0668**
-for the same rounded slices, rather than GeoStudio's **1.170**.
-That difference is **not** hidden with a relaxed tolerance or a benchmark
-override. The test pins both formulae separately. Whether the Ordinary
-method's pore-pressure convention should change requires an engineering
-formulation review, backward-compatibility assessment, and independent
-reference cases. No solver code has been modified here.
+**Ordinary/Fellenius in LE 2026.1.4:** GeoStudio Eq. 3 (PDF page 3)
+projects the pore pressure into the base normal according to
+`(W cos α − u L cos² α) tan φ′`. LE previously used the unprojected
+`u L` term and consequently produced approximately **1.0668** for these
+same rounded slices. The corrected `ordinary()` now uses `u L cos² α` **for circular
+moment equilibrium only** (with its existing effective-normal non-tension
+cap) and matches the published **1.170** factor of safety on the same
+slice inputs. Non-circular Ordinary uses force equilibrium and retains
+`u L`, as verified by the independently derived submerged planar-block
+test. This is an intentional numerical change: existing water-bearing
+**circular** Ordinary analyses must be rerun, with method assumptions
+reviewed before design decisions.
 
-**Bishop:** The existing LE `bishop_simplified()` uses the conventional
+**Bishop:** LE already included pore pressure through the conventional
 `(c b + (W − u b) tan φ) / mα` relation with
-`mα = cos α + sin α tan φ / F`. Its final result matches the hand-calculated
-Bishop FS within the three-decimal publication precision. The test feeds
-the published slice values directly into the real LE solver.
+`mα = cos α + sin α tan φ / F`. In 2026.1.4 the corresponding
+total and effective normal-force decomposition is explicitly calculated
+and regression-tested using PDF Eq. 10:
+`U = u L`, `N = [W − (c L − U tan φ)sinα/F]/mα`,
+`N′ = N − U`. Its algebraic equivalence to the original `u b`
+term is asserted so pore-water forces cannot silently be omitted or
+counted twice. The calculated Bishop factor of safety remains **1.249**
+at the precision of the reference.
 
 ## Source-specific transcription cautions
 
@@ -86,3 +93,10 @@ python -m pytest tests/test_geostudio_handcalcs.py -q
 
 This case is independent of the existing ACADS 1(a) benchmark and protects
 against future changes to the selected LE solver's slice-level equilibrium.
+The scope remains slice-level, not GeoStudio CAD geometry or full slip search.
+
+**Precision caveat:** PDF Table 1 rounds base width `b` and length `L`
+independently. The identity `b=L*cos α` is exact for consistent geometry
+but not exact for the published rounded values. Tests compare the Bishop
+normal-force formula against the equivalent compact equation after deriving
+`b` from `L*cos α`, rather than diluting physical checks with loose tolerances.
