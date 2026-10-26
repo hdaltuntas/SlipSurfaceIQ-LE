@@ -453,8 +453,17 @@ projection for circular moment equilibrium was aligned with the published
 `u L cos² α` formulation (non-circular force equilibrium retains `u L`),
 and the Bishop pore-water normal-force decomposition was added as a checked
 solver relation. See
-[GeoStudio Hand Calculations Verification](docs/GEOSTUDIO_HANDCALCS_VERIFICATION.md);
-run `python -m pytest tests/test_geostudio_handcalcs.py -q`.
+[GeoStudio Hand Calculations Verification](docs/GEOSTUDIO_HANDCALCS_VERIFICATION.md).
+
+Additional official **SLOPE/W Tutorial** and **Limit Equilibrium Formulation**
+examples are now covered by exact published tutorial geometry/material/pore
+inputs and solver-level analytical/method tests. Vendor critical-search FS
+numbers are labelled **reference-only** until the original solved
+circle/search settings are available; no false cross-program equality is
+claimed. See
+[Additional GeoStudio Verification](docs/GEOSTUDIO_ADDITIONAL_VERIFICATION.md).
+
+Run `python -m pytest tests/test_geostudio_handcalcs.py tests/test_geostudio_slope_examples.py -q`.
 
 
 The test suite checks the engine against reference solutions, among them:
