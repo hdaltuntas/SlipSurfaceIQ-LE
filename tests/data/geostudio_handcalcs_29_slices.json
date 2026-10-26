@@ -1,0 +1,299 @@
+{
+  "source": "Seequent GeoStudio Example – Verification – Hand Calculations",
+  "source_page": 4,
+  "source_table": "Table 1",
+  "method_pages": {
+    "ordinary": [
+      3,
+      5,
+      6
+    ],
+    "bishop": [
+      7,
+      9,
+      10,
+      11,
+      12,
+      13
+    ]
+  },
+  "soil": {
+    "unit_weight_kn_m3": 20,
+    "cohesion_kpa": 5,
+    "friction_angle_deg": 30
+  },
+  "reference": {
+    "ordinary_fs": 1.17,
+    "bishop_fs": 1.249,
+    "ordinary_driving_kn": 795.34,
+    "ordinary_resistance_kn": 930.64,
+    "bishop_first_trial_fs": 1.17,
+    "bishop_first_recomputed_fs": 1.236,
+    "bishop_first_resistance_kn": 983.091,
+    "bishop_second_resistance_kn": 991.636,
+    "bishop_third_resistance_kn": 992.967
+  },
+  "rows": [
+    {
+      "n": 1,
+      "height_m": 0.821,
+      "width_m": 0.87,
+      "weight_kn": 14.287,
+      "alpha_deg": -62.087,
+      "base_length_m": 1.858,
+      "pore_pressure_kpa": 0
+    },
+    {
+      "n": 2,
+      "height_m": 2.321,
+      "width_m": 0.87,
+      "weight_kn": 40.387,
+      "alpha_deg": -57.351,
+      "base_length_m": 1.613,
+      "pore_pressure_kpa": 0
+    },
+    {
+      "n": 3,
+      "height_m": 3.801,
+      "width_m": 1.234,
+      "weight_kn": 93.778,
+      "alpha_deg": -52.391,
+      "base_length_m": 2.022,
+      "pore_pressure_kpa": 7.853
+    },
+    {
+      "n": 4,
+      "height_m": 4.887,
+      "width_m": 0.952,
+      "weight_kn": 93.081,
+      "alpha_deg": -47.702,
+      "base_length_m": 1.415,
+      "pore_pressure_kpa": 19.204
+    },
+    {
+      "n": 5,
+      "height_m": 5.393,
+      "width_m": 0.952,
+      "weight_kn": 102.727,
+      "alpha_deg": -43.965,
+      "base_length_m": 1.323,
+      "pore_pressure_kpa": 25.571
+    },
+    {
+      "n": 6,
+      "height_m": 5.782,
+      "width_m": 0.952,
+      "weight_kn": 110.139,
+      "alpha_deg": -40.452,
+      "base_length_m": 1.252,
+      "pore_pressure_kpa": 30.789
+    },
+    {
+      "n": 7,
+      "height_m": 6.072,
+      "width_m": 0.952,
+      "weight_kn": 115.666,
+      "alpha_deg": -37.115,
+      "base_length_m": 1.194,
+      "pore_pressure_kpa": 35.035
+    },
+    {
+      "n": 8,
+      "height_m": 6.277,
+      "width_m": 0.952,
+      "weight_kn": 119.559,
+      "alpha_deg": -33.92,
+      "base_length_m": 1.148,
+      "pore_pressure_kpa": 38.441
+    },
+    {
+      "n": 9,
+      "height_m": 6.405,
+      "width_m": 0.952,
+      "weight_kn": 122.004,
+      "alpha_deg": -30.841,
+      "base_length_m": 1.109,
+      "pore_pressure_kpa": 41.1
+    },
+    {
+      "n": 10,
+      "height_m": 6.465,
+      "width_m": 0.952,
+      "weight_kn": 123.143,
+      "alpha_deg": -27.857,
+      "base_length_m": 1.077,
+      "pore_pressure_kpa": 43.088
+    },
+    {
+      "n": 11,
+      "height_m": 6.462,
+      "width_m": 0.952,
+      "weight_kn": 123.088,
+      "alpha_deg": -24.955,
+      "base_length_m": 1.05,
+      "pore_pressure_kpa": 44.46
+    },
+    {
+      "n": 12,
+      "height_m": 6.401,
+      "width_m": 0.952,
+      "weight_kn": 121.925,
+      "alpha_deg": -22.119,
+      "base_length_m": 1.028,
+      "pore_pressure_kpa": 45.263
+    },
+    {
+      "n": 13,
+      "height_m": 6.286,
+      "width_m": 0.952,
+      "weight_kn": 119.724,
+      "alpha_deg": -19.339,
+      "base_length_m": 1.009,
+      "pore_pressure_kpa": 45.531
+    },
+    {
+      "n": 14,
+      "height_m": 6.118,
+      "width_m": 0.952,
+      "weight_kn": 116.542,
+      "alpha_deg": -16.606,
+      "base_length_m": 0.994,
+      "pore_pressure_kpa": 45.293
+    },
+    {
+      "n": 15,
+      "height_m": 5.902,
+      "width_m": 0.952,
+      "weight_kn": 112.424,
+      "alpha_deg": -13.912,
+      "base_length_m": 0.981,
+      "pore_pressure_kpa": 44.574
+    },
+    {
+      "n": 16,
+      "height_m": 5.639,
+      "width_m": 0.952,
+      "weight_kn": 107.404,
+      "alpha_deg": -11.248,
+      "base_length_m": 0.971,
+      "pore_pressure_kpa": 43.39
+    },
+    {
+      "n": 17,
+      "height_m": 5.329,
+      "width_m": 0.952,
+      "weight_kn": 101.511,
+      "alpha_deg": -8.609,
+      "base_length_m": 0.963,
+      "pore_pressure_kpa": 41.757
+    },
+    {
+      "n": 18,
+      "height_m": 4.975,
+      "width_m": 0.952,
+      "weight_kn": 94.766,
+      "alpha_deg": -5.989,
+      "base_length_m": 0.958,
+      "pore_pressure_kpa": 39.685
+    },
+    {
+      "n": 19,
+      "height_m": 4.577,
+      "width_m": 0.952,
+      "weight_kn": 87.183,
+      "alpha_deg": -3.381,
+      "base_length_m": 0.954,
+      "pore_pressure_kpa": 37.182
+    },
+    {
+      "n": 20,
+      "height_m": 4.136,
+      "width_m": 0.952,
+      "weight_kn": 78.772,
+      "alpha_deg": -0.78,
+      "base_length_m": 0.952,
+      "pore_pressure_kpa": 34.252
+    },
+    {
+      "n": 21,
+      "height_m": 3.651,
+      "width_m": 0.952,
+      "weight_kn": 69.537,
+      "alpha_deg": 1.82,
+      "base_length_m": 0.953,
+      "pore_pressure_kpa": 30.899
+    },
+    {
+      "n": 22,
+      "height_m": 3.123,
+      "width_m": 0.952,
+      "weight_kn": 59.477,
+      "alpha_deg": 4.423,
+      "base_length_m": 0.955,
+      "pore_pressure_kpa": 27.12
+    },
+    {
+      "n": 23,
+      "height_m": 2.551,
+      "width_m": 0.952,
+      "weight_kn": 48.585,
+      "alpha_deg": 7.035,
+      "base_length_m": 0.96,
+      "pore_pressure_kpa": 22.914
+    },
+    {
+      "n": 24,
+      "height_m": 1.935,
+      "width_m": 0.952,
+      "weight_kn": 36.851,
+      "alpha_deg": 9.663,
+      "base_length_m": 0.966,
+      "pore_pressure_kpa": 18.273
+    },
+    {
+      "n": 25,
+      "height_m": 1.507,
+      "width_m": 0.989,
+      "weight_kn": 29.807,
+      "alpha_deg": 12.362,
+      "base_length_m": 1.012,
+      "pore_pressure_kpa": 14.781
+    },
+    {
+      "n": 26,
+      "height_m": 1.265,
+      "width_m": 0.989,
+      "weight_kn": 25.019,
+      "alpha_deg": 15.14,
+      "base_length_m": 1.024,
+      "pore_pressure_kpa": 12.406
+    },
+    {
+      "n": 27,
+      "height_m": 0.971,
+      "width_m": 0.989,
+      "weight_kn": 19.204,
+      "alpha_deg": 17.956,
+      "base_length_m": 1.039,
+      "pore_pressure_kpa": 9.523
+    },
+    {
+      "n": 28,
+      "height_m": 0.623,
+      "width_m": 0.989,
+      "weight_kn": 12.317,
+      "alpha_deg": 20.818,
+      "base_length_m": 1.058,
+      "pore_pressure_kpa": 6.108
+    },
+    {
+      "n": 29,
+      "height_m": 0.217,
+      "width_m": 0.989,
+      "weight_kn": 4.3,
+      "alpha_deg": 23.735,
+      "base_length_m": 1.08,
+      "pore_pressure_kpa": 2.132
+    }
+  ]
+}
