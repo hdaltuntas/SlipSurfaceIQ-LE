@@ -243,7 +243,10 @@ asks for a new computation; display-only changes (colours, labels, notes) do not
 | GLE / Morgenstern-Price (half-sine, constant, clipped sine, trapezoidal) | force + moment | circular and non-circular |
 
 - **Slicing:** a chosen number of equal-width slices plus extra boundaries at every ground,
-  water table, load and polyline-surface vertex, so the top of each slice is straight.
+  water table, load and polyline-surface vertex, so the top of each slice is straight, and
+  where the slip surface crosses a material boundary, so each slice base lies in one
+  material. These geometric boundaries take precedence when they nearly coincide with an
+  equal-width one, so the result does not depend on the failure direction.
   Slice weights are integrated through all material regions (γ above, γsat below the water
   table).
 - **Non-linear strength:** for curved envelopes the solvers iterate on the effective normal
@@ -287,7 +290,10 @@ c and φ.
 ## Groundwater, seismic loads and tension cracks
 
 - **Water table:** u = Hu · γw · (water table − base elevation); Hu and whether the water
-  acts are set per material. Ponded water above the ground is added to the slice weight.
+  acts are set per material. Ponded water above the ground is added to the slice weight
+  as a vertical load only; the horizontal component of the water pressure on a sloping
+  submerged ground surface is not modelled. Where that thrust matters (a submerged toe,
+  a reservoir drawdown), model it explicitly with a surface-normal distributed load.
 - **Ru coefficient:** u = Ru · σv (total vertical stress at the base).
 - **Pseudo-static seismic loading:** horizontal force kh·W in the failure direction at the
   slice centroid; kv positive upward gives a vertical load (1 − kv)·W.

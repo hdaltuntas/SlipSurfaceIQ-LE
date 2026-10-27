@@ -1,3 +1,34 @@
+# Unreleased
+
+## Slicing: direction-independent slice boundaries
+
+- When an equal-width slice boundary fell within the sliver tolerance
+  (0.01 % of the mass width) of a ground, water-table, load or
+  polyline-surface vertex, the leftmost point was kept. The vertex could be
+  dropped, which left a kinked slice top and made the result depend on the
+  failure direction. Geometric boundaries now take precedence.
+- A slice boundary is also placed where the slip surface crosses a material
+  boundary (as in Slide2), so each slice base lies in one material instead
+  of taking the material at its midpoint.
+- On the bundled `layered_water_table` example, the same circle analysed
+  right-to-left and mirrored left-to-right differed by about 2 % in FS
+  (e.g. Bishop 1.197 vs 1.221 with 30 slices). Both directions now agree.
+  **FS values of layered models can change slightly; rerun them** before
+  relying on earlier results. New regression tests pin the mirror symmetry.
+
+## Packaging workflow
+
+- A push to `main` no longer fails the *Native packages* workflow when the
+  current version has no release tag yet, its application code differs from
+  the tag, or the release already has assets. The packages are still built
+  and verified, and publishing waits for the release event or a manual
+  dispatch, both of which still fail on any mismatch.
+
+## Documentation
+
+- State that ponded water is added as vertical weight only.
+- Correct the MSI version mapping example in `packaging/README.md`.
+
 # SlipSurfaceIQ LE 2026.1.4
 
 Released: 2026-10-26

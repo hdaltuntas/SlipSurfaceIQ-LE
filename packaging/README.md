@@ -48,7 +48,8 @@ payload with generated RPM and Arch recipes under `dist/`. The workflow runs
 
 On Windows, install the .NET SDK and WiX (`dotnet tool install --global wix
 --version 5.0.2`), then run `python packaging/build.py msi`. MSI's numeric version
-maps `2026.1.4` to `26.1.3` because Windows Installer limits its major field to 255.
+subtracts 2000 from the year (`2026.1.4` becomes `26.1.4`) because Windows Installer
+limits its major field to 255.
 The package title and application retain the complete calendar version. A stable
 UpgradeCode allows future MSI versions to replace this installation.
 

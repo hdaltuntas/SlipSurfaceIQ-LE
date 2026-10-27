@@ -238,9 +238,29 @@ jobs:
           set -euo pipefail
           version=$(python packaging/build.py version)
           tag="v$version"
+          # A push to main publishes only into an existing release whose application
+          # code matches HEAD and that has no assets yet (e.g. a packaging-only fix
+          # right after a release). Otherwise the packages above were still built and
+          # verified; publishing waits for the release event or a manual dispatch,
+          # which keep failing loudly on any mismatch.
+          skip() {
+            if [ "$GITHUB_EVENT_NAME" = push ]; then
+              echo "::notice::Not publishing: $1"
+              exit 0
+            fi
+            echo "::error::$1"
+            exit 1
+          }
+          git rev-parse -q --verify "refs/tags/$tag" > /dev/null \
+            || skip "release tag $tag does not exist yet"
           # Packaging-only commits may follow a release. Application code must match.
-          git diff --exit-code "$tag" HEAD -- main.py slipsurface pyproject.toml requirements.txt
-          gh release view "$tag" --json tagName,isDraft --jq '.tagName'
+          git diff --quiet "$tag" HEAD -- main.py slipsurface pyproject.toml requirements.txt \
+            || skip "application code changed since $tag"
+          assets=$(gh release view "$tag" --json assets --jq '.assets | length') \
+            || skip "GitHub release $tag does not exist"
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$assets" -gt 0 ]; then
+            skip "release $tag already has assets"
+          fi
           git archive --format=tar.gz --prefix="SlipSurfaceIQ-LE-$version/" HEAD \
             > "release-assets/SlipSurfaceIQ-LE-$version-package-source.tar.gz"
           cp packaging/README.md release-assets/INSTALL.md
