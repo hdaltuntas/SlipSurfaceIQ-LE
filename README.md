@@ -1,12 +1,12 @@
 # SlipSurfaceIQ LE
 
-**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.1.4**
+**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.1.5**
 
-[2026.1.4 release notes](RELEASE_NOTES.md) — Ordinary/Fellenius pore-pressure
-projection for **circular** slip surfaces aligned with GeoStudio hand
-calculations and explicit verification of Bishop total/effective base
-normal forces. Existing water-bearing **circular Ordinary** projects
-should be reanalysed because their calculated FS may change.
+[2026.1.5 release notes](RELEASE_NOTES.md) — slice boundaries no longer
+depend on the failure direction: ground, water-table and load vertices are
+kept, and a boundary is placed where the slip surface crosses a material
+boundary. Existing **layered** projects should be reanalysed because their
+calculated FS may change slightly.
 
 SlipSurfaceIQ LE is an open-source program for checking the stability of soil and rock
 slopes, cuts and embankments with the limit equilibrium method (LEM). You draw the slope

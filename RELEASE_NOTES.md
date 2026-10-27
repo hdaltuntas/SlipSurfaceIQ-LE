@@ -1,4 +1,6 @@
-# Unreleased
+# SlipSurfaceIQ LE 2026.1.5
+
+Released: 2026-10-27
 
 ## Slicing: direction-independent slice boundaries
 
