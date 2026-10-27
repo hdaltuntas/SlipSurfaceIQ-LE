@@ -882,6 +882,27 @@ def acads_1a_project() -> Project:
     )
 
 
+def acads_1b_project() -> Project:
+    """ACADS EX1(b): the EX1(a) cut with three layers; Soil #2 is a wedge-shaped
+    weak lens. Layer 1 starts at the toe, a concave corner of the boundary."""
+    return _mk(
+        "ACADS EX1(b) — non-homogeneous slope",
+        [
+            MaterialSpec("Soil 1", "MC", 19.5, 19.5, False, 0.0, 38.0, color=PALETTE[0]),
+            MaterialSpec("Soil 2", "MC", 19.5, 19.5, False, 5.3, 23.0, color=PALETTE[3]),
+            MaterialSpec("Soil 3", "MC", 19.5, 19.5, False, 7.2, 20.0, color=PALETTE[2]),
+        ],
+        [[20, 20], [70, 20], [70, 35], [50, 35], [30, 25], [20, 25]],
+        bounds=[
+            [[30, 25], [40, 27], [50, 29], [54, 31], [70, 31]],
+            [[40, 27], [52, 24], [70, 24]],
+        ],
+        assigns=[((60, 33), "Soil 1"), ((60, 27), "Soil 2"), ((40, 22), "Soil 3")],
+        methods=["bishop", "spencer", "gle", "janbu_simplified"],
+        n_slices=30,
+    )
+
+
 def layered_example_project() -> Project:
     """Three materials, a weak clay band outcropping on the face, water table."""
     return _mk(
@@ -1039,6 +1060,7 @@ def nailed_shotcrete_project() -> Project:
 EXAMPLES = {
     "Simple slope (10 m, 2H:1V)": default_project,
     "ACADS EX1(a)": acads_1a_project,
+    "ACADS EX1(b)": acads_1b_project,
     "Layered slope + water table": layered_example_project,
     "Anchored cut + surcharge": anchored_example_project,
     "Slope with tension crack": cracked_example_project,

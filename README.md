@@ -1,12 +1,12 @@
 # SlipSurfaceIQ LE
 
-**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.1.5**
+**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.1.6**
 
-[2026.1.5 release notes](RELEASE_NOTES.md) — slice boundaries no longer
-depend on the failure direction: ground, water-table and load vertices are
-kept, and a boundary is placed where the slip surface crosses a material
-boundary. Existing **layered** projects should be reanalysed because their
-calculated FS may change slightly.
+[2026.1.6 release notes](RELEASE_NOTES.md) — a material boundary that starts
+at the slope toe now closes its layer (before, the layers above and below it
+merged and took one material), and the program can notify you of new
+releases (**Help → Check for Updates…**). Projects whose material boundaries
+start at the toe or another concave corner should be reanalysed.
 
 SlipSurfaceIQ LE is an open-source program for checking the stability of soil and rock
 slopes, cuts and embankments with the limit equilibrium method (LEM). You draw the slope
@@ -450,6 +450,7 @@ Available under *File → Examples* and from the command line with `--example "<
 |---|---|---|
 | Simple slope (10 m, 2H:1V) | `simple_slope.slp.json` | homogeneous slope |
 | ACADS EX1(a) | `acads_1a.slp.json` | ACADS verification problem (homogeneous slope) |
+| ACADS EX1(b) | `acads_1b.slp.json` | ACADS verification problem (three layers, weak lens; layer starts at the toe) |
 | Layered slope + water table | `layered_water_table.slp.json` | fill, soft clay and weathered rock (Hoek-Brown) with a water table |
 | Anchored cut + surcharge | `anchored_cut.slp.json` | two rows of grouted tiebacks, distributed and line loads |
 | Slope with tension crack | `tension_crack.slp.json` | water-filled tension crack in stiff clay |
