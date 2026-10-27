@@ -1,4 +1,6 @@
-# Unreleased
+# SlipSurfaceIQ LE 2026.1.6
+
+Released: 2026-10-27
 
 ## Material boundaries starting at the slope toe
 
