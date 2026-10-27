@@ -233,3 +233,22 @@ def test_slice_boundaries_keep_vertices_and_material_crossings():
     inner = crossings[(crossings > s.x_exit + 0.01) & (crossings < s.x_entry - 0.01)]
     assert len(inner) > 0
     assert np.all(np.min(np.abs(inner[:, None] - xb[None, :]), axis=1) < 0.01)
+
+
+def test_force_method_takes_the_root_near_the_start_not_a_spurious_low_one():
+    # At low F the interslice recurrence of Corps #1 has poles and spurious
+    # roots (F ~ 0.31 here, base in tension; or m_alpha <= 0 -> no result).
+    # The physical root near the Bishop start (~1.29) must be returned at
+    # any slice count.
+    p = Project.load(LAYERED)
+    g, mats, kw = p.build_geometry(), p.build_materials(), p.solver_kw()
+    circle = CircularSurface(26.26730746711574, 16.509463528941282, 20.291060357016203)
+    fos = []
+    for n in (30, 31, 60):
+        res, _ = analyze(g, circle, mats, method="corps1", n_slices=n, opts=p.slice_options(), **kw)
+        assert res.ok and res.admissible, res.message or res.issue
+        fos.append(res.fos)
+    assert fos == pytest.approx([1.2857, 1.2868, 1.2881], abs=2e-3)
+    for c in (circle, LAYERED_CIRCLE):
+        res, _ = analyze(g, c, mats, method="corps1", opts=p.slice_options(), **kw)
+        assert 1.2 < res.fos < 1.35

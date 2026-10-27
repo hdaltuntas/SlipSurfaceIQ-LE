@@ -18,6 +18,25 @@ Released: 2026-10-27
   **FS values of layered models can change slightly; rerun them** before
   relying on earlier results. New regression tests pin the mirror symmetry.
 
+## Force methods: physical root instead of a spurious low one
+
+- The force-equilibrium methods (Janbu, Corps of Engineers #1/#2,
+  Lowe-Karafiath) bracketed `E_n(F) = 0` from the lowest F upward and took
+  the first root. At low F the interslice recurrence has poles and spurious
+  real roots, so Corps #1 on the layered example returned FS 0.31 (base in
+  tension) or no result (m_alpha <= 0) depending on the slice count, while
+  the physical root was about 1.29. Brackets are now tried nearest the
+  Bishop/Ordinary start estimate first, and roots with m_alpha <= 0 are
+  rejected. Corps #1 now gives 1.286 / 1.287 / 1.288 with 30 / 31 / 60
+  slices. Corps #2 on the Bishop critical circle of `anchored_cut` moves
+  from 0.330 to 1.445 and of `soil_nail_shotcrete` from 0.698 to 1.784.
+- The spurious roots had a base in tension, so with the default
+  admissibility check the search already rejected them; critical-search
+  results change only slightly (e.g. `anchored_cut` Corps #2 1.385 ->
+  1.382, as surfaces previously lost to a spurious root are now evaluated).
+  **With the admissibility check switched off, rerun force-method
+  analyses**: they could report these spuriously low FS values.
+
 ## Packaging workflow
 
 - A push to `main` no longer fails the *Native packages* workflow when the

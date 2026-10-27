@@ -195,21 +195,24 @@ def _balanced(F, lam, fr: _Frame, c, tp, fint, tolerance=1e-7):
     return bool(np.all(np.isfinite(residuals)) and np.all(np.abs(residuals) <= tolerance))
 
 
-def _root_1d(fn, F_guess, span=(0.2, 5.0), n=17, resid_tol=1e-6):
+def _root_1d(fn, F_guess, span=(0.2, 5.0), n=17, resid_tol=1e-6, valid=None):
     """Bracket and solve fn(F) = 0 on a log grid around F_guess.
 
     A sign change can also come from a pole (a denominator crossing zero);
-    such 'roots' are rejected by checking the residual afterwards.
+    such 'roots' are rejected by checking the residual afterwards. At low F
+    the interslice recurrence has poles and spurious real roots, so brackets
+    are tried nearest F_guess first, and `valid(F)` can reject a root.
     """
     grid = F_guess * np.geomspace(span[0], span[1], n)
     vals = np.array([fn(F) for F in grid])
-    for k in range(len(grid) - 1):
+    mids = np.abs(np.log(np.sqrt(grid[:-1] * grid[1:]) / F_guess))
+    for k in np.argsort(mids, kind="stable"):
         if np.isfinite(vals[k]) and np.isfinite(vals[k + 1]) and vals[k] * vals[k + 1] < 0:
             try:
                 r = brentq(fn, grid[k], grid[k + 1], xtol=1e-10)
             except (ValueError, RuntimeError):
                 continue
-            if abs(fn(r)) < resid_tol:
+            if abs(fn(r)) < resid_tol and (valid is None or valid(r)):
                 return r
     return np.nan
 
@@ -426,9 +429,10 @@ def _force_method(
             for it in range(1, max_outer + 1):
                 cc, tt = c, tp
                 fn = lambda F, cc=cc, tt=tt: _state(F, A, fr, cc, tt)[0][-1] / fr.scale_f  # noqa: E731
-                F = _root_1d(fn, F0, resid_tol=tol)
+                ok = lambda F, tt=tt: bool(np.all(fr.cos + fr.sin * tt / F > 1e-9))  # noqa: E731
+                F = _root_1d(fn, F0, resid_tol=tol, valid=ok)
                 if not np.isfinite(F):
-                    F = _root_1d(fn, F0, span=(0.05, 20.0), n=40, resid_tol=tol)
+                    F = _root_1d(fn, F0, span=(0.05, 20.0), n=40, resid_tol=tol, valid=ok)
                 if not np.isfinite(F) or F <= 0:
                     return LEMResult(np.nan, name, False, it, message="no force-equilibrium root")
                 if not nonlinear:
