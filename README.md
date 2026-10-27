@@ -1,12 +1,12 @@
 # SlipSurfaceIQ LE
 
-**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.1.4**
+**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.1.5**
 
-[2026.1.4 release notes](RELEASE_NOTES.md) — Ordinary/Fellenius pore-pressure
-projection for **circular** slip surfaces aligned with GeoStudio hand
-calculations and explicit verification of Bishop total/effective base
-normal forces. Existing water-bearing **circular Ordinary** projects
-should be reanalysed because their calculated FS may change.
+[2026.1.5 release notes](RELEASE_NOTES.md) — slice boundaries no longer
+depend on the failure direction: ground, water-table and load vertices are
+kept, and a boundary is placed where the slip surface crosses a material
+boundary. Existing **layered** projects should be reanalysed because their
+calculated FS may change slightly.
 
 SlipSurfaceIQ LE is an open-source program for checking the stability of soil and rock
 slopes, cuts and embankments with the limit equilibrium method (LEM). You draw the slope
@@ -243,7 +243,10 @@ asks for a new computation; display-only changes (colours, labels, notes) do not
 | GLE / Morgenstern-Price (half-sine, constant, clipped sine, trapezoidal) | force + moment | circular and non-circular |
 
 - **Slicing:** a chosen number of equal-width slices plus extra boundaries at every ground,
-  water table, load and polyline-surface vertex, so the top of each slice is straight.
+  water table, load and polyline-surface vertex, so the top of each slice is straight, and
+  where the slip surface crosses a material boundary, so each slice base lies in one
+  material. These geometric boundaries take precedence when they nearly coincide with an
+  equal-width one, so the result does not depend on the failure direction.
   Slice weights are integrated through all material regions (γ above, γsat below the water
   table).
 - **Non-linear strength:** for curved envelopes the solvers iterate on the effective normal
@@ -287,7 +290,10 @@ c and φ.
 ## Groundwater, seismic loads and tension cracks
 
 - **Water table:** u = Hu · γw · (water table − base elevation); Hu and whether the water
-  acts are set per material. Ponded water above the ground is added to the slice weight.
+  acts are set per material. Ponded water above the ground is added to the slice weight
+  as a vertical load only; the horizontal component of the water pressure on a sloping
+  submerged ground surface is not modelled. Where that thrust matters (a submerged toe,
+  a reservoir drawdown), model it explicitly with a surface-normal distributed load.
 - **Ru coefficient:** u = Ru · σv (total vertical stress at the base).
 - **Pseudo-static seismic loading:** horizontal force kh·W in the failure direction at the
   slice centroid; kv positive upward gives a vertical load (1 − kv)·W.

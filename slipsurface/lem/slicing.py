@@ -2,7 +2,10 @@
 
 Slice boundaries: `n_slices` equal-width slices between exit and entry,
 plus extra boundaries at every ground-surface, water-table and polyline
-surface vertex inside the mass, so the top of each slice is straight.
+surface vertex inside the mass, so the top of each slice is straight, and
+where the slip surface crosses a material boundary, so each base lies in
+one material. When boundaries nearly coincide, these geometric ones win
+over the equal-width grid.
 
 Weight: each slice column (base -> ground at slice mid-x) is sampled at
 `n_sub` points; each sample takes the unit weight of the region that
@@ -141,6 +144,35 @@ class SlicingError(ValueError):
     """Surface is kinematically or geometrically inadmissible."""
 
 
+def _material_crossings(
+    geom: SlopeGeometry, surf: SlipSurface, x_exit: float, x_entry: float, n: int = 128
+) -> np.ndarray:
+    """x where the slip surface crosses a material boundary (Slide2 adds a
+    slice boundary there, so each slice base lies in a single material)."""
+    line = shapely.LineString(surf.points(x_exit, x_entry, n))
+    hits = shapely.intersection(line, [r.polygon.boundary for r in geom.regions])
+    return shapely.get_coordinates(hits)[:, 0]
+
+
+def _boundaries(x_exit: float, x_entry: float, n_slices: int, extra: np.ndarray) -> np.ndarray:
+    """Equal-width slice boundaries plus the geometric `extra` boundaries.
+
+    Boundaries closer than a sliver tolerance are merged. Geometric
+    boundaries (ground, water, surface and load vertices, material
+    crossings) take precedence over the equal-width grid, so a slice top
+    stays straight and the result does not depend on the failure direction.
+    """
+    tol = 1e-4 * (x_entry - x_exit)
+    inside = extra[(extra > x_exit + 1e-6) & (extra < x_entry - 1e-6)]
+    fixed = np.unique(np.concatenate([[x_exit, x_entry], inside]))
+    fixed = fixed[np.concatenate([[True], np.diff(fixed) > tol])]  # drop slivers
+    fixed[-1] = x_entry
+    grid = np.linspace(x_exit, x_entry, n_slices + 1)[1:-1]
+    k = np.clip(np.searchsorted(fixed, grid), 1, len(fixed) - 1)
+    near = np.minimum(grid - fixed[k - 1], fixed[k] - grid) <= tol
+    return np.sort(np.concatenate([fixed, grid[~near]]))
+
+
 def make_slices(
     geom: SlopeGeometry,
     surf: SlipSurface,
@@ -173,20 +205,14 @@ def make_slices(
         raise SlicingError("sliding mass too small")
 
     # ------------------------------------------------- slice boundaries
-    xs = np.linspace(x_exit, x_entry, o.n_slices + 1)
-    extra = [geom.surface[:, 0]]
+    extra = [geom.surface[:, 0], _material_crossings(geom, surf, x_exit, x_entry)]
     if hasattr(surf, "pts"):  # polyline surface vertices
         extra.append(surf.pts[:, 0])
     if geom.water_table is not None and o.pore == "water_table":
         extra.append(geom.water_table[:, 0])
     if o.loads is not None:
         extra.append(np.asarray(o.loads.extra_boundaries(), float))
-    extra_x = np.concatenate(extra)
-    extra_x = extra_x[(extra_x > x_exit + 1e-6) & (extra_x < x_entry - 1e-6)]
-    xs = np.unique(np.concatenate([xs, extra_x]))
-    keep = np.concatenate([[True], np.diff(xs) > 1e-4 * (x_entry - x_exit)])
-    xs = xs[keep]  # drop slivers
-    xs[-1] = x_entry
+    xs = _boundaries(x_exit, x_entry, o.n_slices, np.concatenate(extra))
 
     xl, xr = xs[:-1], xs[1:]
     xm = 0.5 * (xl + xr)
