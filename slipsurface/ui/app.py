@@ -100,6 +100,8 @@ def run(
     from slipsurface.ui.preferences import show_screen_sized
 
     show_screen_sized(win)
+    if not smoke:
+        QTimer.singleShot(3000, win.auto_check_updates)  # once a day, silent on failure
     if smoke:
 
         def _quit():

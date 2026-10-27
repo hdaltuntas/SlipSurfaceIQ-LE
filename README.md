@@ -146,6 +146,16 @@ python main.py --list-examples                    # list the bundled examples
 python main.py --check                            # check Python and the required packages
 ```
 
+### Update notifications
+
+A few seconds after start-up, at most once a day, the program asks GitHub for the latest
+published release (`api.github.com/repos/hdaltuntas/SlipSurfaceIQ-LE/releases/latest`). If
+a newer version exists, a dialog shows its release notes and can open the download page in
+the browser, or skip that version. Nothing is downloaded or installed automatically, no
+project data is sent, and an offline start-up stays silent. Check manually with
+**Help → Check for Updates…** (also in the About dialog), and turn the automatic check off
+with **Help → Check for Updates at Start-up**.
+
 ---
 
 ## A typical workflow

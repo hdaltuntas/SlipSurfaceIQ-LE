@@ -237,7 +237,12 @@ jobs:
         run: |
           set -euo pipefail
           version=$(python packaging/build.py version)
+          # Releases may be tagged "v2026.1.5" or "2026.1.5".
           tag="v$version"
+          if ! git rev-parse -q --verify "refs/tags/$tag" > /dev/null \
+            && git rev-parse -q --verify "refs/tags/$version" > /dev/null; then
+            tag="$version"
+          fi
           # A push to main publishes only into an existing release whose application
           # code matches HEAD and that has no assets yet (e.g. a packaging-only fix
           # right after a release). Otherwise the packages above were still built and
