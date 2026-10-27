@@ -1,5 +1,18 @@
 # Unreleased
 
+## Material boundaries starting at the slope toe
+
+- A material boundary that starts or ends at a concave corner of the
+  external boundary (typically the slope toe) did not close its layer: its
+  end was pushed slightly into the model, so the layers above and below it
+  merged into one region and **Assign Material** set both at once. In ACADS
+  EX1(b) the top layer silently took the bottom layer's material and FS came
+  out about 10 % low (Bishop 1.254 instead of 1.402). Such ends now snap
+  exactly onto the boundary vertex. **Reanalyse projects whose material
+  boundaries start at the toe or another concave corner.**
+- New bundled example *ACADS EX1(b)* (`examples/acads_1b.slp.json`): Bishop
+  1.402, Spencer 1.372, GLE 1.371, Janbu simplified 1.258.
+
 ## Update notifications
 
 - At start-up (at most once a day, silent when offline) the program checks

@@ -29,3 +29,39 @@ def test_ground_y_interpolation():
 def test_invalid_inputs():
     with pytest.raises(ValueError):
         simple_slope(height=-1)
+
+
+def test_layer_starting_at_a_concave_toe_vertex_splits_the_domain():
+    # ACADS EX1(b): layer 1 starts at the toe (30, 25), a concave corner of the
+    # external boundary. Its end used to be pushed ~tol inside the domain, so
+    # the top and bottom layers merged into one region (and one material).
+    from slipsurface.geometry.builder import build_regions
+
+    ext = [[20, 20], [70, 20], [70, 35], [50, 35], [30, 25], [20, 25]]
+    lines = [[[30, 25], [40, 27], [50, 29], [54, 31], [70, 31]], [[40, 27], [52, 24], [70, 24]]]
+    assigns = [(60, 33, "S1"), (60, 27, "S2"), (40, 22, "S3")]
+    domain, regions, _ = build_regions(ext, lines, assigns, "S0")
+    areas = {r.material: r.polygon.area for r in regions}
+    assert areas == pytest.approx({"S1": 144.0, "S2": 158.0, "S3": 248.0})
+    assert sum(areas.values()) == pytest.approx(domain.area)
+
+
+def test_layer_end_near_a_concave_vertex_snaps_onto_it():
+    from slipsurface.geometry.builder import build_regions
+
+    ext = [[20, 20], [70, 20], [70, 35], [50, 35], [30, 25], [20, 25]]
+    line = [[30.02, 24.99], [50, 29], [70, 31]]  # within the snap tolerance of (30, 25)
+    _, regions, _ = build_regions(ext, [line], [], "S")
+    assert len(regions) == 2
+
+
+def test_acads_1b_matches_published_factors_of_safety():
+    from slipsurface.analysis import run_analysis
+    from slipsurface.project import acads_1b_project
+
+    p = acads_1b_project()
+    p.methods.methods = ["bishop", "spencer"]
+    res = run_analysis(p)
+    # Slide2 verification problem #2 (ACADS EX1(b)): Bishop 1.405, Spencer 1.375
+    assert res.results["bishop"].fos == pytest.approx(1.405, abs=0.015)
+    assert res.results["spencer"].fos == pytest.approx(1.375, abs=0.015)

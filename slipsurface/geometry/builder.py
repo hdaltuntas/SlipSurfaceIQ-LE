@@ -73,6 +73,14 @@ def _attach_ends(ml: np.ndarray, boundary, domain: Polygon, tol: float) -> np.nd
             cand = np.array(q.coords[0]) + d * tol * 0.5
             if domain.contains(Point(cand)):
                 cand = np.array(q.coords[0]) - d * tol * 0.5
+            if domain.contains(Point(cand)):
+                # Concave corner (e.g. a layer starting at the slope toe): both
+                # directions stay inside. End exactly on the boundary vertex so
+                # the line nodes with it instead of dangling inside the domain.
+                verts = np.asarray(boundary.coords)
+                k = int(np.argmin(np.hypot(*(verts - q.coords[0]).T)))
+                near = np.hypot(*(verts[k] - q.coords[0])) <= tol
+                cand = verts[k] if near else np.array(q.coords[0])
             ml[end] = cand
     return ml
 
