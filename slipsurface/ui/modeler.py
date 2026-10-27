@@ -62,6 +62,7 @@ from slipsurface.ui.docks import DisplayOptions, DocumentViewer
 from slipsurface.ui.document import Document
 from slipsurface.ui.icons import color_icon, icon
 from slipsurface.ui.statusbar import CadStatusBar
+from slipsurface.ui.updates import UpdateChecker, auto_enabled, set_auto_enabled
 from slipsurface.ui.worker import AnalysisWorker, start_worker
 from slipsurface.ui.workflow import WorkflowBar
 
@@ -111,6 +112,7 @@ class ModelerWindow(QMainWindow):
         self._build_toolbars()
         self.status = CadStatusBar(self.canvas, self)
         self.setStatusBar(self.status)
+        self.updates = UpdateChecker(self)
 
         # -------------------------------------------------------- signals
         self.doc.changed.connect(self._on_doc_changed)
@@ -468,6 +470,13 @@ class ModelerWindow(QMainWindow):
 
         m = mb.addMenu(tr("&Yardım"))
         m.addAction(tr("Kısayollar"), self._shortcuts_help, "F1")
+        m.addSeparator()
+        m.addAction(tr("Güncellemeleri Kontrol Et…"), self.check_updates)
+        self.a_auto_updates = m.addAction(tr("Başlangıçta Güncellemeleri Denetle"))
+        self.a_auto_updates.setCheckable(True)
+        self.a_auto_updates.setChecked(auto_enabled())
+        self.a_auto_updates.toggled.connect(set_auto_enabled)
+        m.addSeparator()
         m.addAction(tr("Hakkında"), self._about)
 
     def _build_toolbars(self) -> None:
@@ -1353,7 +1362,25 @@ class ModelerWindow(QMainWindow):
     def _about(self) -> None:
         from slipsurface.ui.preferences import TECHNOLOGIES
 
-        QMessageBox.about(self, "Hakkında / About", TECHNOLOGIES)
+        box = QMessageBox(
+            QMessageBox.NoIcon, "Hakkında / About", TECHNOLOGIES, QMessageBox.NoButton, self
+        )
+        box.setTextFormat(Qt.RichText)
+        box.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        box.setIconPixmap(self.windowIcon().pixmap(64, 64))
+        check = box.addButton(tr("Güncellemeleri Kontrol Et…"), QMessageBox.ActionRole)
+        box.addButton(QMessageBox.Close)
+        box.exec()
+        if box.clickedButton() is check:
+            self.check_updates()
+
+    def check_updates(self) -> None:
+        """Help → Check for Updates (always reports the outcome)."""
+        self.updates.check(manual=True)
+
+    def auto_check_updates(self) -> None:
+        """Silent start-up check, at most once a day (see ui.updates)."""
+        self.updates.check_if_due()
 
     def closeEvent(self, ev) -> None:
         if not self._close_pending and not self._confirm_discard():

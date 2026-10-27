@@ -629,5 +629,25 @@ EXTRA.update(
         "Dolu": "Full",
         "Doluluk:": "Fill level:",
         "Kritik düşey": "Critical vertical",
+        # ------------------------------------------------------ updates
+        "Güncellemeleri Kontrol Et…": "Check for Updates…",
+        "Başlangıçta Güncellemeleri Denetle": "Check for Updates at Start-up",
+        "Güncellemeler denetleniyor…": "Checking for updates…",
+        "SlipSurfaceIQ LE güncel (sürüm {}).": "SlipSurfaceIQ LE is up to date (version {}).",
+        "Güncelleme yok": "No Update Available",
+        "En güncel sürümü kullanıyorsunuz ({}).": "You are using the latest version ({}).",
+        "Yeni sürüm mevcut: {}": "New version available: {}",
+        "Güncelleme denetimi": "Update Check",
+        "Güncellemeler denetlenemedi: {}": "Could not check for updates: {}",
+        "Güncelleme mevcut": "Update Available",
+        "SlipSurfaceIQ LE {} yayımlandı (kullandığınız sürüm: {}).": (
+            "SlipSurfaceIQ LE {} has been released (you are using {})."
+        ),
+        "İndirme sayfası tarayıcıda açılır; kurulum dosyasını oradan indirebilirsiniz.": (
+            "The download page opens in your browser; download the installer from there."
+        ),
+        "İndirme Sayfasını Aç": "Open Download Page",
+        "Bu Sürümü Atla": "Skip This Version",
+        "Daha Sonra": "Later",
     }
 )

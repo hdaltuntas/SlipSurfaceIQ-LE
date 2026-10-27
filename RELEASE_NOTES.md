@@ -1,3 +1,26 @@
+# Unreleased
+
+## Update notifications
+
+- At start-up (at most once a day, silent when offline) the program checks
+  the latest published GitHub release. When a newer version exists, a
+  dialog shows the start of its release notes with **Open Download Page**,
+  **Skip This Version** and **Later**. Nothing is downloaded or installed
+  automatically and no project data is sent.
+- **Help → Check for Updates…** and a button in the About dialog check on
+  demand and always report the result (up to date, new version, or why the
+  check failed). **Help → Check for Updates at Start-up** turns the
+  automatic check off.
+- Uses only the Python standard library. Bundled builds fall back to the
+  distribution's CA certificate bundle when their own store is empty.
+
+## Packaging workflow
+
+- Release publishing accepts both `v2026.1.5` and `2026.1.5` tags. The
+  2026.1.5 release was tagged without the `v`, so its package upload was
+  refused. To publish its packages, point that release at a `v2026.1.5` tag
+  on the same commit and re-run the failed *Native packages* run.
+
 # SlipSurfaceIQ LE 2026.1.5
 
 Released: 2026-10-27
