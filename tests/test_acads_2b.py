@@ -115,6 +115,7 @@ def test_acads_2b_circle_surface_options_keep_exact_values():
     from slipsurface.ui.dialogs.surface_options import SurfaceOptionsDialog
 
     app = QApplication.instance() or QApplication([])
+    assert app is not None
     p = acads_2b_project()
     d = SurfaceOptionsDialog(p)
     assert d.r_user.isChecked()
