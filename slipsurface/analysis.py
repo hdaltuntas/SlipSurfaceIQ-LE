@@ -168,9 +168,7 @@ def run_analysis(
         else:
             pts = p.surfaces.user_surface
             if not pts or len(pts) < 2:
-                raise ValueError(
-                    "Kullanıcı tanımlı yüzey veya verilen daire bulunamadı."
-                )
+                raise ValueError("Kullanıcı tanımlı yüzey veya verilen daire bulunamadı.")
             surf = PolylineSurface(extend_to_ground(geom, pts))
         for i, m in enumerate(methods):
             stat.update(method=m, index=i, n_methods=n, stage="user", surface_type="user")
@@ -198,8 +196,15 @@ def run_analysis(
                 keep(
                     m,
                     SearchResult(
-                        surf, res.fos, res, s, 1, [],
-                        "verilen daire" if isinstance(surf, CircularSurface) else "kullanıcı yüzeyi",
+                        surf,
+                        res.fos,
+                        res,
+                        s,
+                        1,
+                        [],
+                        "verilen daire"
+                        if isinstance(surf, CircularSurface)
+                        else "kullanıcı yüzeyi",
                         m,
                     ),
                     kv,
