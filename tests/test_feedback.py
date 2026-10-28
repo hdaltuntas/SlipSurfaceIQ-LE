@@ -36,7 +36,16 @@ def test_every_catalogue_model_builds_and_round_trips(key):
     spec = MaterialSpec(name="M", model=key)
     m = spec.to_material()
     stress = np.array([0.0, 50.0, 500.0])
-    c, tp = m.strength(stress, sigma_v=stress) if key == "SH" else m.strength(stress)
+    if key == "SH":
+        c, tp = m.strength(stress, sigma_v=stress)
+    elif key == "UDG":
+        # A depth-dependent material needs the *elevation* of the slice
+        # base, not a proxy based on normal or vertical stress.
+        c, tp = m.strength(stress, y=np.array([0.0, -0.5, -1.0]))
+        assert c[0] == pytest.approx(spec.su_top)
+        assert c[-1] == pytest.approx(spec.su_bottom)
+    else:
+        c, tp = m.strength(stress)
     assert np.all(np.isfinite(c)) and np.all(c >= 0) and np.all(tp >= 0)
     assert parameter_text(spec)
     p = acads_1a_project()
