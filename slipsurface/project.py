@@ -903,6 +903,40 @@ def acads_1b_project() -> Project:
     )
 
 
+def acads_3a_project() -> Project:
+    """ACADS 3(a) / VS_7: water table at the base of a 0.5 m weak seam.
+
+    Reference: ACADS (Giam & Donald, 1989); Rocscience RS2 verification
+    problem #07. This is an unrestricted non-circular search, not the
+    separately specified surface of ACADS 3(b).
+    """
+    p = _mk(
+        "ACADS 3(a) — water table with weak seam",
+        [
+            MaterialSpec("Soil 1", "MC", 18.84, 18.84, False, 28.5, 20.0, color=PALETTE[0]),
+            MaterialSpec("Soil 2", "MC", 18.84, 18.84, False, 0.0, 10.0, color=PALETTE[3]),
+        ],
+        [[20, 20], [84, 20], [84, 40], [67.5, 40], [43, 27.75], [20, 27.75]],
+        bounds=[
+            [[20, 27.0], [84, 27.0]],
+            [[20, 26.5], [84, 26.5]],
+        ],
+        wt=[[20, 26.5], [84, 26.5]],
+        assigns=[
+            ((60, 32), "Soil 1"),
+            ((60, 26.75), "Soil 2"),
+            ((60, 23), "Soil 1"),
+        ],
+        methods=["spencer", "gle"],
+        n_slices=60,
+    )
+    p.surfaces.surface_type = "noncircular"
+    p.surfaces.noncircular_shape = "polyline"
+    p.surfaces.effort = "fine"
+    p.surfaces.n_ctrl = 4
+    return p
+
+
 def layered_example_project() -> Project:
     """Three materials, a weak clay band outcropping on the face, water table."""
     return _mk(
@@ -1061,6 +1095,7 @@ EXAMPLES = {
     "Simple slope (10 m, 2H:1V)": default_project,
     "ACADS EX1(a)": acads_1a_project,
     "ACADS EX1(b)": acads_1b_project,
+    "ACADS 3(a) — weak seam + water table": acads_3a_project,
     "Layered slope + water table": layered_example_project,
     "Anchored cut + surcharge": anchored_example_project,
     "Slope with tension crack": cracked_example_project,
