@@ -1,3 +1,30 @@
+# SlipSurfaceIQ LE 2026.1.7
+
+Released: 2026-10-28
+
+## Engineering examples and verification
+
+- Add ACADS 3(a) (water table and weak seam) and ACADS 2(b)
+  (Talbingo Dam dry *prescribed circular* slip surface).
+- Add Arai–Tagyo layered slope examples for circular and non-circular
+  searches, with separate reference factors of safety.
+- Add Borges & Cardoso (2002) Case 2 reinforced embankment, including
+  an unanchored geosynthetic and a total-stress undrained material
+  with strength varying linearly with elevation (UDG).
+- Include geometry, material, slice-force and solver regression tests.
+  Vendor global-search factors of safety remain reference-only until
+  an independent critical-surface comparison is completed.
+
+## Application and installer version synchronization
+
+- Update the single application version source to **2026.1.7**.
+  Python package metadata, Windows MSI, DEB, RPM and Arch package
+  filenames are generated from this same source at build time.
+- Update the README and native-package installation examples and add
+  automated checks to flag inconsistent displayed versions.
+- Existing project file schema stays at version 3 (it is distinct
+  from the application's calendar version).
+
 # SlipSurfaceIQ LE 2026.1.6
 
 Released: 2026-10-27
