@@ -451,6 +451,7 @@ Available under *File → Examples* and from the command line with `--example "<
 | Simple slope (10 m, 2H:1V) | `simple_slope.slp.json` | homogeneous slope |
 | ACADS EX1(a) | `acads_1a.slp.json` | ACADS verification problem (homogeneous slope) |
 | ACADS EX1(b) | `acads_1b.slp.json` | ACADS verification problem (three layers, weak lens; layer starts at the toe) |
+| ACADS 3(a) — weak seam + water table | `acads_3a.slp.json` | two materials, 0.5 m weak seam, water table at its base; non-circular Spencer/GLE search |
 | Layered slope + water table | `layered_water_table.slp.json` | fill, soft clay and weathered rock (Hoek-Brown) with a water table |
 | Anchored cut + surcharge | `anchored_cut.slp.json` | two rows of grouted tiebacks, distributed and line loads |
 | Slope with tension crack | `tension_crack.slp.json` | water-filled tension crack in stiff clay |
@@ -481,6 +482,12 @@ claimed. See
 [Additional GeoStudio Verification](docs/GEOSTUDIO_ADDITIONAL_VERIFICATION.md).
 
 Run `python -m pytest tests/test_geostudio_handcalcs.py tests/test_geostudio_slope_examples.py -q`.
+
+The [ACADS 3(a) verification note](docs/ACADS_3A_VERIFICATION.md) gives the
+exact groundwater/weak-seam geometry and published Spencer/GLE references.
+The regression tests check material regions, pore pressures, and a fixed
+non-circular diagnostic path; no match of optimized FS is claimed until a
+full critical search has been checked.
 
 
 The test suite checks the engine against reference solutions, among them:
