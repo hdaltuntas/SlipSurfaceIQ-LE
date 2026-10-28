@@ -89,7 +89,7 @@ def run(
         print(f"[ERROR] Example not found: {example!r}. Options: {', '.join(EXAMPLES)}")
         return 1
 
-     win = ModelerWindow(EXAMPLES[example]() if example else None)
+    win = ModelerWindow(EXAMPLES[example]() if example else None)
     if project_path:
         win.open_project(project_path)
     from slipsurface.ui.preferences import show_screen_sized
