@@ -127,7 +127,9 @@ class UpdateChecker(QObject):
                 __version__,
             )
             + "\n"
-            + tr("Kaynak kodu GitHub sürüm sayfasından edinin; bağımlılıkları kurup python main.py ile çalıştırın."),
+            + tr(
+                "Kaynak kodu GitHub sürüm sayfasından edinin; bağımlılıkları kurup python main.py ile çalıştırın."
+            ),
         )
         if info.notes.strip():
             box.setInformativeText(notes_excerpt(info.notes))
