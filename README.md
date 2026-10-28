@@ -438,6 +438,7 @@ Available under *File → Examples* and from the command line with `--example "<
 | ACADS 2(a) — Talbingo critical upstream search | `acads_2a.slp.json` | upstream-face critical-circle search; infinite-slope reference FoS ~1.951 |
 | ACADS 2(b) — Talbingo fixed circle | `acads_2b.slp.json` | four-material dry embankment; exact circle (100.3, 291, 278.8); Bishop/Spencer/GLE/Janbu |
 | ACADS 3(a) — weak seam + water table | `acads_3a.slp.json` | two materials, 0.5 m weak seam, water table at its base; non-circular Spencer/GLE search |
+| ACADS 3(b) — weak seam specified path | `acads_3b.slp.json` | exact four-point noncircular path for a fixed-surface solver control; no critical search |
 | Arai & Tagyo — layered (circular) | `arai_tagyo_layered_circular.slp.json` | dry three-layer VP15; critical circular Bishop/Janbu/Spencer searches |
 | Arai & Tagyo — layered (noncircular) | `arai_tagyo_layered_noncircular.slp.json` | same VP15 cross-section; non-circular Janbu/Spencer polyline searches |
 | Borges & Cardoso — geosynthetic embankment #2 | `borges_cardoso_case2.slp.json` | dry 5 m embankment, four clays including depth-variable su, unanchored 200 kN/m geosynthetic |
