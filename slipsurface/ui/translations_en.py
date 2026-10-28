@@ -643,10 +643,10 @@ EXTRA.update(
         "SlipSurfaceIQ LE {} yayımlandı (kullandığınız sürüm: {}).": (
             "SlipSurfaceIQ LE {} has been released (you are using {})."
         ),
-        "İndirme sayfası tarayıcıda açılır; kurulum dosyasını oradan indirebilirsiniz.": (
-            "The download page opens in your browser; download the installer from there."
+        "Kaynak kodu GitHub sürüm sayfasından edinin; bağımlılıkları kurup python main.py ile çalıştırın.": (
+            "Get the source from the GitHub release page, install dependencies, and run python main.py."
         ),
-        "İndirme Sayfasını Aç": "Open Download Page",
+        "Kaynak Kod Sayfasını Aç": "Open Source Release Page",
         "Bu Sürümü Atla": "Skip This Version",
         "Daha Sonra": "Later",
     }

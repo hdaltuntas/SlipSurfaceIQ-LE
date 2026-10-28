@@ -1,5 +1,4 @@
-"""QApplication bootstrap (used by main.py, `python -m slipsurface` and the
-`slipsurface` console script)."""
+"""QApplication bootstrap, invoked exclusively by the root main.py entry point."""
 
 from __future__ import annotations
 
@@ -89,10 +88,6 @@ def run(
     if example is not None and example not in EXAMPLES:
         print(f"[ERROR] Example not found: {example!r}. Options: {', '.join(EXAMPLES)}")
         return 1
-
-    # backwards compatible: `python -m slipsurface file.slp.json`
-    if project_path is None and len(argv) > 1 and argv[1].endswith(".json"):
-        project_path = argv[1]
 
     win = ModelerWindow(EXAMPLES[example]() if example else None)
     if project_path:

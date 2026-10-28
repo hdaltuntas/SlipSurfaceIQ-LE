@@ -8,8 +8,9 @@ Run from an IDE (open this file and press Run) or from a terminal:
     python main.py --list-examples
     python main.py --check                          # dependency check, no window
 
-Works from any working directory: the project folder is put on sys.path, so
-no installation is required (``pip install -e .`` is optional).
+Works from any working directory: the project folder is put on sys.path.
+The only application entry point is this file; install dependencies with
+``python -m pip install -r requirements.txt`` before running it.
 """
 
 from __future__ import annotations

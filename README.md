@@ -1,12 +1,8 @@
 # SlipSurfaceIQ LE
 
-**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.1.7**
+**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.2.0**
 
-[2026.1.7 release notes](RELEASE_NOTES.md) — adds ACADS and Arai–Tagyo
-verification models, a fixed-circle analysis mode, and the Borges–Cardoso
-geosynthetic embankment example with depth-dependent undrained strength.
-The previous 2026.1.6 toe-boundary fix is retained; projects whose material
-boundaries begin at a concave corner should be reanalysed.
+[2026.2.0 release notes](RELEASE_NOTES.md) — source-only distribution. Run the application with `python main.py`; native packages and standalone launchers have been removed. Engineering modules, the CAD interface and verification tests remain available.
 
 SlipSurfaceIQ LE is an open-source program for checking the stability of soil and rock
 slopes, cuts and embankments with the limit equilibrium method (LEM). You draw the slope
@@ -85,56 +81,45 @@ switched at any time without losing work. The program runs on Windows, Linux and
 
 ## Installation and start-up
 
-### Native installers
+### Source-only execution
 
-Windows MSI, Ubuntu DEB, Fedora/openSUSE RPM and Arch Linux packages are built by
-the [Native packages workflow](.github/workflows/packages.yml) and published as
-[release assets](https://github.com/hdaltuntas/SlipSurfaceIQ-LE/releases).
-These x86-64 installers include Python and the application dependencies.
-See [package installation and build instructions](packaging/README.md) for supported
-systems, commands, checksums and verification details.
+SlipSurfaceIQ LE is distributed as **Python source code**. There are
+**no MSI, DEB, RPM, Arch or PyInstaller application packages**, no installers,
+and no separate launcher scripts. The **only supported application entry point
+is `main.py`**. Python 3.10 or newer and the dependencies from
+`requirements.txt` are required.
 
-### Running from source
-
-**Requirements:** Python 3.10 or newer (3.11 – 3.14 recommended). The required packages are
-PySide6 (Qt), NumPy, SciPy, Shapely, ReportLab, ezdxf and QtAwesome.
-
-### Quickest way
-
-| System | Command |
-|---|---|
-| Windows | double-click **`run_windows.bat`** |
-| Linux / macOS | `./run_linux_mac.sh` |
-
-The launchers create a virtual environment in `.venv` on the first run, install the
-requirements, reinstall them automatically whenever `requirements.txt` changes, print the
-running version and start the program.
-
-On Linux the Qt runtime libraries must be present (they normally are on a desktop
-system). On minimal installations install them with your package manager, e.g.
+Get the repository using Git or download its source archive and extract it.
+Run these commands from the repository root:
 
 ```bash
-sudo apt install libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3     # Debian / Ubuntu
+python -m pip install -r requirements.txt
+python main.py
+```
+
+For an isolated environment (recommended):
+
+```bash
+python -m venv .venv
+# Windows PowerShell: .venv\Scripts\python.exe -m pip install -r requirements.txt
+# Windows PowerShell: .venv\Scripts\python.exe main.py
+# Linux / macOS: .venv/bin/python -m pip install -r requirements.txt
+# Linux / macOS: .venv/bin/python main.py
+```
+
+You can also run `main.py` directly from VS Code, PyCharm, or another
+Python IDE, using an interpreter with the dependencies installed.
+Neither `pip install -e .` nor OS-level package installation is required.
+
+On minimal Linux desktops, install the Qt runtime shared libraries from your
+operating system's repository if PySide6 reports that they are missing:
+
+```bash
+sudo apt install libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3       # Debian / Ubuntu
 sudo dnf install libglvnd-egl libglvnd-opengl libxkbcommon fontconfig dbus-libs  # Fedora
 sudo pacman -S libglvnd libxkbcommon fontconfig dbus                            # Arch Linux
 sudo zypper install libglvnd libxkbcommon0 fontconfig libdbus-1-3              # openSUSE
 ```
-
-### Manual set-up
-
-```bash
-python -m venv .venv
-# Windows: .venv\Scripts\activate      Linux/macOS: source .venv/bin/activate
-pip install -r requirements.txt          # development and tests: requirements-dev.txt
-python main.py
-```
-
-`main.py` finds the project folder from wherever it is started, so no installation is
-needed. It can also be opened in any IDE (VS Code, PyCharm, Spyder …) and run directly; in
-Spyder choose *Run → Configuration → Execute in an external system terminal*.
-
-Optionally install the package with `pip install -e .`, which adds the `slipsurface`
-command and `python -m slipsurface`.
 
 ### Command line
 
@@ -148,13 +133,12 @@ python main.py --check                            # check Python and the require
 
 ### Update notifications
 
-A few seconds after start-up, at most once a day, the program asks GitHub for the latest
-published release (`api.github.com/repos/hdaltuntas/SlipSurfaceIQ-LE/releases/latest`). If
-a newer version exists, a dialog shows its release notes and can open the download page in
-the browser, or skip that version. Nothing is downloaded or installed automatically, no
-project data is sent, and an offline start-up stays silent. Check manually with
-**Help → Check for Updates…** (also in the About dialog), and turn the automatic check off
-with **Help → Check for Updates at Start-up**.
+The optional update checker shows source-release information from GitHub.
+It never downloads or installs software. When an update is published, open the
+release page to review its changes; update your local source checkout with
+`git pull` (or download the newer source archive), reinstall requirements
+if necessary, and start it with `python main.py`. Automatic checks can be
+disabled under **Help → Check for Updates at Start-up**.
 
 ---
 
@@ -564,9 +548,8 @@ tests. GitHub Actions runs the lint and type checks and the tests on Windows and
 
 ```
 main.py              start-up script (IDE / command line)
-pyproject.toml       package definition (pip install -e .)
+pyproject.toml       lint, type-check and test configuration only
 requirements*.txt    runtime and development requirements
-run_windows.bat, run_linux_mac.sh    one-click set-up and start
 slipsurface/
   geometry/          slope geometry, slip surfaces (circle, polyline, B-spline), regions from boundaries
   materials/         strength models and the model catalogue

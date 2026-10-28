@@ -1,6 +1,35 @@
+# SlipSurfaceIQ LE 2026.2.0
+
+Source-only desktop release
+
+- Start the desktop app **only** with `python main.py` on Windows, Linux
+  and macOS, using dependencies from `requirements.txt`.
+- Remove the native package pipeline, PyInstaller/WiX MSI/DEB/RPM/Arch
+  recipes, separate .bat/.sh launchers and `python -m slipsurface` entry.
+- Keep the CAD desktop GUI, FEM-independent LEM engine, source modules,
+  sample engineering projects, reports, and cross-platform test CI.
+- Update the in-app update message to reference source code instead of
+  installers. Add source-only structure regression tests.
+- Preserve project file schema v3 and all engineering computations.
+  Previously published package assets remain historical on GitHub until
+  explicitly removed by the repository owner.
+
 # SlipSurfaceIQ LE 2026.1.7
 
 Released: 2026-10-28
+
+## Superseded distribution note (see 2026.2.0)
+
+- Removed native installer builds, release package publishing, WiX/PyInstaller
+  recipes and platform-specific setup launchers from the repository.
+- Supported launch method: install `requirements.txt` with Python 3.10+
+  and start the desktop application with `python main.py`.
+- Keep the application, geometry/LEM engine, project files, PDFs, and
+  cross-platform regression CI. Published release assets from previous
+  versions are historical and are not modified by a source commit.
+- `pyproject.toml` now contains development tool configuration only,
+  not a distributable package definition.
+
 
 ## Engineering examples and verification
 

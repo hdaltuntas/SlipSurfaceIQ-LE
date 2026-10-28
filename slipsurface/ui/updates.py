@@ -127,11 +127,13 @@ class UpdateChecker(QObject):
                 __version__,
             )
             + "\n"
-            + tr("İndirme sayfası tarayıcıda açılır; kurulum dosyasını oradan indirebilirsiniz."),
+            + tr(
+                "Kaynak kodu GitHub sürüm sayfasından edinin; bağımlılıkları kurup python main.py ile çalıştırın."
+            ),
         )
         if info.notes.strip():
             box.setInformativeText(notes_excerpt(info.notes))
-        download = box.addButton(tr("İndirme Sayfasını Aç"), QMessageBox.AcceptRole)
+        download = box.addButton(tr("Kaynak Kod Sayfasını Aç"), QMessageBox.AcceptRole)
         skip = box.addButton(tr("Bu Sürümü Atla"), QMessageBox.DestructiveRole)
         box.addButton(tr("Daha Sonra"), QMessageBox.RejectRole)
         box.setDefaultButton(download)
