@@ -1,0 +1,338 @@
+{
+  "format": "slipsurface-le",
+  "version": 3,
+  "summary": {
+    "title": "Borges & Cardoso (2002) — geosynthetic embankment #2",
+    "analysis": "",
+    "author": "",
+    "company": "",
+    "date_created": "2026-10-28, 09:00:00",
+    "comments": [
+      "",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  "materials": [
+    {
+      "name": "Embankment",
+      "model": "MC",
+      "gamma": 20,
+      "gamma_sat": 20,
+      "use_sat": false,
+      "c": 0,
+      "phi": 35,
+      "sigma_ci": 25000,
+      "gsi": 50,
+      "mi": 10,
+      "d": 0,
+      "use_water": true,
+      "hu": 1,
+      "color": "#f0c800",
+      "su_top": 25,
+      "su_bottom": 25,
+      "su_y_top": 0,
+      "su_y_bottom": -1
+    },
+    {
+      "name": "Clay 1",
+      "model": "UD",
+      "gamma": 17,
+      "gamma_sat": 17,
+      "use_sat": false,
+      "c": 0,
+      "phi": 45,
+      "sigma_ci": 25000,
+      "gsi": 50,
+      "mi": 10,
+      "d": 0,
+      "use_water": true,
+      "hu": 1,
+      "color": "#ff7f3f",
+      "su_top": 25,
+      "su_bottom": 25,
+      "su_y_top": 0,
+      "su_y_bottom": -1,
+      "su": 33
+    },
+    {
+      "name": "Clay 2",
+      "model": "UD",
+      "gamma": 17,
+      "gamma_sat": 17,
+      "use_sat": false,
+      "c": 0,
+      "phi": 45,
+      "sigma_ci": 25000,
+      "gsi": 50,
+      "mi": 10,
+      "d": 0,
+      "use_water": true,
+      "hu": 1,
+      "color": "#8080d0",
+      "su_top": 25,
+      "su_bottom": 25,
+      "su_y_top": 0,
+      "su_y_bottom": -1,
+      "su": 16
+    },
+    {
+      "name": "Clay 3",
+      "model": "UDG",
+      "gamma": 17,
+      "gamma_sat": 17,
+      "use_sat": false,
+      "c": 0,
+      "phi": 45,
+      "sigma_ci": 25000,
+      "gsi": 50,
+      "mi": 10,
+      "d": 0,
+      "use_water": true,
+      "hu": 1,
+      "color": "#8b8b00",
+      "su_top": 16,
+      "su_bottom": 18.4,
+      "su_y_top": -4.5,
+      "su_y_bottom": -7
+    },
+    {
+      "name": "Clay 4",
+      "model": "UDG",
+      "gamma": 17,
+      "gamma_sat": 17,
+      "use_sat": false,
+      "c": 0,
+      "phi": 45,
+      "sigma_ci": 25000,
+      "gsi": 50,
+      "mi": 10,
+      "d": 0,
+      "use_water": true,
+      "hu": 1,
+      "color": "#c97bb4",
+      "su_top": 18.4,
+      "su_bottom": 55.1,
+      "su_y_top": -7,
+      "su_y_bottom": -27
+    }
+  ],
+  "geometry": {
+    "external": [
+      [
+        -30,
+        -27
+      ],
+      [
+        45,
+        -27
+      ],
+      [
+        45,
+        0
+      ],
+      [
+        42.5,
+        0
+      ],
+      [
+        36.41,
+        5
+      ],
+      [
+        6.15,
+        5
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        -30,
+        0
+      ]
+    ],
+    "material_boundaries": [
+      [
+        [
+          0,
+          0
+        ],
+        [
+          42.5,
+          0
+        ]
+      ],
+      [
+        [
+          -30,
+          -1
+        ],
+        [
+          45,
+          -1
+        ]
+      ],
+      [
+        [
+          -30,
+          -4.5
+        ],
+        [
+          45,
+          -4.5
+        ]
+      ],
+      [
+        [
+          -30,
+          -7
+        ],
+        [
+          45,
+          -7
+        ]
+      ]
+    ],
+    "water_table": null,
+    "tension_crack": null,
+    "assignments": [
+      {
+        "point": [
+          20,
+          2
+        ],
+        "material": "Embankment"
+      },
+      {
+        "point": [
+          20,
+          -0.5
+        ],
+        "material": "Clay 1"
+      },
+      {
+        "point": [
+          20,
+          -2
+        ],
+        "material": "Clay 2"
+      },
+      {
+        "point": [
+          20,
+          -5.5
+        ],
+        "material": "Clay 3"
+      },
+      {
+        "point": [
+          20,
+          -12
+        ],
+        "material": "Clay 4"
+      }
+    ]
+  },
+  "settings": {
+    "general": {
+      "units": "metric",
+      "failure_direction": "right_to_left",
+      "data_output": "standard"
+    },
+    "methods": {
+      "methods": [
+        "bishop",
+        "janbu_simplified",
+        "gle"
+      ],
+      "n_slices": 50,
+      "tolerance": 0.005,
+      "max_iter": 75,
+      "interslice": "half-sine",
+      "f_start": 0.5,
+      "f_end": 0.5
+    },
+    "groundwater": {
+      "method": "none",
+      "gamma_w": 9.81,
+      "ru": 0
+    },
+    "seismic": {
+      "kh": 0,
+      "kv": 0
+    },
+    "advanced": {
+      "check_admissibility": true,
+      "min_depth": 0
+    }
+  },
+  "surfaces": {
+    "surface_type": "circular",
+    "search": "auto_refine",
+    "effort": "normal",
+    "n_ctrl": 4,
+    "convex_only": true,
+    "seed": 0,
+    "left_range": null,
+    "right_range": null,
+    "user_surface": null,
+    "noncircular_shape": "polyline",
+    "user_circle": null
+  },
+  "loads": [],
+  "support_types": [
+    {
+      "name": "Case 2 geosynthetic – 200 kN/m",
+      "kind": "geosynthetic",
+      "spacing": 1.5,
+      "tensile": 200,
+      "plate": 100,
+      "bond_strength": 50,
+      "bond_length": 4,
+      "pullout": 20,
+      "application": "passive",
+      "orientation": "parallel",
+      "color": "#1f3d7a",
+      "length": 12,
+      "coverage": 100,
+      "anchorage": "none",
+      "adhesion": 0,
+      "interface_friction": 33.7,
+      "overburden_gamma": 20,
+      "pile_shear": 100
+    }
+  ],
+  "supports": [
+    {
+      "a": [
+        0,
+        0
+      ],
+      "b": [
+        42.5,
+        0
+      ],
+      "type": "Case 2 geosynthetic – 200 kN/m"
+    }
+  ],
+  "display": {
+    "external_color": "#606060",
+    "material_boundary_color": "#808080",
+    "water_table_color": "#1f5fd1",
+    "show_vertices": true,
+    "line_width": 2,
+    "show_ruler": true,
+    "show_grid": true,
+    "fill_materials": true,
+    "show_slope_limits": true,
+    "show_slices": true,
+    "slice_fill_color": "#f6d65a",
+    "show_lines_to_center": true,
+    "show_fs_text": true,
+    "show_all_surfaces": true,
+    "show_legend": true
+  }
+}
