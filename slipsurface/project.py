@@ -961,6 +961,25 @@ def acads_3a_project() -> Project:
     return p
 
 
+def acads_3b_project() -> Project:
+    """ACADS 3(b): same weak-seam soils as 3(a), prescribed slip path.
+
+    This is a SOLVER check (no optimization), deliberately separate from
+    3(a)'s search for a critical non-circular surface.
+    """
+    p = acads_3a_project()
+    p.summary.title = "ACADS 3(b) — weak seam, specified noncircular path"
+    p.surfaces.surface_type = "user"
+    p.surfaces.search = "none"
+    p.surfaces.user_surface = [
+        [41.85, 27.75],
+        [44.0, 26.5],
+        [63.5, 27.0],
+        [73.31, 40.0],
+    ]
+    return p
+
+
 def acads_2b_project() -> Project:
     """ACADS 2(b), Talbingo Dam: dry, exactly specified circle, no search.
 
@@ -1007,6 +1026,27 @@ def acads_2b_project() -> Project:
     p.surfaces.surface_type = "user"
     p.surfaces.search = "none"
     p.surfaces.user_circle = [100.3, 291.0, 278.8]
+    return p
+
+
+def acads_2a_project() -> Project:
+    """ACADS 2(a): critical circle SEARCH on the Talbingo upstream face.
+
+    Distinct from 2(b), which evaluates one fixed (Xc, Yc, R) circle.
+    The upstream geometry has a 162 / 315.5 face slope and a limiting
+    cohesionless infinite-slope FoS of tan(45°)/(162/315.5) = 1.948.
+    """
+    p = acads_2b_project()
+    p.summary.title = "ACADS 2(a) — Talbingo Dam, dry critical upstream search"
+    p.surfaces.surface_type = "circular"
+    p.surfaces.search = "auto_refine"
+    p.surfaces.user_circle = None
+    p.surfaces.effort = "fine"
+    # Search the UPSTREAM face, as in the published 2(a) limit mechanism.
+    # The downstream face is a distinct geometry / mechanism.
+    p.surfaces.left_range = [0.0, 315.4]
+    p.surfaces.right_range = [0.1, 315.5]
+    p.methods.methods = ["bishop", "janbu_simplified", "spencer", "gle"]
     return p
 
 
@@ -1140,6 +1180,11 @@ def borges_cardoso_case2_project() -> Project:
     p.supports = [{"a": [0.0, 0.0], "b": [42.5, 0.0], "type": name}]
     p.surfaces.surface_type = "circular"
     p.surfaces.effort = "normal"
+    # Reject degenerate tangent circles whose sliding mass is numerically thin
+    # (a circle tangent to the base can carry a near-zero mass and dodge the
+    # geosynthetic, producing a spurious low minimum). Slide2-style models use
+    # a minimum sliding depth for the same reason.
+    p.advanced.min_depth = 1.0
     return p
 
 
@@ -1301,8 +1346,10 @@ EXAMPLES = {
     "Simple slope (10 m, 2H:1V)": default_project,
     "ACADS EX1(a)": acads_1a_project,
     "ACADS EX1(b)": acads_1b_project,
+    "ACADS 2(a) — Talbingo critical upstream search": acads_2a_project,
     "ACADS 2(b) — Talbingo fixed circle": acads_2b_project,
     "ACADS 3(a) — weak seam + water table": acads_3a_project,
+    "ACADS 3(b) — weak seam specified path": acads_3b_project,
     "Arai & Tagyo — layered (circular)": arai_tagyo_layered_circular_project,
     "Arai & Tagyo — layered (noncircular)": arai_tagyo_layered_noncircular_project,
     "Borges & Cardoso — geosynthetic embankment #2": borges_cardoso_case2_project,

@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from shapely.geometry import Point
 
-from slipsurface.analysis import search_settings
+from slipsurface.analysis import run_analysis, search_settings
 from slipsurface.geometry import CircularSurface
 from slipsurface.lem import analyze, make_slices
 from slipsurface.lem.bishop import slice_strength
@@ -158,3 +158,40 @@ def test_case2_search_config_reproducible_and_water_free():
     assert st.slice_opts.pore == "none"
     assert st.slice_opts.n_slices == 50
     assert len(st.slice_opts.loads.supports) == 1
+
+
+def test_case2_search_finds_reinforced_mechanism():
+    """The critical search must not stop at a degenerate tangent circle.
+
+    A circle tangent to the flat base slices a numerically zero-mass body,
+    dodges the geosynthetic and reports a spurious low minimum (~0.86).
+    The engine's degenerate-mass guard plus the fixture's min_depth = 1 m
+    must force the Bishop search onto the published reinforced mechanism
+    (FoS ~1.15-1.17, SLOPE/W 1.170).
+    """
+    p = borges_cardoso_case2_project()
+    assert p.advanced.min_depth == 1.0
+    st = search_settings(p, "bishop")
+    assert st.slice_opts.min_depth == 1.0
+    r = run_analysis(p)
+    assert "bishop" in r.results
+    res = r.results["bishop"]
+    # published Bishop (moment) reference: 1.170 (reference-only, not solver)
+    assert 1.10 <= res.fos <= 1.25, res.fos
+
+
+def test_degenerate_tangent_circle_rejected_without_min_depth():
+    """Engine guard: a ground-hugging surface is rejected even at min_depth=0."""
+    from slipsurface.lem.slicing import SlicingError
+
+    p = borges_cardoso_case2_project()
+    g, m = p.build_geometry(), p.build_materials()
+    opts = p.slice_options()
+    opts.min_depth = 0.0
+    # circle tangent to the flat base (y = 0): sliding mass ~1.5e-4 m
+    tangent = CircularSurface(-4.743952680906288, 13.35576298052306, 13.355763023175369)
+    with pytest.raises(SlicingError):
+        make_slices(g, tangent, m, opts=opts)
+    # a real deep circle is still admissible
+    s = make_slices(g, CircularSurface(5.0, 10.0, 15.0), m, opts=opts)
+    assert s.n > 20
