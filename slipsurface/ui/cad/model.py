@@ -151,6 +151,7 @@ def set_points(p: Project, key, pts) -> None:
         p.water_table = pts
     elif kind == "user":
         p.surfaces.user_surface = pts
+        p.surfaces.user_circle = None
     elif kind == "crack":
         p.tension_crack = pts
     elif kind == "load":
@@ -186,6 +187,7 @@ def add_entity(p: Project, kind: str, pts) -> tuple:
         return ("water", 0)
     if kind == "user":
         p.surfaces.user_surface = pts
+        p.surfaces.user_circle = None
         p.surfaces.surface_type = "user"
         return ("user", 0)
     if kind == "crack":
