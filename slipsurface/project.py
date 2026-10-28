@@ -961,6 +961,25 @@ def acads_3a_project() -> Project:
     return p
 
 
+def acads_3b_project() -> Project:
+    """ACADS 3(b): same weak-seam soils as 3(a), prescribed slip path.
+
+    This is a SOLVER check (no optimization), deliberately separate from
+    3(a)'s search for a critical non-circular surface.
+    """
+    p = acads_3a_project()
+    p.summary.title = "ACADS 3(b) — weak seam, specified noncircular path"
+    p.surfaces.surface_type = "user"
+    p.surfaces.search = "none"
+    p.surfaces.user_surface = [
+        [41.85, 27.75],
+        [44.0, 26.5],
+        [63.5, 27.0],
+        [73.31, 40.0],
+    ]
+    return p
+
+
 def acads_2b_project() -> Project:
     """ACADS 2(b), Talbingo Dam: dry, exactly specified circle, no search.
 
@@ -1325,6 +1344,7 @@ EXAMPLES = {
     "ACADS 2(a) — Talbingo critical upstream search": acads_2a_project,
     "ACADS 2(b) — Talbingo fixed circle": acads_2b_project,
     "ACADS 3(a) — weak seam + water table": acads_3a_project,
+    "ACADS 3(b) — weak seam specified path": acads_3b_project,
     "Arai & Tagyo — layered (circular)": arai_tagyo_layered_circular_project,
     "Arai & Tagyo — layered (noncircular)": arai_tagyo_layered_noncircular_project,
     "Borges & Cardoso — geosynthetic embankment #2": borges_cardoso_case2_project,
