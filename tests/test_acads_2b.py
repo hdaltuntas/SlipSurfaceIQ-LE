@@ -37,13 +37,21 @@ def test_acads_2b_roundtrip_and_exact_fixed_circle(tmp_path):
         assert case.methods.methods == list(EXPECTED)
         assert case.general.failure_direction == "right_to_left"
         assert case.external == [
-            [0, 0], [648, 0], [577.9, 31.4], [515, 65.3],
-            [453.4, 97.9], [386.9, 130.6], [327.6, 162], [315.5, 162],
+            [0, 0],
+            [648, 0],
+            [577.9, 31.4],
+            [515, 65.3],
+            [453.4, 97.9],
+            [386.9, 130.6],
+            [327.6, 162],
+            [315.5, 162],
         ]
         assert len(case.material_boundaries) == 5
         assert [(m.c, m.phi, m.gamma) for m in case.materials] == [
-            (0, 45, 20.4), (0, 45, 20.4),
-            (0, 45, 20.4), (85, 23, 18.1),
+            (0, 45, 20.4),
+            (0, 45, 20.4),
+            (0, 45, 20.4),
+            (85, 23, 18.1),
         ]
     assert fixture.analysis_inputs() == p.analysis_inputs()
     fn = tmp_path / "acads_2b_roundtrip.slp.json"
@@ -67,7 +75,12 @@ def test_acads_2b_geometry_builds_six_distinct_material_regions():
     ]:
         assert [r.material for r in g.regions if r.polygon.contains(Point(x, y))] == [name]
     assert sorted(r.material for r in g.regions) == [
-        "Core", "Filter", "Rockfill", "Rockfill", "Transitions", "Transitions"
+        "Core",
+        "Filter",
+        "Rockfill",
+        "Rockfill",
+        "Transitions",
+        "Transitions",
     ]
 
 
@@ -91,9 +104,7 @@ def test_acads_2b_fixed_circle_methods_reproduce_published_benchmark():
         assert found.n_evals == 1, "Fixed-circle computation must not run search."
         assert found.lem.ok, (method, found.lem.message)
         assert np.isfinite(found.fos), method
-        assert found.fos == pytest.approx(reference, abs=0.05), (
-            method, found.fos, reference
-        )
+        assert found.fos == pytest.approx(reference, abs=0.05), (method, found.fos, reference)
 
 
 def test_acads_2b_user_polyline_behavior_is_unchanged():
