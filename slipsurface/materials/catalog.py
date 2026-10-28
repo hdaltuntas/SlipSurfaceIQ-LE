@@ -165,7 +165,9 @@ def parameter_text(spec) -> str:
     short = {
         "MC": lambda m: f"c = {m.c:g} kPa, φ = {m.phi:g}°",
         "UD": lambda m: f"su = {m.su:g} kPa",
-        "UDG": lambda m: f"su = {m.su_top:g}–{m.su_bottom:g} kPa; y = {m.su_y_top:g}…{m.su_y_bottom:g} m",
+        "UDG": lambda m: (
+            f"su = {m.su_top:g}–{m.su_bottom:g} kPa; y = {m.su_y_top:g}…{m.su_y_bottom:g} m"
+        ),
         "SH": lambda m: (
             f"A = {m.shansep_su_min:g} kPa, S = {m.shansep_s:g}, "
             f"m = {m.shansep_m:g}, OCR = {m.ocr:g}"
