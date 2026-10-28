@@ -378,6 +378,7 @@ class SurfaceSettings:
     left_range: list[float] | None = None  # slope limits, left end
     right_range: list[float] | None = None  # slope limits, right end
     user_surface: list[list[float]] | None = None
+    user_circle: list[float] | None = None  # exact fixed circle [xc, yc, radius]
 
 
 EFFORT = {"fast": (12, 50), "normal": (20, 80), "fine": (30, 150)}
@@ -472,6 +473,15 @@ class Project:
             "Arayüz fonksiyonu",
         )
         _choice(self.surfaces.surface_type, ("circular", "noncircular", "user"), "Yüzey tipi")
+        circle = self.surfaces.user_circle
+        if circle is not None and (
+            not isinstance(circle, (list, tuple))
+            or len(circle) != 3
+            or any(not isinstance(v, (int, float)) or isinstance(v, bool) for v in circle)
+            or not all(np.isfinite(v) for v in circle)
+            or circle[2] <= 0
+        ):
+            raise ValueError("Verilen daire için [Xc, Yc, R] sonlu olmalı ve R > 0.")
         _choice(self.surfaces.noncircular_shape, ("polyline", "spline"), "Yüzey biçimi")
         _choice(self.surfaces.effort, tuple(EFFORT), "Arama yoğunluğu")
         if self.groundwater.gamma_w <= 0 or not 0 <= self.groundwater.ru <= 1:
@@ -937,6 +947,49 @@ def acads_3a_project() -> Project:
     return p
 
 
+def acads_2b_project() -> Project:
+    """ACADS 2(b), Talbingo Dam: dry, exactly specified circle, no search.
+
+    Geometry and material boundaries: Giam & Donald (1989), as tabulated
+    in the Rocscience verification manual (VP5/VP6).
+    """
+    p = _mk(
+        "ACADS 2(b) — Talbingo Dam, specified dry circle",
+        [
+            MaterialSpec("Rockfill", "MC", 20.4, 20.4, False, 0.0, 45.0, color=PALETTE[0]),
+            MaterialSpec("Transitions", "MC", 20.4, 20.4, False, 0.0, 45.0, color=PALETTE[3]),
+            MaterialSpec("Filter", "MC", 20.4, 20.4, False, 0.0, 45.0, color=PALETTE[1]),
+            MaterialSpec("Core", "MC", 18.1, 18.1, False, 85.0, 23.0, color=PALETTE[2]),
+        ],
+        [
+            [0, 0], [648, 0], [577.9, 31.4], [515, 65.3],
+            [453.4, 97.9], [386.9, 130.6], [327.6, 162], [315.5, 162],
+        ],
+        bounds=[
+            [[168.1, 0], [302.2, 130.6], [315.5, 162]],
+            [[200.7, 0], [311.9, 130.6], [319.5, 162]],
+            [[307.1, 0], [331.3, 130.6], [328.8, 146.1], [321.6, 162]],
+            [[310.7, 0], [333.7, 130.6], [331.3, 146.1], [327.6, 162]],
+            [[372.4, 0], [347.0, 130.6], [327.6, 162]],
+        ],
+        assigns=[
+            ((100, 20), "Rockfill"),
+            ((245, 65), "Transitions"),
+            ((287, 65), "Core"),
+            ((320.7, 65.3), "Filter"),
+            ((341, 65), "Transitions"),
+            ((500, 65), "Rockfill"),
+        ],
+        methods=["bishop", "spencer", "gle", "janbu_corrected"],
+        n_slices=50,
+    )
+    p.groundwater.method = "none"
+    p.surfaces.surface_type = "user"
+    p.surfaces.search = "none"
+    p.surfaces.user_circle = [100.3, 291.0, 278.8]
+    return p
+
+
 def layered_example_project() -> Project:
     """Three materials, a weak clay band outcropping on the face, water table."""
     return _mk(
@@ -1095,6 +1148,7 @@ EXAMPLES = {
     "Simple slope (10 m, 2H:1V)": default_project,
     "ACADS EX1(a)": acads_1a_project,
     "ACADS EX1(b)": acads_1b_project,
+    "ACADS 2(b) — Talbingo fixed circle": acads_2b_project,
     "ACADS 3(a) — weak seam + water table": acads_3a_project,
     "Layered slope + water table": layered_example_project,
     "Anchored cut + surcharge": anchored_example_project,
