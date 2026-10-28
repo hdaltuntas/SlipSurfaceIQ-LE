@@ -1,6 +1,0 @@
-"""Entry point:  python -m slipsurface"""
-
-from slipsurface.ui.app import run
-
-if __name__ == "__main__":
-    raise SystemExit(run())
