@@ -2,6 +2,19 @@
 
 Released: 2026-10-28
 
+## Source-only distribution (repository update)
+
+- Removed native installer builds, release package publishing, WiX/PyInstaller
+  recipes and platform-specific setup launchers from the repository.
+- Supported launch method: install `requirements.txt` with Python 3.10+
+  and start the desktop application with `python main.py`.
+- Keep the application, geometry/LEM engine, project files, PDFs, and
+  cross-platform regression CI. Published release assets from previous
+  versions are historical and are not modified by a source commit.
+- `pyproject.toml` now contains development tool configuration only,
+  not a distributable package definition.
+
+
 ## Engineering examples and verification
 
 - Add ACADS 3(a) (water table and weak seam) and ACADS 2(b)
