@@ -8,11 +8,11 @@ https://github.com/hdaltuntas/SlipSurfaceIQ-LE/releases
 
 | System | Package | Install |
 | --- | --- | --- |
-| Windows 10/11, x64 | `SlipSurfaceIQ-LE-2026.1.6-windows-x64.msi` | Double-click the MSI, or `msiexec /i SlipSurfaceIQ-LE-2026.1.6-windows-x64.msi` |
-| Ubuntu 24.04 or newer, amd64 | `slipsurface-iq-le_2026.1.6-1_ubuntu24.04_amd64.deb` | `sudo apt install ./slipsurface-iq-le_2026.1.6-1_ubuntu24.04_amd64.deb` |
-| Fedora 44 or newer, x86_64 | `slipsurface-iq-le-2026.1.6-1.fedora.x86_64.rpm` | `sudo dnf install ./slipsurface-iq-le-2026.1.6-1.fedora.x86_64.rpm` |
-| openSUSE Leap 16 / current Tumbleweed, x86_64 | `slipsurface-iq-le-2026.1.6-1.opensuse.x86_64.rpm` | `sudo zypper install ./slipsurface-iq-le-2026.1.6-1.opensuse.x86_64.rpm` |
-| Current Arch Linux, x86_64 | `slipsurface-iq-le-2026.1.6-1-x86_64.pkg.tar.zst` | `sudo pacman -U ./slipsurface-iq-le-2026.1.6-1-x86_64.pkg.tar.zst` |
+| Windows 10/11, x64 | `SlipSurfaceIQ-LE-2026.1.7-windows-x64.msi` | Double-click the MSI, or `msiexec /i SlipSurfaceIQ-LE-2026.1.7-windows-x64.msi` |
+| Ubuntu 24.04 or newer, amd64 | `slipsurface-iq-le_2026.1.7-1_ubuntu24.04_amd64.deb` | `sudo apt install ./slipsurface-iq-le_2026.1.7-1_ubuntu24.04_amd64.deb` |
+| Fedora 44 or newer, x86_64 | `slipsurface-iq-le-2026.1.7-1.fedora.x86_64.rpm` | `sudo dnf install ./slipsurface-iq-le-2026.1.7-1.fedora.x86_64.rpm` |
+| openSUSE Leap 16 / current Tumbleweed, x86_64 | `slipsurface-iq-le-2026.1.7-1.opensuse.x86_64.rpm` | `sudo zypper install ./slipsurface-iq-le-2026.1.7-1.opensuse.x86_64.rpm` |
+| Current Arch Linux, x86_64 | `slipsurface-iq-le-2026.1.7-1-x86_64.pkg.tar.zst` | `sudo pacman -U ./slipsurface-iq-le-2026.1.7-1-x86_64.pkg.tar.zst` |
 
 The MSI is unsigned. RPM packages are not signed with a distribution signing key;
 zypper may ask whether to accept an unsigned package. Compare downloads against
@@ -48,7 +48,7 @@ payload with generated RPM and Arch recipes under `dist/`. The workflow runs
 
 On Windows, install the .NET SDK and WiX (`dotnet tool install --global wix
 --version 5.0.2`), then run `python packaging/build.py msi`. MSI's numeric version
-subtracts 2000 from the year (`2026.1.6` becomes `26.1.6`) because Windows Installer
+subtracts 2000 from the year (`2026.1.7` becomes `26.1.7`) because Windows Installer
 limits its major field to 255.
 The package title and application retain the complete calendar version. A stable
 UpgradeCode allows future MSI versions to replace this installation.
