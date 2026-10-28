@@ -50,6 +50,11 @@ surface passes through `(41.85,27.75), (44.0,26.5),
 (63.5,27.0), (73.31,40)`. This is useful for testing the solver
 separately from the **3(a) optimizer**.
 
+The `examples/acads_3b.slp.json` project now makes the exact four-point
+specified surface directly selectable for the same section, with no
+optimizer. A tight comparison of that solver control with the published
+FoS helps distinguish a solver problem from an optimizer search problem.
+
 The very low reported FoS=0.462 is not yet explained. Check that
 the returned lowest-FoS path:
 
