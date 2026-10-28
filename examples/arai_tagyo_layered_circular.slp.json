@@ -1,0 +1,216 @@
+{
+  "format": "slipsurface-le",
+  "version": 3,
+  "summary": {
+    "title": "Arai & Tagyo (1985) — layered slope, circular",
+    "analysis": "",
+    "author": "",
+    "company": "",
+    "date_created": "2026-10-28, 00:00:00",
+    "comments": [
+      "",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  "materials": [
+    {
+      "name": "Upper Layer",
+      "model": "MC",
+      "gamma": 18.82,
+      "gamma_sat": 18.82,
+      "use_sat": false,
+      "c": 29.4,
+      "phi": 12,
+      "sigma_ci": 25000,
+      "gsi": 50,
+      "mi": 10,
+      "d": 0,
+      "use_water": true,
+      "hu": 1,
+      "color": "#8080d0"
+    },
+    {
+      "name": "Middle Layer",
+      "model": "MC",
+      "gamma": 18.82,
+      "gamma_sat": 18.82,
+      "use_sat": false,
+      "c": 9.8,
+      "phi": 5,
+      "sigma_ci": 25000,
+      "gsi": 50,
+      "mi": 10,
+      "d": 0,
+      "use_water": true,
+      "hu": 1,
+      "color": "#f0c800"
+    },
+    {
+      "name": "Lower Layer",
+      "model": "MC",
+      "gamma": 18.82,
+      "gamma_sat": 18.82,
+      "use_sat": false,
+      "c": 294,
+      "phi": 40,
+      "sigma_ci": 25000,
+      "gsi": 50,
+      "mi": 10,
+      "d": 0,
+      "use_water": true,
+      "hu": 1,
+      "color": "#ff7f3f"
+    }
+  ],
+  "geometry": {
+    "external": [
+      [
+        0,
+        3
+      ],
+      [
+        96,
+        3
+      ],
+      [
+        96,
+        35
+      ],
+      [
+        72,
+        35
+      ],
+      [
+        48,
+        35
+      ],
+      [
+        24,
+        19
+      ],
+      [
+        18,
+        15
+      ],
+      [
+        0,
+        15
+      ]
+    ],
+    "material_boundaries": [
+      [
+        [
+          24,
+          19
+        ],
+        [
+          72,
+          35
+        ]
+      ],
+      [
+        [
+          0,
+          3
+        ],
+        [
+          96,
+          35
+        ]
+      ]
+    ],
+    "water_table": null,
+    "tension_crack": null,
+    "assignments": [
+      {
+        "point": [
+          48,
+          31
+        ],
+        "material": "Upper Layer"
+      },
+      {
+        "point": [
+          48,
+          24
+        ],
+        "material": "Middle Layer"
+      },
+      {
+        "point": [
+          48,
+          12
+        ],
+        "material": "Lower Layer"
+      }
+    ]
+  },
+  "settings": {
+    "general": {
+      "units": "metric",
+      "failure_direction": "right_to_left",
+      "data_output": "standard"
+    },
+    "methods": {
+      "methods": [
+        "bishop",
+        "janbu_simplified",
+        "spencer"
+      ],
+      "n_slices": 50,
+      "tolerance": 0.005,
+      "max_iter": 75,
+      "interslice": "half-sine",
+      "f_start": 0.5,
+      "f_end": 0.5
+    },
+    "groundwater": {
+      "method": "none",
+      "gamma_w": 9.81,
+      "ru": 0
+    },
+    "seismic": {
+      "kh": 0,
+      "kv": 0
+    },
+    "advanced": {
+      "check_admissibility": true,
+      "min_depth": 0
+    }
+  },
+  "surfaces": {
+    "surface_type": "circular",
+    "search": "auto_refine",
+    "effort": "normal",
+    "n_ctrl": 4,
+    "convex_only": true,
+    "seed": 0,
+    "left_range": null,
+    "right_range": null,
+    "user_surface": null,
+    "noncircular_shape": "polyline"
+  },
+  "loads": [],
+  "support_types": [],
+  "supports": [],
+  "display": {
+    "external_color": "#606060",
+    "material_boundary_color": "#808080",
+    "water_table_color": "#1f5fd1",
+    "show_vertices": true,
+    "line_width": 2,
+    "show_ruler": true,
+    "show_grid": true,
+    "fill_materials": true,
+    "show_slope_limits": true,
+    "show_slices": true,
+    "slice_fill_color": "#f6d65a",
+    "show_lines_to_center": true,
+    "show_fs_text": true,
+    "show_all_surfaces": true,
+    "show_legend": true
+  }
+}
