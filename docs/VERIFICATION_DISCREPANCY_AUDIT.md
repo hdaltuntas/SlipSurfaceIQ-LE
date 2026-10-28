@@ -8,7 +8,7 @@ now match. Reported SlipSurfaceIQ-LE outputs (user's 2026-10-28 runs):
 | Talbingo ACADS **2(b)**, specified circle | Bishop 2.206; Janbu Corrected 2.073 | Slide2 Bishop 2.208; Janbu Corrected 2.073 | Matches the SAME fixed circle and methods |
 | Talbingo ACADS **2(a)**, searched upstream face | Not separately evaluated | SLOPE/W 1.951 (Bishop / rigorous) | Distinct search problem, now supplied as a second project |
 | ACADS 3(a), weak seam + water table | 0.462 | Spencer ~1.258; GLE ~1.246–1.264 | Large discrepancy requiring audit of actual optimized path |
-| Borges & Cardoso (2002), Case 2 | 0.861 | Bishop 1.170; Morgenstern–Price 1.171 | Large discrepancy requiring reinforcement mobilization / search audit |
+| Borges & Cardoso (2002), Case 2 | ~~0.861~~ → **Bishop 1.162 (resolved)**; Janbu 0.905; GLE 0.942 | Bishop 1.170; Morgenstern–Price 1.171 | Bishop now matches: the old 0.861 came from a degenerate tangent circle (see below). Janbu/GLE still find a shallow embankment-face mechanism — separate issue |
 
 ## Source hierarchy
 
@@ -86,6 +86,28 @@ comparison involves a different mechanism or pullout treatment.
 Review the support intersection coordinates, available embedment
 lengths, the effective overburden and the force direction before
 altering the material strength.
+
+**Resolved (2026-10-28):** the FoS=0.861 surface was a *degenerate
+tangent circle* — a circle tangent to the flat base (y = 0) whose
+sliding mass was numerically ~1.5e-4 m thick, i.e. a zero-mass
+geometric artifact. Because it hugged the ground it never crossed
+the geosynthetic, so `T = 0` and the reported 0.861 was effectively
+the *unreinforced* embankment-face mechanism. Two fixes now guard
+against this:
+
+1. The slice engine rejects surfaces whose sliding mass is
+   numerically zero relative to the model extent (degenerate-mass
+   guard, active even at `min_depth = 0`).
+2. The Borges fixture sets `advanced.min_depth = 1 m` so the search
+   cannot stop at any near-tangent shallow artifact.
+
+With these guards the Bishop search finds a deep circle that crosses
+the geosynthetic, mobilises `T = 200 kN/m` (tensile capacity) and
+reports **FoS = 1.162**, matching the published Bishop 1.170 within
+0.7%. The Janbu/GLE searches now avoid the tangent artifact too but
+still stop on a shallow embankment-face mechanism (~0.90-0.94); that
+remaining difference concerns the *search's* mechanism selection, not
+the reinforcement treatment, and remains open.
 
 The older GeoStudio 2022 manual prints uncorrected Janbu FoS=1.233,
 while the user-supplied reproduction quotes 1.209. Use the document
