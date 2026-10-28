@@ -49,8 +49,7 @@ def test_case2_preset_roundtrip_and_materials(tmp_path):
         ]
         assert [m.model for m in p.materials] == ["MC", "UD", "UD", "UDG", "UDG"]
         assert [m.gamma for m in p.materials] == [20, 17, 17, 17, 17]
-        assert [(m.su_top, m.su_bottom, m.su_y_top, m.su_y_bottom)
-                for m in p.materials[3:]] == [
+        assert [(m.su_top, m.su_bottom, m.su_y_top, m.su_y_bottom) for m in p.materials[3:]] == [
             (16, 18.4, -4.5, -7),
             (18.4, 55.1, -7, -27),
         ]
@@ -62,9 +61,7 @@ def test_case2_preset_roundtrip_and_materials(tmp_path):
         assert st.anchorage == "none"
         assert st.application == "passive"
         assert st.orientation == "parallel"
-        assert p.supports == [
-            {"a": [0, 0], "b": [42.5, 0], "type": st.name}
-        ]
+        assert p.supports == [{"a": [0, 0], "b": [42.5, 0], "type": st.name}]
     assert preset.analysis_inputs() == fixture.analysis_inputs()
     path = tmp_path / "case2.slp.json"
     preset.save(path)
@@ -82,9 +79,7 @@ def test_case2_domain_material_zones_and_strengths():
         ((20, -5.5), "Clay 3"),
         ((20, -12), "Clay 4"),
     ]:
-        assert [r.material for r in g.regions if r.polygon.contains(Point(xy))] == [
-            material
-        ]
+        assert [r.material for r in g.regions if r.polygon.contains(Point(xy))] == [material]
     assert sum(r.polygon.area for r in g.regions) == pytest.approx(g.domain.area)
     assert g.ground_y(-25) == 0
     assert g.ground_y(15) == 5
