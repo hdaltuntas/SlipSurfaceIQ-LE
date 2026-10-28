@@ -85,19 +85,22 @@ def test_arai_tagyo_geometry_has_three_zones_of_correct_area_and_strength():
     assert len(g.regions) == 3
     assert sum(r.polygon.area for r in g.regions) == pytest.approx(2412)
     by_name = {r.material: r.polygon.area for r in g.regions}
-    assert by_name == pytest.approx({
-        "Upper Layer": 192,
-        "Middle Layer": 684,
-        "Lower Layer": 1536,
-    })
+    assert by_name == pytest.approx(
+        {
+            "Upper Layer": 192,
+            "Middle Layer": 684,
+            "Lower Layer": 1536,
+        }
+    )
     for point, name in [
         ((48, 31), "Upper Layer"),
         ((48, 24), "Middle Layer"),
         ((48, 12), "Lower Layer"),
     ]:
         assert [r.material for r in g.regions if r.polygon.contains(Point(point))] == [name]
-    np.testing.assert_allclose(g.ground_y(np.array([0, 18, 24, 48, 72, 96])),
-                               [15, 15, 19, 35, 35, 35])
+    np.testing.assert_allclose(
+        g.ground_y(np.array([0, 18, 24, 48, 72, 96])), [15, 15, 19, 35, 35, 35]
+    )
 
 
 def test_arai_tagyo_dry_slice_material_assignment_and_method_solving():
