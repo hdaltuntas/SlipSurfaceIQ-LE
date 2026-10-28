@@ -1180,6 +1180,11 @@ def borges_cardoso_case2_project() -> Project:
     p.supports = [{"a": [0.0, 0.0], "b": [42.5, 0.0], "type": name}]
     p.surfaces.surface_type = "circular"
     p.surfaces.effort = "normal"
+    # Reject degenerate tangent circles whose sliding mass is numerically thin
+    # (a circle tangent to the base can carry a near-zero mass and dodge the
+    # geosynthetic, producing a spurious low minimum). Slide2-style models use
+    # a minimum sliding depth for the same reason.
+    p.advanced.min_depth = 1.0
     return p
 
 

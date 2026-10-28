@@ -228,6 +228,18 @@ def make_slices(
     h = y_top - y_base
     if o.min_depth > 0 and h.max() < o.min_depth:
         raise SlicingError("sliding mass shallower than the minimum depth")
+    # Degenerate-mass guard: a surface hugging the ground line (e.g. a circle
+    # tangent to a flat base) slices into a sliding mass that is numerically
+    # zero everywhere. Such a surface is a geometric artifact, not a physical
+    # mechanism; its FoS is meaningless and it can trap the search at a
+    # spurious low minimum. Reject it regardless of the min_depth setting.
+    # Scale by the model's own extent so the test is unit- and model-independent.
+    extent = float(geom.meta.get("extent", 0.0)) if hasattr(geom, "meta") else 0.0
+    if extent <= 0.0:
+        xs_all = np.concatenate([np.atleast_1d(np.asarray(geom.surface)[:, 0]), xl, xr])
+        extent = float(np.max(xs_all) - np.min(xs_all))
+    if extent > 0 and h.max() < max(1e-6, 1e-4 * extent):
+        raise SlicingError("degenerate sliding mass (surface hugs the ground)")
 
     # ---------------------------------------------- material lookup
     names = list(materials)
