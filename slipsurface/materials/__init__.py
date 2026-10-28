@@ -13,6 +13,7 @@ from slipsurface.materials.models import (
     Sanisand,
     Shansep,
     Undrained,
+    UndrainedDepth,
 )
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "Sanisand",
     "Shansep",
     "Undrained",
+    "UndrainedDepth",
 ]
