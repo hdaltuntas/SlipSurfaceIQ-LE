@@ -451,6 +451,7 @@ Available under *File → Examples* and from the command line with `--example "<
 | Simple slope (10 m, 2H:1V) | `simple_slope.slp.json` | homogeneous slope |
 | ACADS EX1(a) | `acads_1a.slp.json` | ACADS verification problem (homogeneous slope) |
 | ACADS EX1(b) | `acads_1b.slp.json` | ACADS verification problem (three layers, weak lens; layer starts at the toe) |
+| ACADS 2(a) — Talbingo critical upstream search | `acads_2a.slp.json` | upstream-face critical-circle search; infinite-slope reference FoS ~1.951 |
 | ACADS 2(b) — Talbingo fixed circle | `acads_2b.slp.json` | four-material dry embankment; exact circle (100.3, 291, 278.8); Bishop/Spencer/GLE/Janbu |
 | ACADS 3(a) — weak seam + water table | `acads_3a.slp.json` | two materials, 0.5 m weak seam, water table at its base; non-circular Spencer/GLE search |
 | Arai & Tagyo — layered (circular) | `arai_tagyo_layered_circular.slp.json` | dry three-layer VP15; critical circular Bishop/Janbu/Spencer searches |
@@ -486,6 +487,11 @@ claimed. See
 [Additional GeoStudio Verification](docs/GEOSTUDIO_ADDITIONAL_VERIFICATION.md).
 
 Run `python -m pytest tests/test_geostudio_handcalcs.py tests/test_geostudio_slope_examples.py -q`.
+
+**Reference discrepancies:** The [verification discrepancy audit](docs/VERIFICATION_DISCREPANCY_AUDIT.md)
+separates Talbingo 2(a) versus 2(b) and provides a read-only diagnostic
+for ACADS 3(a) and Borges–Cardoso Case 2. Do not accept very low optimized
+FoS without checking the actual surface and support mobilization.
 
 The [ACADS 2(b) Talbingo Dam verification](docs/ACADS_2B_VERIFICATION.md)
 adds an exact fixed-circle solver case, without an optimizer search, to check
