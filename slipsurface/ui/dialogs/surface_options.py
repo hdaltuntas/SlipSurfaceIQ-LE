@@ -41,7 +41,7 @@ class SurfaceOptionsDialog(QDialog):
     def __init__(self, project: Project, parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle(tr("Yüzey Seçenekleri"))
-        fit_to_screen(self, 560, 470)
+        fit_to_screen(self, 560, 590)
         s = project.surfaces
         self.p = project
 
@@ -57,7 +57,7 @@ class SurfaceOptionsDialog(QDialog):
         {"circular": self.r_circ, "noncircular": self.r_non, "user": self.r_user}[
             s.surface_type
         ].setChecked(True)
-        if not s.user_surface:
+        if not s.user_surface and s.user_circle is None:
             self.r_user.setToolTip(tr("Önce Yüzeyler → Kullanıcı Yüzeyi Çiz ile bir yüzey çizin."))
 
         grid.addWidget(QLabel(tr("Arama yöntemi:")), 3, 0)
@@ -93,6 +93,22 @@ class SurfaceOptionsDialog(QDialog):
         f.addRow(self.convex)
         self.opts.setVisible(False)
         self.opt_btn.toggled.connect(self.opts.setVisible)
+
+        self.circle_group = QGroupBox("Verilen dairesel kayma yüzeyi")
+        circle_form = QFormLayout(self.circle_group)
+        self.use_circle = QCheckBox("Merkezi ve yarıçapı bilinen daireyi kullan")
+        self.use_circle.setChecked(s.user_circle is not None)
+        circle_form.addRow(self.use_circle)
+        vals = s.user_circle or [0.0, 0.0, 1.0]
+        self.circle_fields = []
+        for label, value in zip(("Xc (m):", "Yc (m):", "R (m):"), vals, strict=False):
+            spin = QDoubleSpinBox()
+            spin.setDecimals(3)
+            spin.setRange(0.001 if label.startswith("R") else -1e6, 1e6)
+            spin.setValue(value)
+            circle_form.addRow(label, spin)
+            self.circle_fields.append(spin)
+        self.use_circle.toggled.connect(self._update_search)
 
         typeopts = QGroupBox(tr("Yüzey tipi seçenekleri"))
         tl = QVBoxLayout(typeopts)
@@ -150,6 +166,7 @@ class SurfaceOptionsDialog(QDialog):
         lay = QVBoxLayout(self)
         lay.addLayout(grid)
         lay.addWidget(self.opts)
+        lay.addWidget(self.circle_group)
         lay.addWidget(typeopts)
         lay.addWidget(lim)
         lay.addStretch(1)
@@ -186,6 +203,9 @@ class SurfaceOptionsDialog(QDialog):
         self.opt_btn.setEnabled(t != "user")
         self.opts.setEnabled(t != "user")
         self.use_limits.setEnabled(t != "user")
+        self.circle_group.setEnabled(t == "user")
+        for field in self.circle_fields:
+            field.setEnabled(t == "user" and self.use_circle.isChecked())
         self._limits_enabled(self.use_limits.isChecked())
 
     def _defaults(self) -> None:
@@ -197,9 +217,14 @@ class SurfaceOptionsDialog(QDialog):
         self.shape.setCurrentIndex(0)
         self.convex.setChecked(d.convex_only)
         self.use_limits.setChecked(False)
+        self.use_circle.setChecked(False)
 
     def _accept(self) -> None:
-        if self._type() == "user" and not self.p.surfaces.user_surface:
+        if (
+            self._type() == "user"
+            and not self.p.surfaces.user_surface
+            and not self.use_circle.isChecked()
+        ):
             self.error.setText(
                 tr("⚠ Kullanıcı tanımlı yüzey yok. Önce Yüzeyler → Kullanıcı Yüzeyi Çiz ile çizin.")
             )
@@ -234,6 +259,12 @@ class SurfaceOptionsDialog(QDialog):
         s.n_ctrl = self.n_ctrl.value()
         s.noncircular_shape = self.shape.currentData()
         s.convex_only = self.convex.isChecked()
+        if self._type() == "user":
+            s.user_circle = (
+                [field.value() for field in self.circle_fields]
+                if self.use_circle.isChecked()
+                else None
+            )
         if self.use_limits.isChecked():
             s.left_range = [self.l0.value(), self.l1.value()]
             s.right_range = [self.r0.value(), self.r1.value()]
