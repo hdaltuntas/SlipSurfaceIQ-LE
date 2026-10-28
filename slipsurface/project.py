@@ -1020,9 +1020,9 @@ def arai_tagyo_layered_project(noncircular: bool = False) -> Project:
             ((48, 24), "Middle Layer"),
             ((48, 12), "Lower Layer"),
         ],
-        methods=["janbu_simplified", "spencer"] if noncircular else [
-            "bishop", "janbu_simplified", "spencer"
-        ],
+        methods=["janbu_simplified", "spencer"]
+        if noncircular
+        else ["bishop", "janbu_simplified", "spencer"],
         n_slices=50,
     )
     p.groundwater.method = "none"
