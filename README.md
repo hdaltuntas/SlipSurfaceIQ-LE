@@ -453,6 +453,8 @@ Available under *File → Examples* and from the command line with `--example "<
 | ACADS EX1(b) | `acads_1b.slp.json` | ACADS verification problem (three layers, weak lens; layer starts at the toe) |
 | ACADS 2(b) — Talbingo fixed circle | `acads_2b.slp.json` | four-material dry embankment; exact circle (100.3, 291, 278.8); Bishop/Spencer/GLE/Janbu |
 | ACADS 3(a) — weak seam + water table | `acads_3a.slp.json` | two materials, 0.5 m weak seam, water table at its base; non-circular Spencer/GLE search |
+| Arai & Tagyo — layered (circular) | `arai_tagyo_layered_circular.slp.json` | dry three-layer VP15; critical circular Bishop/Janbu/Spencer searches |
+| Arai & Tagyo — layered (noncircular) | `arai_tagyo_layered_noncircular.slp.json` | same VP15 cross-section; non-circular Janbu/Spencer polyline searches |
 | Layered slope + water table | `layered_water_table.slp.json` | fill, soft clay and weathered rock (Hoek-Brown) with a water table |
 | Anchored cut + surcharge | `anchored_cut.slp.json` | two rows of grouted tiebacks, distributed and line loads |
 | Slope with tension crack | `tension_crack.slp.json` | water-filled tension crack in stiff clay |
@@ -488,6 +490,11 @@ The [ACADS 2(b) Talbingo Dam verification](docs/ACADS_2B_VERIFICATION.md)
 adds an exact fixed-circle solver case, without an optimizer search, to check
 four methods on the same published surface. The circle is editable under
 Surface Options → User-defined → Fixed circle.
+
+The [Arai & Tagyo VP15 layered-slope verification note](docs/ARAI_TAGYO_LAYERED_VERIFICATION.md)
+provides the circular and non-circular models, material region checks, and
+published vendor FoS values. The benchmark global-search match remains
+unverified until separately calculated and reviewed.
 
 The [ACADS 3(a) verification note](docs/ACADS_3A_VERIFICATION.md) gives the
 exact groundwater/weak-seam geometry and published Spencer/GLE references.
