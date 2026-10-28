@@ -148,9 +148,7 @@ class UndrainedDepth(Material):
     def strength(self, sigma_n, *, y=None):
         if y is None:
             raise ValueError("Undrained-depth strength requires slice-base elevation y")
-        sn, elevation = np.broadcast_arrays(
-            np.asarray(sigma_n, float), np.asarray(y, float)
-        )
+        sn, elevation = np.broadcast_arrays(np.asarray(sigma_n, float), np.asarray(y, float))
         fraction = np.clip((self.y_top - elevation) / (self.y_top - self.y_bottom), 0.0, 1.0)
         su = self.su_top + fraction * (self.su_bottom - self.su_top)
         return su, np.zeros_like(sn)
