@@ -455,6 +455,7 @@ Available under *File → Examples* and from the command line with `--example "<
 | ACADS 3(a) — weak seam + water table | `acads_3a.slp.json` | two materials, 0.5 m weak seam, water table at its base; non-circular Spencer/GLE search |
 | Arai & Tagyo — layered (circular) | `arai_tagyo_layered_circular.slp.json` | dry three-layer VP15; critical circular Bishop/Janbu/Spencer searches |
 | Arai & Tagyo — layered (noncircular) | `arai_tagyo_layered_noncircular.slp.json` | same VP15 cross-section; non-circular Janbu/Spencer polyline searches |
+| Borges & Cardoso — geosynthetic embankment #2 | `borges_cardoso_case2.slp.json` | dry 5 m embankment, four clays including depth-variable su, unanchored 200 kN/m geosynthetic |
 | Layered slope + water table | `layered_water_table.slp.json` | fill, soft clay and weathered rock (Hoek-Brown) with a water table |
 | Anchored cut + surcharge | `anchored_cut.slp.json` | two rows of grouted tiebacks, distributed and line loads |
 | Slope with tension crack | `tension_crack.slp.json` | water-filled tension crack in stiff clay |
@@ -490,6 +491,12 @@ The [ACADS 2(b) Talbingo Dam verification](docs/ACADS_2B_VERIFICATION.md)
 adds an exact fixed-circle solver case, without an optimizer search, to check
 four methods on the same published surface. The circle is editable under
 Surface Options → User-defined → Fixed circle.
+
+The [Borges–Cardoso Case 2 geosynthetic benchmark](docs/BORGES_CARDOSO_CASE2_VERIFICATION.md)
+adds a 5-layer reinforced embankment model and a new elevation-dependent
+undrained total-stress material (UDG). Published FoS are verification
+references, not hardcoded results; global critical-circle matching remains
+pending independent analysis.
 
 The [Arai & Tagyo VP15 layered-slope verification note](docs/ARAI_TAGYO_LAYERED_VERIFICATION.md)
 provides the circular and non-circular models, material region checks, and

@@ -81,7 +81,9 @@ def _strength(s: SliceSet, sigma_n: np.ndarray) -> tuple[np.ndarray, np.ndarray]
     for i, mat in enumerate(s.materials):
         sel = s.mat_idx == i
         if sel.any():
-            if getattr(mat, "uses_vertical_stress", False):
+            if getattr(mat, "uses_elevation", False):
+                c[sel], tp[sel] = cast(Any, mat).strength(sigma_n[sel], y=s.y_base[sel])
+            elif getattr(mat, "uses_vertical_stress", False):
                 c[sel], tp[sel] = cast(Any, mat).strength(sigma_n[sel], sigma_v=s.sigma_v_eff[sel])
             else:
                 c[sel], tp[sel] = mat.strength(sigma_n[sel])
@@ -92,7 +94,9 @@ def slice_strength(s: SliceSet, i: int) -> tuple[float, float]:
     """(c, tan phi) on the base of slice i at sigma_n ~ W/b - u (reporting)."""
     mat = s.materials[s.mat_idx[i]]
     sn = np.array([max(s.W[i] / s.b[i] - s.u[i], 0.0)])
-    if getattr(mat, "uses_vertical_stress", False):
+    if getattr(mat, "uses_elevation", False):
+        c, tp = cast(Any, mat).strength(sn, y=s.y_base[i : i + 1])
+    elif getattr(mat, "uses_vertical_stress", False):
         c, tp = cast(Any, mat).strength(sn, sigma_v=s.sigma_v_eff[i : i + 1])
     else:
         c, tp = mat.strength(sn)

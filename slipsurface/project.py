@@ -64,6 +64,7 @@ from slipsurface.materials import (
     Sanisand,
     Shansep,
     Undrained,
+    UndrainedDepth,
 )
 from slipsurface.materials.catalog import MODELS
 
@@ -167,6 +168,10 @@ class MaterialSpec:
     color: str = PALETTE[0]
 
     su: float = 25.0
+    su_top: float = 25.0
+    su_bottom: float = 25.0
+    su_y_top: float = 0.0
+    su_y_bottom: float = -1.0
     coefficient: float = 0.2
     exponent: float = 0.5
     reference_pressure: float = 100.0
@@ -219,6 +224,15 @@ class MaterialSpec:
         )
         if self.model == "UD":
             return Undrained(self.name, su=self.su, **common)
+        if self.model == "UDG":
+            return UndrainedDepth(
+                self.name,
+                su_top=self.su_top,
+                su_bottom=self.su_bottom,
+                y_top=self.su_y_top,
+                y_bottom=self.su_y_bottom,
+                **common,
+            )
         if self.model == "PL":
             return PowerLaw(
                 self.name,
@@ -1043,6 +1057,92 @@ def arai_tagyo_layered_noncircular_project() -> Project:
     return arai_tagyo_layered_project(noncircular=True)
 
 
+def borges_cardoso_case2_project() -> Project:
+    """Borges & Cardoso (2002) Case 2 / SLOPE/W §2.18.
+
+    Dry 5 m embankment on four total-stress soft-clay layers, including
+    depth-varying undrained shear strength and an unanchored geosynthetic.
+    Published FoS are reference values, not imposed search results.
+    """
+    name = "Case 2 geosynthetic – 200 kN/m"
+    p = _mk(
+        "Borges & Cardoso (2002) — geosynthetic embankment #2",
+        [
+            MaterialSpec("Embankment", "MC", 20, 20, False, 0, 35, color=PALETTE[0]),
+            MaterialSpec("Clay 1", "UD", 17, 17, False, su=33, color=PALETTE[2]),
+            MaterialSpec("Clay 2", "UD", 17, 17, False, su=16, color=PALETTE[3]),
+            MaterialSpec(
+                "Clay 3",
+                "UDG",
+                17,
+                17,
+                False,
+                su_top=16.0,
+                su_bottom=18.4,
+                su_y_top=-4.5,
+                su_y_bottom=-7.0,
+                color=PALETTE[4],
+            ),
+            MaterialSpec(
+                "Clay 4",
+                "UDG",
+                17,
+                17,
+                False,
+                su_top=18.4,
+                su_bottom=55.1,
+                su_y_top=-7.0,
+                su_y_bottom=-27.0,
+                color=PALETTE[5],
+            ),
+        ],
+        [
+            [-30, -27],
+            [45, -27],
+            [45, 0],
+            [42.5, 0],
+            [36.41, 5],
+            [6.15, 5],
+            [0, 0],
+            [-30, 0],
+        ],
+        bounds=[
+            [[0, 0], [42.5, 0]],
+            [[-30, -1], [45, -1]],
+            [[-30, -4.5], [45, -4.5]],
+            [[-30, -7], [45, -7]],
+        ],
+        assigns=[
+            ((20, 2), "Embankment"),
+            ((20, -0.5), "Clay 1"),
+            ((20, -2), "Clay 2"),
+            ((20, -5.5), "Clay 3"),
+            ((20, -12), "Clay 4"),
+        ],
+        methods=["bishop", "janbu_simplified", "gle"],
+        n_slices=50,
+    )
+    p.groundwater.method = "none"
+    p.support_types = [
+        SupportType(
+            name=name,
+            kind="geosynthetic",
+            tensile=200,
+            coverage=100,
+            anchorage="none",
+            adhesion=0,
+            interface_friction=33.7,
+            overburden_gamma=20,
+            application="passive",
+            orientation="parallel",
+        )
+    ]
+    p.supports = [{"a": [0.0, 0.0], "b": [42.5, 0.0], "type": name}]
+    p.surfaces.surface_type = "circular"
+    p.surfaces.effort = "normal"
+    return p
+
+
 def layered_example_project() -> Project:
     """Three materials, a weak clay band outcropping on the face, water table."""
     return _mk(
@@ -1205,6 +1305,7 @@ EXAMPLES = {
     "ACADS 3(a) — weak seam + water table": acads_3a_project,
     "Arai & Tagyo — layered (circular)": arai_tagyo_layered_circular_project,
     "Arai & Tagyo — layered (noncircular)": arai_tagyo_layered_noncircular_project,
+    "Borges & Cardoso — geosynthetic embankment #2": borges_cardoso_case2_project,
     "Layered slope + water table": layered_example_project,
     "Anchored cut + surcharge": anchored_example_project,
     "Slope with tension crack": cracked_example_project,

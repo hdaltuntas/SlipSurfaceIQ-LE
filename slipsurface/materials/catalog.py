@@ -31,6 +31,18 @@ MODELS: dict[str, ModelInfo] = {
         (("su", "Drenajsız kayma dayanımı su (kPa)", 0, 1e6, 3),),
         total_stress=True,
     ),
+    "UDG": ModelInfo(
+        "Undrained – linear with elevation",
+        "τ = su(y), linear from layer top to bottom (total stress)",
+        (
+            ("su_top", "Drenajsız dayanım üst kotta (kPa)", 0, 1e6, 3),
+            ("su_bottom", "Drenajsız dayanım alt kotta (kPa)", 0, 1e6, 3),
+            ("su_y_top", "Üst kot (m)", -1e6, 1e6, 3),
+            ("su_y_bottom", "Alt kot (m)", -1e6, 1e6, 3),
+        ),
+        total_stress=True,
+        note="Dilim tabanında su(y) doğrusal enterpolasyonla belirlenir. Üst/alt kot sınırlarının dışında uç değer korunur.",
+    ),
     "SH": ModelInfo(
         "SHANSEP",
         "τ = su = A + S · σ′v · OCR^m",
@@ -153,6 +165,9 @@ def parameter_text(spec) -> str:
     short = {
         "MC": lambda m: f"c = {m.c:g} kPa, φ = {m.phi:g}°",
         "UD": lambda m: f"su = {m.su:g} kPa",
+        "UDG": lambda m: (
+            f"su = {m.su_top:g}–{m.su_bottom:g} kPa; y = {m.su_y_top:g}…{m.su_y_bottom:g} m"
+        ),
         "SH": lambda m: (
             f"A = {m.shansep_su_min:g} kPa, S = {m.shansep_s:g}, "
             f"m = {m.shansep_m:g}, OCR = {m.ocr:g}"
