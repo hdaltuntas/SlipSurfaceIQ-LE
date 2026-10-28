@@ -164,7 +164,7 @@ def run_analysis(
 
     if p.surfaces.surface_type == "user":
         if p.surfaces.user_circle is not None:
-            surf = CircularSurface(*p.surfaces.user_circle)
+            surf: CircularSurface | PolylineSurface = CircularSurface(*p.surfaces.user_circle)
         else:
             pts = p.surfaces.user_surface
             if not pts or len(pts) < 2:
