@@ -120,6 +120,43 @@ class Undrained(Material):
 
 
 @dataclass
+class UndrainedDepth(Material):
+    """Total-stress undrained shear strength linear in absolute elevation.
+
+    Both endpoints are specified in world coordinates, top elevation > bottom.
+    Evaluate at the slice-base midpoint, not at its mean overburden stress.
+    The model is constant outside the stated layer range.
+    """
+
+    su_top: float = 25.0
+    su_bottom: float = 25.0
+    y_top: float = 0.0
+    y_bottom: float = -1.0
+    uses_elevation: bool = field(default=True, init=False, repr=False)
+
+    def __post_init__(self):
+        super().__post_init__()
+        if (
+            not np.isfinite([self.su_top, self.su_bottom, self.y_top, self.y_bottom]).all()
+            or min(self.su_top, self.su_bottom) < 0
+            or self.y_top <= self.y_bottom
+        ):
+            raise ValueError("Undrained-depth material needs finite su >= 0 and y_top > y_bottom")
+        self.total_stress = True
+        self.use_water = False
+
+    def strength(self, sigma_n, *, y=None):
+        if y is None:
+            raise ValueError("Undrained-depth strength requires slice-base elevation y")
+        sn, elevation = np.broadcast_arrays(
+            np.asarray(sigma_n, float), np.asarray(y, float)
+        )
+        fraction = np.clip((self.y_top - elevation) / (self.y_top - self.y_bottom), 0.0, 1.0)
+        su = self.su_top + fraction * (self.su_bottom - self.su_top)
+        return su, np.zeros_like(sn)
+
+
+@dataclass
 class PowerLaw(Material):
     """Concave envelope tau = a * pa * (1 + max(sigma',0)/pa)^b.
 
