@@ -163,15 +163,18 @@ def run_analysis(
         stat["best"] = float("nan")
 
     if p.surfaces.surface_type == "user":
-        pts = p.surfaces.user_surface
-        if not pts or len(pts) < 2:
-            raise ValueError("Kullanıcı tanımlı yüzey çizilmemiş (Yüzeyler → Kullanıcı Yüzeyi).")
-        surf = PolylineSurface(extend_to_ground(geom, pts))
+        if p.surfaces.user_circle is not None:
+            surf = CircularSurface(*p.surfaces.user_circle)
+        else:
+            pts = p.surfaces.user_surface
+            if not pts or len(pts) < 2:
+                raise ValueError("Kullanıcı tanımlı yüzey veya verilen daire bulunamadı.")
+            surf = PolylineSurface(extend_to_ground(geom, pts))
         for i, m in enumerate(methods):
             stat.update(method=m, index=i, n_methods=n, stage="user", surface_type="user")
             if progress and progress(i, n, m, 0, np.nan):
                 raise SearchCancelled()
-            if m == "bishop":
+            if m == "bishop" and not isinstance(surf, CircularSurface):
                 out.errors[m] = "Bishop yalnızca dairesel yüzeyler için geçerlidir."
                 stat["done"][m] = out.errors[m]
                 continue
@@ -192,7 +195,18 @@ def run_analysis(
                     continue
                 keep(
                     m,
-                    SearchResult(surf, res.fos, res, s, 1, [], "kullanıcı yüzeyi", m),
+                    SearchResult(
+                        surf,
+                        res.fos,
+                        res,
+                        s,
+                        1,
+                        [],
+                        "verilen daire"
+                        if isinstance(surf, CircularSurface)
+                        else "kullanıcı yüzeyi",
+                        m,
+                    ),
                     kv,
                 )
             finish_cases(m, failures)

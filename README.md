@@ -451,6 +451,7 @@ Available under *File → Examples* and from the command line with `--example "<
 | Simple slope (10 m, 2H:1V) | `simple_slope.slp.json` | homogeneous slope |
 | ACADS EX1(a) | `acads_1a.slp.json` | ACADS verification problem (homogeneous slope) |
 | ACADS EX1(b) | `acads_1b.slp.json` | ACADS verification problem (three layers, weak lens; layer starts at the toe) |
+| ACADS 2(b) — Talbingo fixed circle | `acads_2b.slp.json` | four-material dry embankment; exact circle (100.3, 291, 278.8); Bishop/Spencer/GLE/Janbu |
 | ACADS 3(a) — weak seam + water table | `acads_3a.slp.json` | two materials, 0.5 m weak seam, water table at its base; non-circular Spencer/GLE search |
 | Layered slope + water table | `layered_water_table.slp.json` | fill, soft clay and weathered rock (Hoek-Brown) with a water table |
 | Anchored cut + surcharge | `anchored_cut.slp.json` | two rows of grouted tiebacks, distributed and line loads |
@@ -482,6 +483,11 @@ claimed. See
 [Additional GeoStudio Verification](docs/GEOSTUDIO_ADDITIONAL_VERIFICATION.md).
 
 Run `python -m pytest tests/test_geostudio_handcalcs.py tests/test_geostudio_slope_examples.py -q`.
+
+The [ACADS 2(b) Talbingo Dam verification](docs/ACADS_2B_VERIFICATION.md)
+adds an exact fixed-circle solver case, without an optimizer search, to check
+four methods on the same published surface. The circle is editable under
+Surface Options → User-defined → Fixed circle.
 
 The [ACADS 3(a) verification note](docs/ACADS_3A_VERIFICATION.md) gives the
 exact groundwater/weak-seam geometry and published Spencer/GLE references.
