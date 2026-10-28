@@ -996,6 +996,53 @@ def acads_2b_project() -> Project:
     return p
 
 
+def arai_tagyo_layered_project(noncircular: bool = False) -> Project:
+    """Arai & Tagyo (1985) example 2 / Slide2 VP15: dry three-layer slope.
+
+    A weak middle layer lies between stronger upper and lower layers.
+    The same exact geometry is used for circular and non-circular searches.
+    """
+    shape = "noncircular" if noncircular else "circular"
+    p = _mk(
+        f"Arai & Tagyo (1985) — layered slope, {shape}",
+        [
+            MaterialSpec("Upper Layer", "MC", 18.82, 18.82, False, 29.4, 12.0, color=PALETTE[3]),
+            MaterialSpec("Middle Layer", "MC", 18.82, 18.82, False, 9.8, 5.0, color=PALETTE[0]),
+            MaterialSpec("Lower Layer", "MC", 18.82, 18.82, False, 294.0, 40.0, color=PALETTE[2]),
+        ],
+        [[0, 3], [96, 3], [96, 35], [72, 35], [48, 35], [24, 19], [18, 15], [0, 15]],
+        bounds=[
+            [[24, 19], [72, 35]],
+            [[0, 3], [96, 35]],
+        ],
+        assigns=[
+            ((48, 31), "Upper Layer"),
+            ((48, 24), "Middle Layer"),
+            ((48, 12), "Lower Layer"),
+        ],
+        methods=["janbu_simplified", "spencer"] if noncircular else [
+            "bishop", "janbu_simplified", "spencer"
+        ],
+        n_slices=50,
+    )
+    p.groundwater.method = "none"
+    p.surfaces.surface_type = "noncircular" if noncircular else "circular"
+    p.surfaces.noncircular_shape = "polyline"
+    p.surfaces.effort = "fine" if noncircular else "normal"
+    p.surfaces.n_ctrl = 4
+    return p
+
+
+def arai_tagyo_layered_circular_project() -> Project:
+    """VP15 circular search."""
+    return arai_tagyo_layered_project(noncircular=False)
+
+
+def arai_tagyo_layered_noncircular_project() -> Project:
+    """VP15 non-circular polyline search."""
+    return arai_tagyo_layered_project(noncircular=True)
+
+
 def layered_example_project() -> Project:
     """Three materials, a weak clay band outcropping on the face, water table."""
     return _mk(
@@ -1156,6 +1203,8 @@ EXAMPLES = {
     "ACADS EX1(b)": acads_1b_project,
     "ACADS 2(b) — Talbingo fixed circle": acads_2b_project,
     "ACADS 3(a) — weak seam + water table": acads_3a_project,
+    "Arai & Tagyo — layered (circular)": arai_tagyo_layered_circular_project,
+    "Arai & Tagyo — layered (noncircular)": arai_tagyo_layered_noncircular_project,
     "Layered slope + water table": layered_example_project,
     "Anchored cut + surcharge": anchored_example_project,
     "Slope with tension crack": cracked_example_project,
