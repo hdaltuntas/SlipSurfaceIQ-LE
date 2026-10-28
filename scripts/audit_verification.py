@@ -74,9 +74,9 @@ def audit(name: str, effort: str, seed: int, restrict_seam: bool) -> dict:
         else:
             surface = {
                 "type": type(shape).__name__,
-                "vertices": [[float(a), float(b)] for a, b in shape.points(
-                    slices.x_exit, slices.x_entry, 24
-                )],
+                "vertices": [
+                    [float(a), float(b)] for a, b in shape.points(slices.x_exit, slices.x_entry, 24)
+                ],
             }
         supports = []
         for f in slices.support_forces:
@@ -103,9 +103,7 @@ def audit(name: str, effort: str, seed: int, restrict_seam: bool) -> dict:
             "x_entry": float(slices.x_entry),
             "n_slices": int(slices.n),
             "n_evaluations": int(found.n_evals),
-            "base_material_counts": {
-                mat: base_names.count(mat) for mat in sorted(set(base_names))
-            },
+            "base_material_counts": {mat: base_names.count(mat) for mat in sorted(set(base_names))},
             "max_pore_pressure_kpa": float(np.max(slices.u)),
             "supports_crossing_surface": supports,
             "surface": surface,
