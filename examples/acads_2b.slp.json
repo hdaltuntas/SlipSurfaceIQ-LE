@@ -1,0 +1,317 @@
+{
+  "format": "slipsurface-le",
+  "version": 3,
+  "summary": {
+    "title": "ACADS 2(b) — Talbingo Dam, specified dry circle",
+    "analysis": "",
+    "author": "",
+    "company": "",
+    "date_created": "2026-10-28, 08:20:00",
+    "comments": [
+      "",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  "materials": [
+    {
+      "name": "Rockfill",
+      "model": "MC",
+      "gamma": 20.4,
+      "gamma_sat": 20.4,
+      "use_sat": false,
+      "c": 0,
+      "phi": 45,
+      "sigma_ci": 25000,
+      "gsi": 50,
+      "mi": 10,
+      "d": 0,
+      "use_water": true,
+      "hu": 1,
+      "color": "#f0c800"
+    },
+    {
+      "name": "Transitions",
+      "model": "MC",
+      "gamma": 20.4,
+      "gamma_sat": 20.4,
+      "use_sat": false,
+      "c": 0,
+      "phi": 45,
+      "sigma_ci": 25000,
+      "gsi": 50,
+      "mi": 10,
+      "d": 0,
+      "use_water": true,
+      "hu": 1,
+      "color": "#8080d0"
+    },
+    {
+      "name": "Filter",
+      "model": "MC",
+      "gamma": 20.4,
+      "gamma_sat": 20.4,
+      "use_sat": false,
+      "c": 0,
+      "phi": 45,
+      "sigma_ci": 25000,
+      "gsi": 50,
+      "mi": 10,
+      "d": 0,
+      "use_water": true,
+      "hu": 1,
+      "color": "#3cb371"
+    },
+    {
+      "name": "Core",
+      "model": "MC",
+      "gamma": 18.1,
+      "gamma_sat": 18.1,
+      "use_sat": false,
+      "c": 85,
+      "phi": 23,
+      "sigma_ci": 25000,
+      "gsi": 50,
+      "mi": 10,
+      "d": 0,
+      "use_water": true,
+      "hu": 1,
+      "color": "#ff7f3f"
+    }
+  ],
+  "geometry": {
+    "external": [
+      [
+        0,
+        0
+      ],
+      [
+        648,
+        0
+      ],
+      [
+        577.9,
+        31.4
+      ],
+      [
+        515,
+        65.3
+      ],
+      [
+        453.4,
+        97.9
+      ],
+      [
+        386.9,
+        130.6
+      ],
+      [
+        327.6,
+        162
+      ],
+      [
+        315.5,
+        162
+      ]
+    ],
+    "material_boundaries": [
+      [
+        [
+          168.1,
+          0
+        ],
+        [
+          302.2,
+          130.6
+        ],
+        [
+          315.5,
+          162
+        ]
+      ],
+      [
+        [
+          200.7,
+          0
+        ],
+        [
+          311.9,
+          130.6
+        ],
+        [
+          319.5,
+          162
+        ]
+      ],
+      [
+        [
+          307.1,
+          0
+        ],
+        [
+          331.3,
+          130.6
+        ],
+        [
+          328.8,
+          146.1
+        ],
+        [
+          321.6,
+          162
+        ]
+      ],
+      [
+        [
+          310.7,
+          0
+        ],
+        [
+          333.7,
+          130.6
+        ],
+        [
+          331.3,
+          146.1
+        ],
+        [
+          327.6,
+          162
+        ]
+      ],
+      [
+        [
+          372.4,
+          0
+        ],
+        [
+          347,
+          130.6
+        ],
+        [
+          327.6,
+          162
+        ]
+      ]
+    ],
+    "water_table": null,
+    "tension_crack": null,
+    "assignments": [
+      {
+        "point": [
+          100,
+          20
+        ],
+        "material": "Rockfill"
+      },
+      {
+        "point": [
+          245,
+          65
+        ],
+        "material": "Transitions"
+      },
+      {
+        "point": [
+          287,
+          65
+        ],
+        "material": "Core"
+      },
+      {
+        "point": [
+          320.7,
+          65.3
+        ],
+        "material": "Filter"
+      },
+      {
+        "point": [
+          341,
+          65
+        ],
+        "material": "Transitions"
+      },
+      {
+        "point": [
+          500,
+          65
+        ],
+        "material": "Rockfill"
+      }
+    ]
+  },
+  "settings": {
+    "general": {
+      "units": "metric",
+      "failure_direction": "right_to_left",
+      "data_output": "standard"
+    },
+    "methods": {
+      "methods": [
+        "bishop",
+        "spencer",
+        "gle",
+        "janbu_corrected"
+      ],
+      "n_slices": 50,
+      "tolerance": 0.005,
+      "max_iter": 75,
+      "interslice": "half-sine",
+      "f_start": 0.5,
+      "f_end": 0.5
+    },
+    "groundwater": {
+      "method": "none",
+      "gamma_w": 9.81,
+      "ru": 0
+    },
+    "seismic": {
+      "kh": 0,
+      "kv": 0
+    },
+    "advanced": {
+      "check_admissibility": true,
+      "min_depth": 0
+    }
+  },
+  "surfaces": {
+    "surface_type": "user",
+    "search": "none",
+    "effort": "fine",
+    "n_ctrl": 4,
+    "convex_only": true,
+    "seed": 0,
+    "left_range": null,
+    "right_range": null,
+    "user_surface": null,
+    "noncircular_shape": "polyline",
+    "user_circle": [
+      100.3,
+      291,
+      278.8
+    ]
+  },
+  "loads": [],
+  "support_types": [],
+  "supports": [],
+  "display": {
+    "external_color": "#606060",
+    "material_boundary_color": "#808080",
+    "water_table_color": "#1f5fd1",
+    "show_vertices": true,
+    "line_width": 2,
+    "show_ruler": true,
+    "show_grid": true,
+    "fill_materials": true,
+    "show_slope_limits": true,
+    "show_slices": true,
+    "slice_fill_color": "#f6d65a",
+    "show_lines_to_center": true,
+    "show_fs_text": true,
+    "show_all_surfaces": true,
+    "show_legend": true
+  }
+}
