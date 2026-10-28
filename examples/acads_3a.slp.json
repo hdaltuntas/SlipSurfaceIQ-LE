@@ -1,0 +1,200 @@
+{
+  "format": "slipsurface-le",
+  "version": 3,
+  "summary": {
+    "title": "ACADS 3(a) — water table with weak seam",
+    "analysis": "",
+    "author": "",
+    "company": "",
+    "date_created": "2026-10-28, 08:20:00",
+    "comments": [
+      "",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  "materials": [
+    {
+      "name": "Soil 1",
+      "model": "MC",
+      "gamma": 18.84,
+      "gamma_sat": 18.84,
+      "use_sat": false,
+      "c": 28.5,
+      "phi": 20,
+      "sigma_ci": 25000,
+      "gsi": 50,
+      "mi": 10,
+      "d": 0,
+      "use_water": true,
+      "hu": 1,
+      "color": "#f0c800"
+    },
+    {
+      "name": "Soil 2",
+      "model": "MC",
+      "gamma": 18.84,
+      "gamma_sat": 18.84,
+      "use_sat": false,
+      "c": 0,
+      "phi": 10,
+      "sigma_ci": 25000,
+      "gsi": 50,
+      "mi": 10,
+      "d": 0,
+      "use_water": true,
+      "hu": 1,
+      "color": "#8080d0"
+    }
+  ],
+  "geometry": {
+    "external": [
+      [
+        20,
+        20
+      ],
+      [
+        84,
+        20
+      ],
+      [
+        84,
+        40
+      ],
+      [
+        67.5,
+        40
+      ],
+      [
+        43,
+        27.75
+      ],
+      [
+        20,
+        27.75
+      ]
+    ],
+    "material_boundaries": [
+      [
+        [
+          20,
+          27
+        ],
+        [
+          84,
+          27
+        ]
+      ],
+      [
+        [
+          20,
+          26.5
+        ],
+        [
+          84,
+          26.5
+        ]
+      ]
+    ],
+    "water_table": [
+      [
+        20,
+        26.5
+      ],
+      [
+        84,
+        26.5
+      ]
+    ],
+    "tension_crack": null,
+    "assignments": [
+      {
+        "point": [
+          60,
+          32
+        ],
+        "material": "Soil 1"
+      },
+      {
+        "point": [
+          60,
+          26.75
+        ],
+        "material": "Soil 2"
+      },
+      {
+        "point": [
+          60,
+          23
+        ],
+        "material": "Soil 1"
+      }
+    ]
+  },
+  "settings": {
+    "general": {
+      "units": "metric",
+      "failure_direction": "right_to_left",
+      "data_output": "standard"
+    },
+    "methods": {
+      "methods": [
+        "spencer",
+        "gle"
+      ],
+      "n_slices": 60,
+      "tolerance": 0.005,
+      "max_iter": 75,
+      "interslice": "half-sine",
+      "f_start": 0.5,
+      "f_end": 0.5
+    },
+    "groundwater": {
+      "method": "water_table",
+      "gamma_w": 9.81,
+      "ru": 0
+    },
+    "seismic": {
+      "kh": 0,
+      "kv": 0
+    },
+    "advanced": {
+      "check_admissibility": true,
+      "min_depth": 0
+    }
+  },
+  "surfaces": {
+    "surface_type": "noncircular",
+    "search": "auto_refine",
+    "effort": "fine",
+    "n_ctrl": 4,
+    "convex_only": true,
+    "seed": 0,
+    "left_range": null,
+    "right_range": null,
+    "user_surface": null,
+    "noncircular_shape": "polyline"
+  },
+  "loads": [],
+  "support_types": [],
+  "supports": [],
+  "display": {
+    "external_color": "#606060",
+    "material_boundary_color": "#808080",
+    "water_table_color": "#1f5fd1",
+    "show_vertices": true,
+    "line_width": 2,
+    "show_ruler": true,
+    "show_grid": true,
+    "fill_materials": true,
+    "show_slope_limits": true,
+    "show_slices": true,
+    "slice_fill_color": "#f6d65a",
+    "show_lines_to_center": true,
+    "show_fs_text": true,
+    "show_all_surfaces": true,
+    "show_legend": true
+  }
+}
