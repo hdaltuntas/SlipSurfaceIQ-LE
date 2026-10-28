@@ -280,7 +280,7 @@
   "surfaces": {
     "surface_type": "user",
     "search": "none",
-    "effort": "fine",
+    "effort": "normal",
     "n_ctrl": 4,
     "convex_only": true,
     "seed": 0,
