@@ -61,9 +61,7 @@ def test_acads_3a_seam_is_a_real_region_not_a_drawn_line():
 
     assert g.domain.area == pytest.approx(848.1875)
     assert len(g.regions) == 3
-    assert sorted(r.polygon.area for r in g.regions) == pytest.approx(
-        [32.0, 400.1875, 416.0]
-    )
+    assert sorted(r.polygon.area for r in g.regions) == pytest.approx([32.0, 400.1875, 416.0])
     for point, expected in [
         ((60, 32), "Soil 1"),
         ((60, 26.75), "Soil 2"),
@@ -73,8 +71,7 @@ def test_acads_3a_seam_is_a_real_region_not_a_drawn_line():
         assert matches == [expected]
 
     np.testing.assert_allclose(g.water_y(np.array([20, 43, 67.5, 84])), 26.5)
-    np.testing.assert_allclose(g.ground_y(np.array([20, 43, 67.5, 84])),
-                               [27.75, 27.75, 40.0, 40.0])
+    np.testing.assert_allclose(g.ground_y(np.array([20, 43, 67.5, 84])), [27.75, 27.75, 40.0, 40.0])
 
 
 def test_acads_3a_control_surface_intersects_weak_seam():
@@ -95,18 +92,12 @@ def test_acads_3a_groundwater_is_positive_only_below_phreatic_line():
     g, mats = p.build_geometry(), p.build_materials()
     # This diagnostic trial surface cuts below the water table: ACADS 3(b)
     # happens to run at/above the water elevation along its weak seam.
-    trial = PolylineSurface(
-        [[41.85, 27.75], [44, 26.0], [63.5, 26.0], [73.31, 40.0]]
-    )
+    trial = PolylineSurface([[41.85, 27.75], [44, 26.0], [63.5, 26.0], [73.31, 40.0]])
     wet = make_slices(g, trial, mats, opts=p.slice_options())
-    dry = make_slices(
-        g, trial, mats, opts=replace(p.slice_options(), pore="none")
-    )
+    dry = make_slices(g, trial, mats, opts=replace(p.slice_options(), pore="none"))
 
     assert np.any(wet.u > 0)
-    np.testing.assert_allclose(
-        wet.u, 9.81 * np.maximum(26.5 - wet.y_base, 0.0), rtol=0, atol=1e-9
-    )
+    np.testing.assert_allclose(wet.u, 9.81 * np.maximum(26.5 - wet.y_base, 0.0), rtol=0, atol=1e-9)
     np.testing.assert_array_equal(dry.u, np.zeros_like(dry.u))
     np.testing.assert_allclose(wet.W, dry.W, rtol=1e-12, atol=1e-8)
 
