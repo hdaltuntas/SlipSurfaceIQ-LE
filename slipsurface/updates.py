@@ -1,8 +1,8 @@
 """Check GitHub for a newer published release (no Qt; used by the UI).
 
 Only the public "latest release" endpoint is queried: drafts and
-pre-releases are never offered. Nothing is downloaded or installed; the
-user is pointed to the release page.
+pre-releases are never offered. Nothing is downloaded or installed;
+users are directed to a source-code release, then run main.py.
 """
 
 from __future__ import annotations
@@ -22,8 +22,7 @@ REPOSITORY = "hdaltuntas/SlipSurfaceIQ-LE"
 LATEST_API = f"https://api.github.com/repos/{REPOSITORY}/releases/latest"
 RELEASES_PAGE = f"https://github.com/{REPOSITORY}/releases/latest"
 
-# Certificate bundles of common Linux distributions and macOS. A bundled
-# (PyInstaller) Python may look for OpenSSL's compiled-in path instead.
+# Certificate bundles of common Linux distributions and macOS.
 CA_BUNDLES = (
     "/etc/ssl/certs/ca-certificates.crt",  # Debian, Ubuntu, Arch
     "/etc/pki/tls/certs/ca-bundle.crt",  # Fedora, RHEL
