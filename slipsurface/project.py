@@ -927,6 +927,106 @@ def acads_1b_project() -> Project:
     )
 
 
+def acads_1c_project() -> Project:
+    """ACADS EX1(c): the EX1(a) homogeneous slope with a water-filled
+    tension crack in the crest zone.
+
+    Slide2 verification problem #2 / RS2 #2 (Giam & Donald, 1989).
+    The crack depth follows Craig (1997):
+    z0 = 2c/gamma * sqrt((1 - sin phi) / (1 + sin phi)) = 2.685 m
+    for c=32 kPa, phi=10 deg, gamma=20 kN/m3. Published FoS:
+    Spencer 1.592, GLE 1.592 (Slide2); referee 1.65 (Giam).
+    """
+    import math
+
+    phi = math.radians(10.0)
+    z0 = 2 * 32.0 / 20.0 * math.sqrt((1 - math.sin(phi)) / (1 + math.sin(phi)))
+    p = _mk(
+        "ACADS EX1(c) — slope with tension crack",
+        [MaterialSpec("Soil 1", "MC", 20, 20, False, 32.0, 10.0, color=PALETTE[0])],
+        [[0, -5], [60, -5], [60, 10], [40, 10], [20, 0], [0, 0]],
+        methods=["bishop", "spencer", "gle"],
+        n_slices=40,
+    )
+    p.tension_crack = [[42.0, 10 - z0], [60.0, 10 - z0]]
+    p.groundwater.crack_water = 1.0  # water-filled crack (Slide2 VP#2)
+    p.surfaces.effort = "fine"
+    return p
+
+
+def acads_1d_project() -> Project:
+    """ACADS EX1(d): the EX1(b) three-layer slope with kh = 0.15.
+
+    Slide2 verification problem #4 / RS2 #4 (Giam & Donald, 1989).
+    Published FoS: Spencer 0.991, GLE 0.989 (Slide2); referee 1.00 (Giam).
+    """
+    p = acads_1b_project()
+    p.summary.title = "ACADS EX1(d) — seismic kh = 0.15"
+    p.methods.methods = ["bishop", "spencer", "gle"]
+    p.seismic.kh = 0.15
+    return p
+
+
+def acads_4_project() -> Project:
+    """ACADS EX4: weak seam, piezometric surface and surcharge.
+
+    Slide2 verification problem #9 / RS2 #9 (Giam & Donald, 1989).
+    Same geometry and materials as 3(a) with an inclined piezometric
+    surface and two distributed loads. Published FoS: Spencer 0.761,
+    GLE 0.721 (Slide2, block search); referee 0.78 (Giam).
+    """
+    p = acads_3a_project()
+    p.summary.title = "ACADS EX4 — weak seam, water table, surcharge"
+    p.water_table = [
+        [20, 27.75],
+        [43, 27.75],
+        [49, 29.8],
+        [60, 34.0],
+        [66, 35.8],
+        [74, 37.6],
+        [80, 38.4],
+        [84, 38.4],
+    ]
+    p.loads = [
+        {
+            "kind": "distributed",
+            "points": [[23, 27.75], [43, 27.75]],
+            "q": [20, 20],
+            "orientation": "vertical",
+        },
+        {
+            "kind": "distributed",
+            "points": [[70, 40], [80, 40]],
+            "q": [20, 40],
+            "orientation": "vertical",
+        },
+    ]
+    return p
+
+
+def acads_5_project() -> Project:
+    """ACADS EX5: excavated 1:2 slope with stabilised groundwater.
+
+    Slide2 verification problem #10 / RS2 #10 (Giam & Donald, 1989).
+    The published reference derives pore pressures from a flow net; this
+    model approximates them with a water table that falls toward the
+    excavation (u = 0 above the table). Published FoS: Spencer 1.500
+    (Slide2, pore-pressure grid); referee 1.53 (Giam). With the water-
+    table approximation the Spencer search gives ~1.486.
+    """
+    p = _mk(
+        "ACADS EX5 — excavated slope with groundwater",
+        [MaterialSpec("Soil 1", "MC", 20, 20, False, 11.0, 28.0, color=PALETTE[0])],
+        [[0, -10], [80, -10], [80, 0], [50, 0], [30, 10], [0, 10]],
+        wt=[[0, 6], [30, 6], [40, 3], [50, 0], [80, 0]],
+        methods=["bishop", "spencer", "gle"],
+        n_slices=40,
+    )
+    p.general.failure_direction = "left_to_right"  # high ground on the left
+    p.surfaces.effort = "fine"
+    return p
+
+
 def acads_3a_project() -> Project:
     """ACADS 3(a) / VS_7: water table at the base of a 0.5 m weak seam.
 
@@ -1346,10 +1446,14 @@ EXAMPLES = {
     "Simple slope (10 m, 2H:1V)": default_project,
     "ACADS EX1(a)": acads_1a_project,
     "ACADS EX1(b)": acads_1b_project,
+    "ACADS EX1(c) — slope with tension crack": acads_1c_project,
+    "ACADS EX1(d) — seismic kh = 0.15": acads_1d_project,
     "ACADS 2(a) — Talbingo critical upstream search": acads_2a_project,
     "ACADS 2(b) — Talbingo fixed circle": acads_2b_project,
     "ACADS 3(a) — weak seam + water table": acads_3a_project,
     "ACADS 3(b) — weak seam specified path": acads_3b_project,
+    "ACADS EX4 — weak seam, water table, surcharge": acads_4_project,
+    "ACADS EX5 — excavated slope with groundwater": acads_5_project,
     "Arai & Tagyo — layered (circular)": arai_tagyo_layered_circular_project,
     "Arai & Tagyo — layered (noncircular)": arai_tagyo_layered_noncircular_project,
     "Borges & Cardoso — geosynthetic embankment #2": borges_cardoso_case2_project,

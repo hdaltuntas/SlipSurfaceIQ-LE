@@ -1,0 +1,366 @@
+{
+  "format": "slipsurface-le",
+  "version": 3,
+  "summary": {
+    "title": "ACADS EX1(d) — seismic kh = 0.15",
+    "analysis": "",
+    "author": "",
+    "company": "",
+    "date_created": "2026-10-31, 20:49:18",
+    "comments": [
+      "",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  "materials": [
+    {
+      "name": "Soil 1",
+      "model": "MC",
+      "gamma": 19.5,
+      "gamma_sat": 19.5,
+      "use_sat": false,
+      "c": 0.0,
+      "phi": 38.0,
+      "sigma_ci": 25000.0,
+      "gsi": 50.0,
+      "mi": 10.0,
+      "d": 0.0,
+      "use_water": true,
+      "hu": 1.0,
+      "color": "#f0c800",
+      "su": 25.0,
+      "su_top": 25.0,
+      "su_bottom": 25.0,
+      "su_y_top": 0.0,
+      "su_y_bottom": -1.0,
+      "coefficient": 0.2,
+      "exponent": 0.5,
+      "reference_pressure": 100.0,
+      "shansep_s": 0.22,
+      "shansep_m": 0.8,
+      "ocr": 1.0,
+      "shansep_su_min": 0.0,
+      "hs_psi": 0.0,
+      "hs_e50": 30000.0,
+      "hs_eoed": 30000.0,
+      "hs_eur": 90000.0,
+      "hs_m": 0.5,
+      "hs_pref": 100.0,
+      "hs_rf": 0.9,
+      "ss_m": 1.25,
+      "ss_e": 0.75,
+      "ss_ec0": 0.934,
+      "ss_lambda": 0.019,
+      "ss_xi": 0.7,
+      "ss_nb": 1.1,
+      "ss_pat": 101.3,
+      "pc_a": 1.5,
+      "pc_b": 0.8,
+      "pc_c": 0.0,
+      "pc_d": 0.0,
+      "bb_phir": 25.0,
+      "bb_jrc": 10.0,
+      "bb_jcs": 50000.0,
+      "bb_l0": 0.1,
+      "bb_ln": 0.1,
+      "cni_sigma_c": 10000.0,
+      "cni_a": 0.6,
+      "cni_n": 0.75,
+      "cni_t": 100.0,
+      "hb_mb": 1.0,
+      "hb_s": 0.001,
+      "hb_a": 0.5
+    },
+    {
+      "name": "Soil 2",
+      "model": "MC",
+      "gamma": 19.5,
+      "gamma_sat": 19.5,
+      "use_sat": false,
+      "c": 5.3,
+      "phi": 23.0,
+      "sigma_ci": 25000.0,
+      "gsi": 50.0,
+      "mi": 10.0,
+      "d": 0.0,
+      "use_water": true,
+      "hu": 1.0,
+      "color": "#8080d0",
+      "su": 25.0,
+      "su_top": 25.0,
+      "su_bottom": 25.0,
+      "su_y_top": 0.0,
+      "su_y_bottom": -1.0,
+      "coefficient": 0.2,
+      "exponent": 0.5,
+      "reference_pressure": 100.0,
+      "shansep_s": 0.22,
+      "shansep_m": 0.8,
+      "ocr": 1.0,
+      "shansep_su_min": 0.0,
+      "hs_psi": 0.0,
+      "hs_e50": 30000.0,
+      "hs_eoed": 30000.0,
+      "hs_eur": 90000.0,
+      "hs_m": 0.5,
+      "hs_pref": 100.0,
+      "hs_rf": 0.9,
+      "ss_m": 1.25,
+      "ss_e": 0.75,
+      "ss_ec0": 0.934,
+      "ss_lambda": 0.019,
+      "ss_xi": 0.7,
+      "ss_nb": 1.1,
+      "ss_pat": 101.3,
+      "pc_a": 1.5,
+      "pc_b": 0.8,
+      "pc_c": 0.0,
+      "pc_d": 0.0,
+      "bb_phir": 25.0,
+      "bb_jrc": 10.0,
+      "bb_jcs": 50000.0,
+      "bb_l0": 0.1,
+      "bb_ln": 0.1,
+      "cni_sigma_c": 10000.0,
+      "cni_a": 0.6,
+      "cni_n": 0.75,
+      "cni_t": 100.0,
+      "hb_mb": 1.0,
+      "hb_s": 0.001,
+      "hb_a": 0.5
+    },
+    {
+      "name": "Soil 3",
+      "model": "MC",
+      "gamma": 19.5,
+      "gamma_sat": 19.5,
+      "use_sat": false,
+      "c": 7.2,
+      "phi": 20.0,
+      "sigma_ci": 25000.0,
+      "gsi": 50.0,
+      "mi": 10.0,
+      "d": 0.0,
+      "use_water": true,
+      "hu": 1.0,
+      "color": "#ff7f3f",
+      "su": 25.0,
+      "su_top": 25.0,
+      "su_bottom": 25.0,
+      "su_y_top": 0.0,
+      "su_y_bottom": -1.0,
+      "coefficient": 0.2,
+      "exponent": 0.5,
+      "reference_pressure": 100.0,
+      "shansep_s": 0.22,
+      "shansep_m": 0.8,
+      "ocr": 1.0,
+      "shansep_su_min": 0.0,
+      "hs_psi": 0.0,
+      "hs_e50": 30000.0,
+      "hs_eoed": 30000.0,
+      "hs_eur": 90000.0,
+      "hs_m": 0.5,
+      "hs_pref": 100.0,
+      "hs_rf": 0.9,
+      "ss_m": 1.25,
+      "ss_e": 0.75,
+      "ss_ec0": 0.934,
+      "ss_lambda": 0.019,
+      "ss_xi": 0.7,
+      "ss_nb": 1.1,
+      "ss_pat": 101.3,
+      "pc_a": 1.5,
+      "pc_b": 0.8,
+      "pc_c": 0.0,
+      "pc_d": 0.0,
+      "bb_phir": 25.0,
+      "bb_jrc": 10.0,
+      "bb_jcs": 50000.0,
+      "bb_l0": 0.1,
+      "bb_ln": 0.1,
+      "cni_sigma_c": 10000.0,
+      "cni_a": 0.6,
+      "cni_n": 0.75,
+      "cni_t": 100.0,
+      "hb_mb": 1.0,
+      "hb_s": 0.001,
+      "hb_a": 0.5
+    }
+  ],
+  "geometry": {
+    "external": [
+      [
+        20.0,
+        20.0
+      ],
+      [
+        70.0,
+        20.0
+      ],
+      [
+        70.0,
+        35.0
+      ],
+      [
+        50.0,
+        35.0
+      ],
+      [
+        30.0,
+        25.0
+      ],
+      [
+        20.0,
+        25.0
+      ]
+    ],
+    "material_boundaries": [
+      [
+        [
+          30.0,
+          25.0
+        ],
+        [
+          40.0,
+          27.0
+        ],
+        [
+          50.0,
+          29.0
+        ],
+        [
+          54.0,
+          31.0
+        ],
+        [
+          70.0,
+          31.0
+        ]
+      ],
+      [
+        [
+          40.0,
+          27.0
+        ],
+        [
+          52.0,
+          24.0
+        ],
+        [
+          70.0,
+          24.0
+        ]
+      ]
+    ],
+    "water_table": null,
+    "tension_crack": null,
+    "assignments": [
+      {
+        "point": [
+          60.0,
+          33.0
+        ],
+        "material": "Soil 1"
+      },
+      {
+        "point": [
+          60.0,
+          27.0
+        ],
+        "material": "Soil 2"
+      },
+      {
+        "point": [
+          40.0,
+          22.0
+        ],
+        "material": "Soil 3"
+      }
+    ]
+  },
+  "settings": {
+    "general": {
+      "units": "metric",
+      "failure_direction": "right_to_left",
+      "data_output": "standard"
+    },
+    "methods": {
+      "methods": [
+        "bishop",
+        "spencer",
+        "gle"
+      ],
+      "n_slices": 30,
+      "tolerance": 0.005,
+      "max_iter": 75,
+      "interslice": "half-sine",
+      "f_start": 0.5,
+      "f_end": 0.5
+    },
+    "groundwater": {
+      "method": "water_table",
+      "gamma_w": 9.81,
+      "ru": 0.0,
+      "crack_water": 0.0
+    },
+    "seismic": {
+      "kh": 0.15,
+      "kv": 0.0,
+      "both_vertical": true
+    },
+    "advanced": {
+      "check_admissibility": true,
+      "min_depth": 0.0,
+      "m_alpha_min": 0.2,
+      "e_max_ratio": 50.0
+    }
+  },
+  "surfaces": {
+    "surface_type": "circular",
+    "search": "auto_refine",
+    "effort": "normal",
+    "n_ctrl": 4,
+    "noncircular_shape": "polyline",
+    "convex_only": true,
+    "seed": 0,
+    "left_range": null,
+    "right_range": null,
+    "user_surface": null,
+    "user_circle": null
+  },
+  "loads": [],
+  "support_types": [],
+  "supports": [],
+  "support_patterns": [],
+  "facing_types": [],
+  "facings": [],
+  "annotations": [],
+  "result_annotations": [],
+  "display": {
+    "external_color": "#606060",
+    "material_boundary_color": "#808080",
+    "water_table_color": "#1f5fd1",
+    "show_vertices": true,
+    "line_width": 2,
+    "show_ruler": true,
+    "show_grid": true,
+    "fill_materials": true,
+    "show_slope_limits": true,
+    "show_slices": false,
+    "slice_fill_color": "#f6d65a",
+    "show_lines_to_center": true,
+    "show_fs_text": true,
+    "show_all_surfaces": false,
+    "show_fs_contours": true,
+    "critical_dashed": true,
+    "show_legend": true,
+    "show_fs_legend": true,
+    "material_labels": "none",
+    "label_size": 8,
+    "show_control_points": false
+  }
+}
