@@ -383,7 +383,16 @@ def _solve_gle(
             lam=lam_rep,
         )
     res = LEMResult(F, name, True, it, float(ma.min()), lam=lam_rep)
-    return check_admissibility(res, ma, c * fr.l + Np * tp, fr.W, m_alpha_min)
+    return check_admissibility(
+        res,
+        ma,
+        c * fr.l + Np * tp,
+        fr.W,
+        m_alpha_min,
+        base_normal_eff=Np,
+        interslice_E=E,
+        cohesion_force=c * fr.l,
+    )
 
 
 def spencer(s: SliceSet, **kw) -> LEMResult:
@@ -458,7 +467,16 @@ def _force_method(
                     "m_alpha <= 0 (steep negative base angle)",
                 )
             res = LEMResult(float(F), name, True, it, float(ma.min()))
-            return check_admissibility(res, ma, c * fr.l + Np * tp, fr.W, m_alpha_min)
+            return check_admissibility(
+                res,
+                ma,
+                c * fr.l + Np * tp,
+                fr.W,
+                m_alpha_min,
+                base_normal_eff=Np,
+                interslice_E=E,
+                cohesion_force=c * fr.l,
+            )
     except (ValueError, FloatingPointError, ZeroDivisionError) as exc:
         return LEMResult(np.nan, name, False, 0, message=f"{name} failed: {exc}")
 

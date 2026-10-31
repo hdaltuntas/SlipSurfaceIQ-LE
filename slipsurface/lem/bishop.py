@@ -55,6 +55,9 @@ def check_admissibility(
     base_strength: np.ndarray,
     W: np.ndarray,
     m_alpha_min: float = M_ALPHA_MIN,
+    base_normal_eff: np.ndarray | None = None,
+    interslice_E: np.ndarray | None = None,
+    cohesion_force: np.ndarray | None = None,
 ) -> LEMResult:
     """Flag numerically/physically unreliable solutions.
 
@@ -63,6 +66,15 @@ def check_admissibility(
     * negative mobilisable base shear, c l + N' tan(phi) < 0, i.e. the base is
       in tension beyond what cohesion can carry — typical of spurious low-FoS
       roots on surfaces with steep negative base angles.
+    * negative effective base normal N' < 0 on any slice: soil cannot carry
+      tension, so a solution that puts a base in tension is physically
+      invalid even when the mobilised shear c l + N' tan(phi) stays positive
+      thanks to cohesion. Such roots satisfy both equilibrium equations but
+      rely on tensile normal forces (Spencer/GLE on concave non-circular
+      surfaces; observed on the ACADS 3(a) weak-seam search).
+    * widespread interslice tension E < 0: half or more of the interslice
+      forces in tension indicates the trial surface/lambda pair mobilises a
+      tension field instead of a compressive active-passive arch.
     """
     issues = []
     if np.min(ma) < m_alpha_min:
@@ -70,6 +82,22 @@ def check_admissibility(
     tol = -1e-3 * float(np.mean(W))
     if np.min(base_strength) < tol:
         issues.append("negatif taban kayma direnci (tabanda çekme)")
+    if base_normal_eff is not None:
+        # A base in genuine tension is physically invalid, but the last slice
+        # or two at the ends of a legitimate mechanism often shows a small
+        # negative N' (numerical end effect) that the cohesion can carry.
+        # Only flag tension beyond the slice's own cohesive resistance, which
+        # is the physically meaningless regime (soil cannot carry tension).
+        if cohesion_force is not None:
+            beyond = base_normal_eff < -0.9 * np.maximum(cohesion_force, 1e-9)
+        else:
+            beyond = base_normal_eff < -0.1 * W
+        if np.any(beyond):
+            issues.append("negatif efektif taban normali (tabanda çekme)")
+    if interslice_E is not None and interslice_E.size > 2:
+        n_tension = int(np.sum(interslice_E < -1e-9))
+        if n_tension >= max(2, interslice_E.size // 2):
+            issues.append(f"yaygın interslice çekmesi ({n_tension}/{interslice_E.size})")
     res.admissible = not issues
     res.issue = "; ".join(issues)
     return res
