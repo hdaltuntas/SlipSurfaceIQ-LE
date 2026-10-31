@@ -7,7 +7,7 @@ now match. Reported SlipSurfaceIQ-LE outputs (user's 2026-10-28 runs):
 |---|---:|---:|---|
 | Talbingo ACADS **2(b)**, specified circle | Bishop 2.206; Janbu Corrected 2.073 | Slide2 Bishop 2.208; Janbu Corrected 2.073 | Matches the SAME fixed circle and methods |
 | Talbingo ACADS **2(a)**, searched upstream face | Not separately evaluated | SLOPE/W 1.951 (Bishop / rigorous) | Distinct search problem, now supplied as a second project |
-| ACADS 3(a), weak seam + water table | 0.462 | Spencer ~1.258; GLE ~1.246–1.264 | Large discrepancy requiring audit of actual optimized path |
+| ACADS 3(a), weak seam + water table | ~~0.462~~ → **Spencer 1.227 / GLE 1.213 (resolved)** | Spencer ~1.258; GLE ~1.246–1.264 | Tensile roots rejected by the base-tension guard; seam mechanism found |
 | Borges & Cardoso (2002), Case 2 | ~~0.861~~ → **Bishop 1.162 (resolved)**; Janbu 0.905; GLE 0.942 | Bishop 1.170; Morgenstern–Price 1.171 | Bishop now matches: the old 0.861 came from a degenerate tangent circle (see below). Janbu/GLE still find a shallow embankment-face mechanism — separate issue |
 
 ## Source hierarchy
@@ -70,6 +70,23 @@ the returned lowest-FoS path:
 
 **Do not** force the default model to report 1.26 by discarding valid
 lower-FoS surfaces or multiplying the result.
+
+**Resolved (2026-10-31):** the low-FoS roots were *tensile*: their
+equilibrium requires negative effective base normals far beyond the
+slices' cohesive resistance (worst |N'|/cl ≈ 2.5) and half the
+interslice forces in tension — physically impossible for soil.
+`check_admissibility` now flags base tension beyond 0.5·c·l on more
+than the end slices, and widespread interslice tension. With the
+guard, the unrestricted 3(a) search reports Spencer 1.227 / GLE 1.213
+(published 1.257 / 1.246, both on the seam mechanism), and the Arai–
+Tagyo non-circular search improves from Spencer 0.322 to 0.418
+(published 0.412). The prescribed 3(b) path (worst ratio 0.41, a
+trailing-edge effect within cohesion) remains admissible.
+
+A residual question is documented rather than forced: a single
+trailing-edge slice in tension is accepted as the usual exit/entry
+artifact; two or more such slices, or interior tension, reject the
+root.
 
 ### Borges & Cardoso Case 2: support contribution is a priority
 

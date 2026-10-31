@@ -86,13 +86,15 @@ def check_admissibility(
         # A base in genuine tension is physically invalid, but the last slice
         # or two at the ends of a legitimate mechanism often shows a small
         # negative N' (numerical end effect) that the cohesion can carry.
-        # Only flag tension beyond the slice's own cohesive resistance, which
-        # is the physically meaningless regime (soil cannot carry tension).
+        # Only flag tension beyond half the slice's cohesive resistance on more
+        # than the end slices: a single trailing-edge slice in tension is the
+        # usual exit/entry artifact, while tension spread across the mass is
+        # the physically meaningless regime (soil cannot carry tension).
         if cohesion_force is not None:
-            beyond = base_normal_eff < -0.9 * np.maximum(cohesion_force, 1e-9)
+            beyond = base_normal_eff < -0.5 * np.maximum(cohesion_force, 1e-9)
         else:
             beyond = base_normal_eff < -0.1 * W
-        if np.any(beyond):
+        if np.sum(beyond) >= 2 or (beyond.size >= 4 and bool(beyond[1:-1].any())):
             issues.append("negatif efektif taban normali (tabanda çekme)")
     if interslice_E is not None and interslice_E.size > 2:
         n_tension = int(np.sum(interslice_E < -1e-9))

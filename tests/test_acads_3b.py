@@ -40,3 +40,48 @@ def test_acads_3b_really_solves_prescribed_path():
         assert solution.n_evals == 1
         assert solution.slices.n > 20
         assert solution.fos == pytest.approx(1.26, abs=0.12)
+
+
+def test_tensile_roots_are_inadmissible_but_reference_paths_pass():
+    """The base-tension admissibility guard separates spurious and real roots.
+
+    The ACADS 3(a) unrestricted search used to stop at a Spencer root whose
+    equilibrium required |N'| > c*l on interior slices (soil in tension).
+    The prescribed 3(b) seam path, in contrast, only shows small trailing-
+    edge tensions well within cohesion. Both must stay classified that way.
+    """
+    from slipsurface.lem import make_slices, spencer, solve_gle
+    from slipsurface.geometry import PolylineSurface
+
+    g, m = acads_3a_project().build_geometry(), acads_3a_project().build_materials()
+    # a surface of the spurious family: dips below the seam to y ~ 20
+    # (captured from the pre-guard 3(a) search result)
+    surf_bad = PolylineSurface(
+        [
+            [46.106, 29.303],
+            [49.829, 23.866],
+            [52.435, 20.058],
+            [55.536, 22.876],
+            [58.236, 25.329],
+            [61.022, 27.869],
+            [63.740, 30.346],
+            [66.769, 33.109],
+            [69.626, 35.726],
+            [70.433, 36.465],
+            [74.292, 40.0],
+        ]
+    )
+    s = make_slices(g, surf_bad, m, opts=acads_3a_project().slice_options())
+    r = spencer(s, tol=1e-10)
+    assert r.ok and not r.admissible, (r.fos, r.admissible, r.issue)
+    assert "çekme" in r.issue
+
+    # the prescribed 3(b) path remains admissible for both solvers
+    p3b = acads_3b_project()
+    s2 = make_slices(
+        g, PolylineSurface(p3b.surfaces.user_surface), m, opts=acads_3a_project().slice_options()
+    )
+    r2 = spencer(s2, tol=1e-10)
+    assert r2.ok and r2.admissible, (r2.fos, r2.issue)
+    rg = solve_gle(s2, interslice="half-sine", tol=1e-10)
+    assert rg.ok and rg.admissible, (rg.fos, rg.issue)
