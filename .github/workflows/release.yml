@@ -1,0 +1,31 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build delta-update manifest
+        run: |
+          python - <<'EOF'
+          from pathlib import Path
+          from slipsurface.patch import write_manifest
+          version = "${{ github.ref_name }}".lstrip("v")
+          manifest = write_manifest(Path("."), Path("manifest.json"), version)
+          print(f"manifest: {len(manifest['files'])} files for v{version}")
+          EOF
+      - name: Create release with manifest
+        uses: softprops/action-gh-release@v2
+        with:
+          files: manifest.json
+          generate_release_notes: true

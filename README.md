@@ -1,8 +1,8 @@
 # SlipSurfaceIQ LE
 
-**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.2.0**
+**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.3.0**
 
-[2026.2.0 release notes](RELEASE_NOTES.md) — source-only distribution. Run the application with `python main.py`; native packages and standalone launchers have been removed. Engineering modules, the CAD interface and verification tests remain available.
+[2026.3.0 release notes](RELEASE_NOTES.md) — delta updates and the FEA interface style. Run the application with `python main.py`; native packages and standalone launchers have been removed. Engineering modules, the CAD interface and verification tests remain available.
 
 SlipSurfaceIQ LE is an open-source program for checking the stability of soil and rock
 slopes, cuts and embankments with the limit equilibrium method (LEM). You draw the slope

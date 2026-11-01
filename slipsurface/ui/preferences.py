@@ -58,46 +58,105 @@ def show_screen_sized(window) -> None:
 
 
 def apply_theme(dark=None):
+    """Apply the SlipSurfaceIQ FEA-style theme (explicit light / dark palettes).
+
+    The light mode mirrors the SlipSurfaceIQ-FEA desktop app: an explicit
+    palette independent of the system dark mode, with matching QSS for
+    menus, toolbars, buttons, tabs and headers.
+    """
     app = QApplication.instance()
     if dark is None:
         dark = settings().value("dark", False, type=bool)
     settings().setValue("dark", dark)
-    bg, base, text, border = (
-        ("#161e2c", "#202c3e", "#e6edf7", "#36465d")
-        if dark
-        else ("#f1f5f9", "#ffffff", "#243348", "#d9e2ed")
-    )
+    if dark:
+        c = dict(
+            bg="#1b2735",
+            base="#223042",
+            text="#e6edf7",
+            border="#39516b",
+            mid="#31435c",
+            hover="#2a3d54",
+            checked="#3a5f8f",
+            sel_bg="#3a5f8f",
+            sel_text="#ffffff",
+            disabled="#7f90a5",
+            header="#26354a",
+            highlight="#4d8fd1",
+            tab_sel_bg="#2e4260",
+        )
+    else:  # FEA-style explicit light palette
+        c = dict(
+            bg="#f1f4f7",
+            base="#ffffff",
+            text="#243746",
+            border="#ccd7e0",
+            mid="#e6edf3",
+            hover="#e7f1f8",
+            checked="#d9edf9",
+            sel_bg="#dcecf7",
+            sel_text="#124d70",
+            disabled="#71818d",
+            header="#e6edf3",
+            highlight="#2182b3",
+            tab_sel_bg="#ffffff",
+        )
     pal = QPalette()
     for role in (QPalette.Window, QPalette.Button):
-        pal.setColor(role, QColor(bg))
+        pal.setColor(role, QColor(c["bg"]))
     for role in (QPalette.Base, QPalette.AlternateBase, QPalette.ToolTipBase):
-        pal.setColor(role, QColor(base))
+        pal.setColor(role, QColor(c["base"]))
     for role in (QPalette.Text, QPalette.WindowText, QPalette.ButtonText, QPalette.ToolTipText):
-        pal.setColor(role, QColor(text))
-        pal.setColor(QPalette.Disabled, role, QColor("#8491a4"))
-    pal.setColor(QPalette.Highlight, QColor("#287ae6"))
+        pal.setColor(role, QColor(c["text"]))
+        pal.setColor(QPalette.Disabled, role, QColor(c["disabled"]))
+    pal.setColor(QPalette.Highlight, QColor(c["highlight"]))
     pal.setColor(QPalette.HighlightedText, QColor("#ffffff"))
     app.setPalette(pal)
     app.setFont(interface_font())
     app.setStyleSheet(f"""
-        QWidget {{ font-family: "Source Sans 3"; font-size: 14px; }}
-        QMainWindow, QDialog {{ background: {bg}; }}
-        QToolBar {{ spacing: 5px; padding: 7px; border: none;
-                    border-bottom: 1px solid {border}; }}
-        QToolButton {{ padding: 6px; border-radius: 6px; }}
-        QToolButton:hover, QPushButton:hover {{ background: {border}; }}
-        QToolButton:checked {{ background: #315b88; color: white; }}
-        QPushButton {{ padding: 7px 16px; border: 1px solid {border}; border-radius: 6px; }}
-        QLineEdit, QComboBox, QPlainTextEdit {{
-            padding: 5px; border: 1px solid {border}; border-radius: 5px;
-            background: {base}; color: {text}; }}
-        QSpinBox, QDoubleSpinBox {{ background: {base}; color: {text}; min-height: 28px; }}
-        QSpinBox QLineEdit, QDoubleSpinBox QLineEdit {{ padding: 0; border: none; }}
-        QTreeWidget, QListWidget, QTableWidget {{ border: 1px solid {border}; }}
-        QMenu {{ padding: 5px; }}
+        QWidget {{ font-family: "Source Sans 3"; font-size: 14px; color: {c["text"]}; }}
+        QMainWindow, QDialog {{ background: {c["bg"]}; }}
+        QMenuBar, QMenu, QToolBar {{ background: {c["base"]}; color: {c["text"]}; }}
+        QMenuBar::item {{ padding: 7px 12px; background: transparent; }}
+        QMenuBar::item:selected, QMenu::item:selected {{
+            background: {c["sel_bg"]}; color: {c["sel_text"]}; }}
         QMenu::item {{ padding: 7px 26px; }}
-        QMenu::item:selected {{ background: #287ae6; color: white; }}
-        QStatusBar {{ border-top: 1px solid {border}; }}
+        QToolBar {{ spacing: 4px; padding: 5px; border: 0;
+                    border-bottom: 1px solid {c["border"]}; }}
+        QToolButton, QPushButton {{
+            background: {c["base"]}; color: {c["text"]};
+            border: 1px solid {c["border"]}; border-radius: 4px;
+            padding: 6px 9px; min-height: 18px; }}
+        QToolButton:hover, QPushButton:hover {{
+            background: {c["hover"]}; border-color: {c["mid"]}; }}
+        QToolButton:checked, QPushButton:checked {{
+            background: {c["checked"]}; color: {c["sel_text"] if not dark else "#ffffff"};
+            border-color: {c["highlight"]}; }}
+        QToolButton:disabled, QPushButton:disabled {{ background: {c["mid"]}; color: {c["disabled"]}; }}
+        QLineEdit, QComboBox, QPlainTextEdit, QTextEdit, QAbstractItemView {{
+            background: {c["base"]}; color: {c["text"]};
+            selection-background-color: {c["sel_bg"]};
+            selection-color: {c["sel_text"]};
+            border: 1px solid {c["border"]}; border-radius: 3px; padding: 4px; }}
+        QSpinBox, QDoubleSpinBox {{
+            background: {c["base"]}; color: {c["text"]}; min-height: 24px; }}
+        QSpinBox QLineEdit, QDoubleSpinBox QLineEdit {{ padding: 0; border: none; }}
+        QAbstractItemView::item:selected {{ background: {c["sel_bg"]}; color: {c["sel_text"]}; }}
+        QListWidget::item {{ padding: 5px; }}
+        QHeaderView::section {{
+            background: {c["header"]}; color: {c["text"]};
+            padding: 6px; border: 1px solid {c["border"]}; }}
+        QTabWidget::pane {{ border: 1px solid {c["border"]}; background: {c["base"]}; }}
+        QTabBar::tab {{ background: {c["header"]}; color: {c["text"]}; padding: 8px 13px; }}
+        QTabBar::tab:selected {{
+            background: {c["tab_sel_bg"]}; color: {c["sel_text"] if not dark else c["text"]};
+            border-bottom: 2px solid {c["highlight"]}; }}
+        QDockWidget::title {{ background: {c["mid"]}; color: {c["text"]}; padding: 6px; }}
+        QSplitter::handle {{ background: {c["mid"]}; }}
+        QTreeWidget, QListWidget, QTableWidget {{ border: 1px solid {c["border"]}; }}
+        QStatusBar {{ background: {c["mid"]}; color: {c["text"]}; border-top: 1px solid {c["border"]}; }}
+        QProgressBar {{ background: {c["header"]}; color: {c["text"]}; border: 0; text-align: center; }}
+        QProgressBar::chunk {{ background: {c["highlight"]}; }}
+        QToolTip {{ background: {c["text"]}; color: {c["bg"]}; border: 0; padding: 5px; }}
     """)
     for widget in app.topLevelWidgets():
         widget.update()

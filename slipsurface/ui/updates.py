@@ -53,6 +53,7 @@ class UpdateChecker(QObject):
 
     found = Signal(object, bool)  # ReleaseInfo, manual
     failed = Signal(str, bool)  # reason, manual
+    applied = Signal(str, str)  # version, summary (delta update finished)
 
     def __init__(self, parent: QWidget, fetch=fetch_latest) -> None:
         super().__init__(parent)
@@ -62,6 +63,7 @@ class UpdateChecker(QObject):
         self.dialog: QMessageBox | None = None
         self.found.connect(self._on_found)
         self.failed.connect(self._on_failed)
+        self.applied.connect(self._on_applied)
 
     @property
     def busy(self) -> bool:
@@ -117,6 +119,25 @@ class UpdateChecker(QObject):
                 trf("Güncellemeler denetlenemedi: {}", reason),
             )
 
+    def _on_applied(self, version: str, summary: str) -> None:
+        """A delta update finished successfully."""
+        self._busy = False
+        self._status("")
+        box = self._box(
+            QMessageBox.Information,
+            tr("Güncelleme tamam"),
+            trf("SlipSurfaceIQ LE {} dosyaları güncellendi.", version)
+            + "\n"
+            + summary
+            + "\n\n"
+            + tr(
+                "Değişikliklerin tamamı için uygulamayı yeniden başlatın. "
+                "Eski dosyalar .update-backup klasöründedir."
+            ),
+        )
+        box.addButton(QMessageBox.Ok)
+        box.open()
+
     def _offer(self, info: ReleaseInfo) -> None:
         box = self._box(
             QMessageBox.Information,
@@ -128,24 +149,58 @@ class UpdateChecker(QObject):
             )
             + "\n"
             + tr(
-                "Kaynak kodu GitHub sürüm sayfasından edinin; bağımlılıkları kurup python main.py ile çalıştırın."
+                "Sadece değişen dosyalar indirilip yerinde kopyalanabilir; "
+                "eski dosyalar .update-backup klasörüne yedeklenir."
             ),
         )
         if info.notes.strip():
             box.setInformativeText(notes_excerpt(info.notes))
+        patch = box.addButton(tr("Değişen Dosyaları Güncelle"), QMessageBox.AcceptRole)
         download = box.addButton(tr("Kaynak Kod Sayfasını Aç"), QMessageBox.AcceptRole)
         skip = box.addButton(tr("Bu Sürümü Atla"), QMessageBox.DestructiveRole)
         box.addButton(tr("Daha Sonra"), QMessageBox.RejectRole)
-        box.setDefaultButton(download)
+        box.setDefaultButton(patch)
 
         def clicked(button) -> None:
-            if button is download:
+            if button is patch:
+                self._apply_delta(info)
+            elif button is download:
                 QDesktopServices.openUrl(QUrl(info.url))
             elif button is skip:
                 settings().setValue(SKIP_KEY, info.version)
 
         box.buttonClicked.connect(clicked)
         box.open()
+
+    # ------------------------------------------------------ delta update
+    def _apply_delta(self, info: ReleaseInfo) -> None:
+        """Download and copy only the changed files, on a worker thread."""
+        if self._busy:
+            return
+        self._busy = True
+        self._status(tr("Güncelleme planlanıyor…"))
+
+        def run() -> None:
+            from slipsurface.patch import apply_update, plan_against_local
+
+            try:
+                plan = plan_against_local(info.version)
+                summary = apply_update(
+                    plan,
+                    info.version,
+                    progress=lambda done, total, rel: self._progress(done, total, rel),
+                )
+            except Exception as exc:  # UpdateCheckError or any network error
+                self.failed.emit(str(exc), True)
+            else:
+                self.applied.emit(info.version, summary)
+
+        threading.Thread(target=run, daemon=True).start()
+
+    def _progress(self, done: int, total: int, relpath: str) -> bool:
+        """Progress to the status bar; return True to cancel (never, for now)."""
+        self._status(trf("Güncelleniyor: {}/{} ({})", done, total, relpath))
+        return False
 
     # ---------------------------------------------------------- helpers
     def _box(self, kind, title: str, text: str) -> QMessageBox:

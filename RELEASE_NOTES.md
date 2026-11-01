@@ -1,3 +1,22 @@
+# SlipSurfaceIQ LE 2026.3.0
+
+Delta updates and the SlipSurfaceIQ-FEA interface style
+
+- The desktop theme now mirrors the SlipSurfaceIQ-FEA app: an explicit
+  light palette independent of the system dark mode, with matching QSS
+  for menus, toolbars, buttons, tabs, headers and the status bar. The
+  dark mode is kept and restyled with the same component coverage.
+- New in-place **delta updater**: `python -m slipsurface.patch` (or the
+  Help → Check for Updates dialog) compares the running installation's
+  file hashes with the release's published `manifest.json` and downloads
+  **only the changed files**, copying them over the application folder.
+  Previous files are backed up to `.update-backup` before anything is
+  replaced; deleted files are removed locally.
+- The update dialog offers "Değişen Dosyaları Güncelle" alongside the
+  release-page link, and reports a per-file progress line on the status
+  bar while the worker thread transfers the delta.
+- Version 2026.3.0.
+
 # SlipSurfaceIQ LE 2026.2.0
 
 Source-only desktop release
