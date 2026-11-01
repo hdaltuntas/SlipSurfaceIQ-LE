@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from slipsurface.ui.preferences import fit_to_screen
 
-from slipsurface.ui.i18n import tr
-
 
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QColor, QPainter, QPen, QPixmap, QPolygonF
@@ -43,10 +41,10 @@ from slipsurface.project import (
 
 TITLE_CSS = "color:#2a7ad0;font-size:16px;"
 INTERSLICE = [
-    ("half-sine", tr("Yarım sinüs")),
-    ("constant", tr("Sabit (Spencer'e eşdeğer)")),
-    ("clipped-sine", tr("Kırpılmış sinüs")),
-    ("trapezoidal", "Trapez"),
+    ("half-sine", "Half Sine"),
+    ("constant", "Constant (Equivalent to Spencer)"),
+    ("clipped-sine", "Clipped Sine"),
+    ("trapezoidal", "Trapezoidal"),
 ]
 # Slide2 order of the method check boxes
 METHOD_ORDER = [
@@ -104,11 +102,11 @@ def _direction_pixmap(left: bool) -> QPixmap:
 
 
 class ProjectSettingsDialog(QDialog):
-    PAGES = [tr("Genel"), tr("Yöntemler"), tr("Yeraltı Suyu"), tr("Sismik"), tr("Gelişmiş")]
+    PAGES = ["General", "Methods", "Groundwater", "Seismic", "Advanced"]
 
     def __init__(self, project: Project, parent=None, page: int = 0) -> None:
         super().__init__(parent)
-        self.setWindowTitle(tr("Proje Ayarları"))
+        self.setWindowTitle("Project Settings")
         fit_to_screen(self, 760, 560)
         self.p = project.copy()
 
@@ -128,11 +126,11 @@ class ProjectSettingsDialog(QDialog):
         self.nav.setCurrentRow(page)
 
         btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        btns.button(QDialogButtonBox.Ok).setText(tr("Tamam"))
-        btns.button(QDialogButtonBox.Cancel).setText(tr("İptal"))
+        btns.button(QDialogButtonBox.Ok).setText("OK")
+        btns.button(QDialogButtonBox.Cancel).setText("Cancel")
         btns.accepted.connect(self._accept)
         btns.rejected.connect(self.reject)
-        defaults = QPushButton(tr("Varsayılanlar…"))
+        defaults = QPushButton("Defaults…")
         defaults.clicked.connect(self._defaults)
 
         top = QHBoxLayout()
@@ -159,20 +157,20 @@ class ProjectSettingsDialog(QDialog):
         return w, lay
 
     def _page_general(self):
-        w, lay = self._page(tr("Genel"))
+        w, lay = self._page("General")
         g = self.p.general
-        units = QGroupBox(tr("Ölçü birimleri"))
+        units = QGroupBox("Units")
         f = QFormLayout(units)
         self.units = QComboBox()
-        self.units.addItem(tr("Metrik (kN, kPa, m)"), "metric")
-        f.addRow(tr("Gerilme birimleri:"), self.units)
+        self.units.addItem("Metric (kN, kPa, m)", "metric")
+        f.addRow("Stress units:", self.units)
         lay.addWidget(units)
 
         row = QHBoxLayout()
-        dirbox = QGroupBox(tr("Göçme yönü"))
+        dirbox = QGroupBox("Failure Direction")
         gl = QGridLayout(dirbox)
-        self.rtl = QRadioButton(tr("Sağdan sola"))
-        self.ltr = QRadioButton(tr("Soldan sağa"))
+        self.rtl = QRadioButton("Right to left")
+        self.ltr = QRadioButton("Left to right")
         self.dir_group = QButtonGroup(self)
         self.dir_group.addButton(self.rtl)
         self.dir_group.addButton(self.ltr)
@@ -184,10 +182,10 @@ class ProjectSettingsDialog(QDialog):
         gl.addWidget(i1, 0, 1)
         gl.addWidget(self.ltr, 1, 0)
         gl.addWidget(i2, 1, 1)
-        out = QGroupBox(tr("Veri çıktısı"))
+        out = QGroupBox("Data Output")
         ol = QVBoxLayout(out)
         self.out_std = QRadioButton("Standart")
-        self.out_max = QRadioButton(tr("Maksimum (dilim tabloları raporda)"))
+        self.out_max = QRadioButton("Maximum (Slice Tables in Report)")
         (self.out_std if g.data_output == "standard" else self.out_max).setChecked(True)
         ol.addWidget(self.out_std)
         ol.addWidget(self.out_max)
@@ -198,18 +196,18 @@ class ProjectSettingsDialog(QDialog):
         return w
 
     def _page_methods(self):
-        w, lay = self._page(tr("Yöntemler"))
+        w, lay = self._page("Methods")
         m = self.p.methods
         row = QHBoxLayout()
         left = QVBoxLayout()
-        self.vertical = QRadioButton(tr("Düşey dilimler"))
+        self.vertical = QRadioButton("Vertical Slices")
         self.vertical.setChecked(True)
-        sarma_ns = QRadioButton(tr("Sarma düşey olmayan dilimler"))
+        sarma_ns = QRadioButton("Sarma Nonvertical Slices")
         sarma_ns.setEnabled(False)
-        sarma_ns.setToolTip(tr("Bu sürümde desteklenmiyor."))
+        sarma_ns.setToolTip("Not supported in this version.")
         left.addWidget(self.vertical)
         left.addWidget(sarma_ns)
-        box = QGroupBox(tr("Yöntemler"))
+        box = QGroupBox("Methods")
         bl = QVBoxLayout(box)
         self.method_checks: dict[str, QCheckBox] = {}
         for key in METHOD_ORDER:
@@ -217,31 +215,31 @@ class ProjectSettingsDialog(QDialog):
             cb.setChecked(key in m.methods)
             self.method_checks[key] = cb
             bl.addWidget(cb)
-        sarma = QCheckBox(tr("Sarma"))
+        sarma = QCheckBox("Sarma")
         sarma.setEnabled(False)
-        sarma.setToolTip(tr("Bu sürümde desteklenmiyor."))
+        sarma.setToolTip("Not supported in this version.")
         bl.addWidget(sarma)
         left.addWidget(box)
         left.addStretch(1)
 
         right = QVBoxLayout()
-        conv = QGroupBox(tr("Yakınsama seçenekleri"))
+        conv = QGroupBox("Convergence Options")
         cf = QFormLayout(conv)
         self.n_slices = QSpinBox()
         self.n_slices.setRange(5, 500)
         self.n_slices.setValue(m.n_slices)
         self.tol = _dspin(1e-6, 0.1, 6, 0.001, m.tolerance)
         self.tol.setToolTip(
-            tr("Göreli yakınsama toleransı. Çözücü bu sayıyı olduğu gibi kullanır.")
+            "Relative convergence tolerance. The solver uses this number as entered."
         )
         self.max_iter = QSpinBox()
         self.max_iter.setRange(5, 1000)
         self.max_iter.setValue(m.max_iter)
-        cf.addRow(tr("Dilim sayısı:"), self.n_slices)
-        cf.addRow(tr("Tolerans:"), self.tol)
-        cf.addRow(tr("Maksimum iterasyon:"), self.max_iter)
+        cf.addRow("Number of Slices:", self.n_slices)
+        cf.addRow("Tolerance:", self.tol)
+        cf.addRow("Maximum iterations:", self.max_iter)
         right.addWidget(conv)
-        inter = QGroupBox(tr("Arayüz kuvvet fonksiyonu (GLE/Morgenstern-Price)"))
+        inter = QGroupBox("Interslice Force Function (GLE/Morgenstern-Price)")
         il = QFormLayout(inter)
         self.interslice = QComboBox()
         for k, label in INTERSLICE:
@@ -256,9 +254,9 @@ class ProjectSettingsDialog(QDialog):
         )
         self.f_start = _dspin(0, 1, 3, 0.05, m.f_start)
         self.f_end = _dspin(0, 1, 3, 0.05, m.f_end)
-        il.addRow(tr("Fonksiyon:"), self.interslice)
-        il.addRow(tr("Başlangıç değeri:"), self.f_start)
-        il.addRow(tr("Bitiş değeri:"), self.f_end)
+        il.addRow("Function:", self.interslice)
+        il.addRow("Start Value:", self.f_start)
+        il.addRow("End Value:", self.f_end)
         self.inter_box = inter
         right.addWidget(inter)
         right.addStretch(1)
@@ -279,42 +277,39 @@ class ProjectSettingsDialog(QDialog):
         self.f_end.setEnabled(on and clipped)
 
     def _page_groundwater(self):
-        w, lay = self._page(tr("Yeraltı Suyu"))
+        w, lay = self._page("Groundwater")
         gw = self.p.groundwater
-        box = QGroupBox(tr("Boşluk suyu basıncı"))
+        box = QGroupBox("Pore Water Pressure")
         f = QFormLayout(box)
         self.gw_method = QComboBox()
-        self.gw_method.addItem(tr("Su tablosu (YASS)"), "water_table")
-        self.gw_method.addItem(tr("Ru katsayısı"), "ru")
-        self.gw_method.addItem(tr("Kuru (boşluk suyu yok)"), "none")
+        self.gw_method.addItem("Water table (phreatic)", "water_table")
+        self.gw_method.addItem("Ru Coefficient", "ru")
+        self.gw_method.addItem("Dry (No Pore Water)", "none")
         self.gw_method.setCurrentIndex(["water_table", "ru", "none"].index(gw.method))
         self.gamma_w = _dspin(1, 20, 3, 0.01, gw.gamma_w, " kN/m³")
         self.ru = _dspin(0, 1, 3, 0.05, gw.ru)
-        f.addRow(tr("Yöntem:"), self.gw_method)
-        f.addRow(tr("Suyun birim hacim ağırlığı γw:"), self.gamma_w)
+        f.addRow("Method:", self.gw_method)
+        f.addRow("Water Unit Weight γw:", self.gamma_w)
         f.addRow("Ru:", self.ru)
         lay.addWidget(box)
-        cbox = QGroupBox(tr("Gerilme çatlağı suyu"))
+        cbox = QGroupBox("Tension Crack Water")
         cf = QFormLayout(cbox)
         self.crack_mode = QComboBox()
-        self.crack_mode.addItem(tr("Kuru"), "dry")
-        self.crack_mode.addItem(tr("Dolu"), "full")
-        self.crack_mode.addItem(tr("Kısmen dolu (%)"), "percent")
+        self.crack_mode.addItem("Dry", "dry")
+        self.crack_mode.addItem("Full", "full")
+        self.crack_mode.addItem("Partially Filled (%)", "percent")
         cw = gw.crack_water
         self.crack_mode.setCurrentIndex(0 if cw == 0 else 1 if cw == 1 else 2)
         self.crack_pct = _dspin(0, 100, 1, 5, 100 * cw, " %")
         self.crack_mode.currentIndexChanged.connect(self._crack_mode_changed)
-        cf.addRow(tr("Çatlaktaki su:"), self.crack_mode)
-        cf.addRow(tr("Doluluk:"), self.crack_pct)
+        cf.addRow("Crack Water:", self.crack_mode)
+        cf.addRow("Fill level:", self.crack_pct)
         lay.addWidget(cbox)
         self._crack_mode_changed()
         note = QLabel(
-            tr(
-                "Su tablosu: u = Hu · γw · (YASS kotu − taban kotu); Hu ve suyun etkisi "
-                "malzeme bazında Malzeme Özellikleri → Su Parametreleri'nden ayarlanır."
-            )
+            "Water table: u = Hu · γw · (water table elevation − base elevation); Hu and whether water acts are set per material in Material Properties → Water Parameters."
             + "\n"
-            + tr("Ru: u = Ru · σv (dilim tabanındaki toplam düşey gerilme).")
+            + "Ru: u = Ru · σv (total vertical stress at the slice base)."
         )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
@@ -335,23 +330,23 @@ class ProjectSettingsDialog(QDialog):
             self.crack_pct.setValue(100)
 
     def _page_seismic(self):
-        w, lay = self._page(tr("Sismik"))
+        w, lay = self._page("Seismic")
         s = self.p.seismic
-        box = QGroupBox(tr("Psödo-statik sismik yük katsayıları"))
+        box = QGroupBox("Pseudo-static Seismic Coefficients")
         f = QFormLayout(box)
         self.kh = _dspin(0, 1, 4, 0.01, max(s.kh, 0.0))
-        self.kh.setToolTip(tr("kh her zaman göçme yönündedir."))
+        self.kh.setToolTip("kh always acts in the failure direction.")
         self.kv = _dspin(-1, 1, 4, 0.01, s.kv)
-        f.addRow(tr("Yatay katsayı kh:"), self.kh)
-        f.addRow(tr("Düşey katsayı kv:"), self.kv)
-        self.both_kv = QCheckBox(tr("Her iki düşey yönü tara ve kritik olanı kullan"))
+        f.addRow("Horizontal Coefficient kh:", self.kh)
+        f.addRow("Vertical Coefficient kv:", self.kv)
+        self.both_kv = QCheckBox("Check both vertical directions and use the critical one")
         self.both_kv.setChecked(s.both_vertical)
         self.both_kv.setToolTip(
-            tr("kv ve -kv ayrı çözülür; düşük olan FS alınır. kv = 0 ise ikinci çözüm yapılmaz.")
+            "kv and -kv are solved separately; the lower FS is kept. No second solution is run when kv = 0."
         )
         f.addRow(self.both_kv)
         lay.addWidget(box)
-        note = QLabel(tr(SEISMIC_NOTE))
+        note = QLabel(SEISMIC_NOTE)
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
         lay.addWidget(note)
@@ -359,12 +354,12 @@ class ProjectSettingsDialog(QDialog):
         return w
 
     def _page_advanced(self):
-        w, lay = self._page(tr("Gelişmiş"))
+        w, lay = self._page("Advanced")
         a = self.p.advanced
-        box = QGroupBox(tr("Çözüm kontrolleri"))
+        box = QGroupBox("Solution Checks")
         v = QVBoxLayout(box)
         self.check_adm = QCheckBox(
-            tr("mα < eşik ve negatif taban kayma direnci olan yüzeyleri reddet")
+            "Reject surfaces with mα below threshold or negative base shear resistance"
         )
         self.check_adm.setChecked(a.check_admissibility)
         v.addWidget(self.check_adm)
@@ -372,16 +367,13 @@ class ProjectSettingsDialog(QDialog):
         self.m_alpha_min = _dspin(0.05, 1.0, 2, 0.05, a.m_alpha_min)
         self.e_max_ratio = _dspin(1, 1000, 0, 5, a.e_max_ratio)
         self.min_depth = _dspin(0, 1000, 3, 0.5, a.min_depth, " m")
-        f.addRow(tr("mα eşik değeri (varsayılan 0.2):"), self.m_alpha_min)
-        f.addRow(tr("Maksimum arayüz kuvveti oranı (E/W):"), self.e_max_ratio)
-        f.addRow(tr("Minimum kayma derinliği:"), self.min_depth)
+        f.addRow("mα Threshold (Default 0.2):", self.m_alpha_min)
+        f.addRow("Maximum Interslice Force Ratio (E/W):", self.e_max_ratio)
+        f.addRow("Minimum Slip Depth:", self.min_depth)
         v.addLayout(f)
         lay.addWidget(box)
         note = QLabel(
-            "mα kontrolü (Whitman & Bailey 1967) kapatılırsa veya eşiği düşürülürse, "
-            "topukta dik negatif taban açılı yüzeylerde sayısal olarak güvenilmez, "
-            "düşük FS değerleri bulunabilir. Arayüz kuvveti oranı, tekil (singular) "
-            "çözümleri elemek için toplam ağırlığa göre bir üst sınır belirler."
+            "If the mα check (Whitman & Bailey 1967) is switched off or its threshold lowered, numerically unreliable low FS values can be found on surfaces with steep negative base angles at the toe. The interslice force ratio caps the forces relative to the total weight to reject singular solutions."
         )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
@@ -418,7 +410,7 @@ class ProjectSettingsDialog(QDialog):
     def _accept(self) -> None:
         p = self.collect()
         if not p.methods.methods:
-            self.error.setText(tr("⚠ En az bir yöntem seçin."))
+            self.error.setText("Select at least one method.")
             self.nav.setCurrentRow(1)
             return
         self.result_project = p

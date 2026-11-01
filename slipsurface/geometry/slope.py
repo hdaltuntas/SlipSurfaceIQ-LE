@@ -21,7 +21,7 @@ class Region:
     """A material zone: closed polygon + material name."""
 
     polygon: Polygon
-    material: str = "Zemin 1"
+    material: str = "Soil 1"
 
 
 @dataclass
@@ -83,7 +83,7 @@ def simple_slope(
     left_bench: float = 15.0,
     right_bench: float = 20.0,
     depth_below_toe: float = 10.0,
-    material: str = "Zemin 1",
+    material: str = "Soil 1",
 ) -> SlopeGeometry:
     """Homogeneous single-face slope.
 
@@ -110,7 +110,7 @@ def simple_slope(
         surface=surface,
         regions=[Region(poly, material)],
         meta={
-            "name": f"Basit şev H={height:g} m, {ratio_h_to_v:g}H:1V",
+            "name": f"Simple slope H={height:g} m, {ratio_h_to_v:g}H:1V",
             "toe": (toe_x, 0.0),
             "crest": (crest_x, height),
             "height": height,
@@ -154,11 +154,11 @@ def layered_geometry(
 
     surface = np.asarray(surface, dtype=float)
     if len(surface) < 2 or np.any(np.diff(surface[:, 0]) <= 0):
-        raise ValueError("Zemin yüzeyi en az 2 noktalı olmalı ve x artan sırada olmalı.")
+        raise ValueError("The ground surface needs at least 2 points in increasing x order.")
     if not layers:
-        raise ValueError("En az bir katman gerekli.")
+        raise ValueError("At least one layer is required.")
     if bottom >= surface[:, 1].min():
-        raise ValueError("Model tabanı zemin yüzeyinin en alçak noktasından aşağıda olmalı.")
+        raise ValueError("The model base must lie below the lowest point of the ground surface.")
 
     x0, x1 = surface[0, 0], surface[-1, 0]
     domain = Polygon([(x0, bottom), (x1, bottom), *map(tuple, surface[::-1])]).buffer(0)
@@ -168,7 +168,7 @@ def layered_geometry(
     boundaries = []
     for i, (_mat, top) in enumerate(layers[1:], start=2):
         if top is None or len(top) < 2:
-            raise ValueError(f"Katman {i}: üst sınır en az 2 nokta içermeli.")
+            raise ValueError(f"Layer {i}: the top boundary needs at least 2 points.")
         top = np.asarray(top, dtype=float)
         belows.append(_below(top, x0, x1, floor).intersection(domain))
         boundaries.append(top)
@@ -182,13 +182,13 @@ def layered_geometry(
             if isinstance(part, Polygon) and part.area > min_area:
                 regions.append(Region(part, mat))
     if not regions:
-        raise ValueError("Katmanlardan geçerli bölge oluşturulamadı.")
+        raise ValueError("No valid region could be built from the layers.")
 
     wt = None
     if water_table is not None:
         wt = np.asarray(water_table, dtype=float)
         if len(wt) < 2 or np.any(np.diff(wt[:, 0]) <= 0):
-            raise ValueError("YASS en az 2 noktalı olmalı ve x artan sırada olmalı.")
+            raise ValueError("The water table needs at least 2 points in increasing x order.")
         # extend flat to the model edges so water_y() is defined everywhere
         if wt[0, 0] > x0:
             wt = np.vstack([[x0, wt[0, 1]], wt])

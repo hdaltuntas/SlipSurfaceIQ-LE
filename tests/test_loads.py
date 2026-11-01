@@ -59,7 +59,7 @@ def test_geosynthetic_pullout_uses_effective_overburden():
 
 def acads():
     g = simple_slope(10, 2, toe_x=20, left_bench=20, right_bench=20, depth_below_toe=5)
-    return g, {"Zemin 1": MohrCoulomb("Zemin 1", gamma=20, c=3, phi=19.6)}
+    return g, {"Soil 1": MohrCoulomb("Soil 1", gamma=20, c=3, phi=19.6)}
 
 
 def plane():

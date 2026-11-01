@@ -196,7 +196,7 @@ def _range(r, geom) -> tuple[float, float]:
     a, b = sorted(map(float, r))
     a, b = max(a, geom.x_min), min(b, geom.x_max)
     if b - a < 1e-6:
-        raise ValueError("Uç aralığı model sınırları içinde değil.")
+        raise ValueError("The end range is not inside the model limits.")
     return a, b
 
 
@@ -229,11 +229,10 @@ def search(
     )
     if st.surface_type in ("spline", "polyline") and st.method == "bishop":
         raise ValueError(
-            "Simplified Bishop yalnızca dairesel yüzeyler için geçerlidir; "
-            "dairesel olmayan yüzeylerde Spencer veya GLE seçin."
+            "Simplified Bishop is valid for circular surfaces only; choose Spencer or GLE for non-circular surfaces."
         )
     if st.method not in METHODS:
-        raise ValueError(f"Bilinmeyen yöntem: {st.method}")
+        raise ValueError(f"Unknown method: {st.method}")
     sopts = replace(st.slice_opts, n_slices=st.n_slices)
 
     def run(surf):
@@ -347,7 +346,7 @@ def search(
 
     if f_best >= PENALTY:
         raise RuntimeError(
-            "Kabul edilebilir kayma yüzeyi bulunamadı (uç aralıklarını ve geometriyi kontrol edin)."
+            "No admissible slip surface found (check the end ranges and the geometry)."
         )
 
     surf = build(x_best)
@@ -369,7 +368,7 @@ def search(
         slices,
         n_evals,
         top=_distinct_top(seen, st.keep_top, geom),
-        message=f"{gen} nesil, {n_evals} yüzey",
+        message=f"{gen} generations, {n_evals} surfaces",
         method=st.method,
         centres=centres,
     )

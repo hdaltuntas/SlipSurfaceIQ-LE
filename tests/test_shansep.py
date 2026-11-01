@@ -64,7 +64,7 @@ def test_planar_block_matches_closed_form_with_surcharge_and_seismic(method, ru)
     theta = math.radians(15)
     geom = simple_slope(10, 2, toe_x=20, left_bench=20, right_bench=20, depth_below_toe=5)
     surf = PolylineSurface([[20, 0], [60, 40 * math.tan(theta)]])
-    clay = Shansep("Zemin 1", gamma=20, s_ratio=0.25, ocr=2, m_exp=0.8, su_min=5)
+    clay = Shansep("Soil 1", gamma=20, s_ratio=0.25, ocr=2, m_exp=0.8, su_min=5)
     # Static overburden defines strength; this applied load and seismic inertia
     # change equilibrium without being mistaken for consolidation stresses.
     loads = LoadSet(distributed=[DistributedLoad(42, 52, 10, 10, "vertical")])
@@ -146,22 +146,18 @@ def test_existing_project_minimum_field_round_trip_and_missing_default(tmp_path)
     assert default.to_material().su(100) == pytest.approx(43.527528164806206)
 
 
-@pytest.mark.parametrize("language", ["tr", "en"])
-def test_dialog_edits_additive_a_and_explains_reference_stress(language, monkeypatch):
+def test_dialog_edits_additive_a_and_explains_reference_stress():
     from PySide6.QtWidgets import QApplication
-    from slipsurface.ui import i18n
     from slipsurface.ui.dialogs.materials import MaterialsDialog
 
     app = QApplication.instance() or QApplication([])
-    monkeypatch.setattr(i18n, "_language", language)
     spec = MaterialSpec(model="SH", shansep_su_min=5, shansep_s=0.25, ocr=2)
     dialog = MaterialsDialog([spec])
     try:
-        i18n.translate_window(dialog)
         row = next(i for i, entry in enumerate(MODELS["SH"].rows) if entry[0] == "shansep_su_min")
         assert dialog.formula.text() == "τ = su = A + S · σ′v · OCR^m"
-        assert dialog.table.item(row, 0).text() == i18n.tr(MODELS["SH"].rows[row][1])
-        assert dialog.derived.text() == i18n.tr(MODELS["SH"].note)
+        assert dialog.table.item(row, 0).text() == MODELS["SH"].rows[row][1]
+        assert dialog.derived.text() == MODELS["SH"].note
         dialog.table.item(row, 1).setText("7.5")
         app.processEvents()
         assert dialog.mats[0].shansep_su_min == 7.5

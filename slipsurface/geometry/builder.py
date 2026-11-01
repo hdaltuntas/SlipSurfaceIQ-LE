@@ -43,8 +43,7 @@ def upper_profile(poly: Polygon) -> np.ndarray:
             cut.bounds[3], 0.5 * (left[1] + right[1]), rtol=0.0, atol=1e-10 * scale
         ):
             raise ValueError(
-                "Dik şev yüzü veya çıkmalı geometri desteklenmiyor. "
-                "Zemin yüzeyi sürekli ve x artan bir profil olmalı."
+                "Vertical slope faces and overhangs are not supported. The ground surface must be a continuous profile with increasing x."
             )
     return profile
 
@@ -96,12 +95,12 @@ def build_regions(
     """Return (domain polygon, [Region], clipped material lines)."""
     ext = np.asarray(external, dtype=float)
     if ext.ndim != 2 or ext.shape[1] != 2 or len(ext) < 3 or not np.all(np.isfinite(ext)):
-        raise ValueError("Dış sınır en az 3 köşe içermeli.")
+        raise ValueError("The external boundary must have at least 3 vertices.")
     domain = Polygon(ext)
     if not domain.is_valid:
-        raise ValueError("Dış sınır kendini kesiyor (geçersiz poligon).")
+        raise ValueError("The external boundary intersects itself (invalid polygon).")
     if domain.area <= 0:
-        raise ValueError("Dış sınırın alanı sıfır.")
+        raise ValueError("The external boundary has zero area.")
     domain = shapely.orient_polygons(domain) if hasattr(shapely, "orient_polygons") else domain
     size = max(domain.bounds[2] - domain.bounds[0], domain.bounds[3] - domain.bounds[1])
     tol = snap_tol if snap_tol is not None else 2e-3 * size
@@ -112,7 +111,7 @@ def build_regions(
     for i, ml in enumerate(material_lines or []):
         ml = np.asarray(ml, dtype=float)
         if ml.ndim != 2 or ml.shape[1] != 2 or len(ml) < 2 or not np.all(np.isfinite(ml)):
-            raise ValueError(f"Malzeme sınırı {i + 1}: en az 2 nokta gerekli.")
+            raise ValueError(f"Material boundary {i + 1}: at least 2 points required.")
         ml = _attach_ends(ml, boundary, domain, tol)
         ls = LineString(ml)
         # the (extended) line crosses the boundary -> robust nodes; parts
@@ -146,7 +145,7 @@ def boundary_geometry(
     external,
     material_lines=(),
     assignments=(),
-    default_material="Zemin 1",
+    default_material="Soil 1",
     water_table=None,
     name: str = "Model",
 ) -> SlopeGeometry:
@@ -159,11 +158,11 @@ def boundary_geometry(
     if water_table is not None and len(water_table) > 0:
         wt = np.asarray(water_table, dtype=float)
         if wt.ndim != 2 or wt.shape[1] != 2 or len(wt) < 2:
-            raise ValueError("YASS çizgisi en az 2 adet (x, y) noktası içermeli.")
+            raise ValueError("Water table polyline must contain at least 2 (x, y) points.")
         if not np.all(np.isfinite(wt)):
-            raise ValueError("YASS koordinatları sonlu olmalı.")
+            raise ValueError("Water table coordinates must be finite.")
         if np.any(np.diff(wt[:, 0]) <= 0):
-            raise ValueError("YASS noktaları x artan sırada olmalı.")
+            raise ValueError("Water table points must be in increasing x order.")
         wt = _extend_flat(wt, x0, x1)
     return SlopeGeometry(
         surface=surface,

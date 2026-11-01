@@ -115,10 +115,7 @@ class UpdatePlan:
         return len(self.changed) + len(self.new)
 
     def summary(self) -> str:
-        return (
-            f"{self.from_version} → {self.to_version}: "
-            f"{len(self.changed)} değişti, {len(self.new)} yeni, {len(self.removed)} silindi"
-        )
+        return f"{self.from_version} → {self.to_version}: {len(self.changed)} changed, {len(self.new)} new, {len(self.removed)} removed"
 
 
 def manifest_url(version: str) -> str:
@@ -396,7 +393,7 @@ def apply_update(
         # 1) download and verify everything; the installation is not touched yet
         for delta in downloads:
             if progress is not None and progress(done, total, delta.relpath):
-                raise UpdateCheckError("güncelleme iptal edildi")
+                raise UpdateCheckError("update cancelled")
             download_file(delta.relpath, version, tmp_dir / delta.relpath, timeout, opener)
             digest = local_hash(delta.relpath, tmp_dir, delta.new_hash) or ""
             if not plan_against_local_verifies(delta, digest):

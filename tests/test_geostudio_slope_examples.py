@@ -129,8 +129,8 @@ def limit_equilibrium_analogue():
     inputs = source_case()["limit_equilibrium_formulation"]["soil"]
     geom = simple_slope(10, 2, toe_x=20, left_bench=20, right_bench=20, depth_below_toe=5)
     mats = {
-        "Zemin 1": MohrCoulomb(
-            "Zemin 1",
+        "Soil 1": MohrCoulomb(
+            "Soil 1",
             gamma=inputs["gamma_kn_m3"],
             c=inputs["c_kpa"],
             phi=inputs["phi_deg"],

@@ -12,7 +12,6 @@ Keys:   Esc = cancel / select tool, Enter = finish, Backspace = undo point,
 
 from __future__ import annotations
 
-from slipsurface.ui.i18n import tr
 
 import math
 
@@ -524,16 +523,14 @@ class CadCanvas(QWidget):
             menu.addSeparator()
         wx, wy = self.s2w(pos)
         hit = self.material_at(wx, wy)
-        # Interpret only edits notes (edit_kinds={"annot"}); material properties
+        # Interpret only edits notes (edit_kinds=annot); material properties
         # belong to the Modeler, where every entity kind is editable.
         if hit is not None and self.edit_kinds is None:
-            menu.addAction(
-                tr("Bu Malzemeyi Düzenle…"), lambda n=hit: self.material_activated.emit(n)
-            )
+            menu.addAction("Edit This Material…", lambda n=hit: self.material_activated.emit(n))
             menu.addSeparator()
-        menu.addAction(tr("Tümünü göster (F2)"), self.zoom_extents)
-        menu.addAction(tr("Yakınlaştır"), lambda: self.zoom(1.25))
-        menu.addAction(tr("Uzaklaştır"), lambda: self.zoom(0.8))
+        menu.addAction("Zoom Extents (F2)", self.zoom_extents)
+        menu.addAction("Zoom In", lambda: self.zoom(1.25))
+        menu.addAction("Zoom Out", lambda: self.zoom(0.8))
 
     # ============================================================ painting
     def paintEvent(self, ev) -> None:
@@ -1085,8 +1082,8 @@ class CadCanvas(QWidget):
         fb = QFont("Source Sans 3", 9, QFont.Bold)
         fs = QFont("Source Sans 3", 7)
         fm = QFontMetrics(f)
-        title = tr("FS (aranan merkezler)")
-        note = tr("Her yarıçap taranmaz")
+        title = "FS (searched centres)"
+        note = "Not every radius is tried"
         band_h = 6
         sw = 16
         lw = max(fm.horizontalAdvance(t) for t in labels) + 8
@@ -1334,7 +1331,7 @@ class CadCanvas(QWidget):
         rh = fm.height() + 3
         wn = max(fm.horizontalAdvance(n) for _, n, _ in rows) + 22
         wv = fm.horizontalAdvance("00.000") + 14
-        title = tr("Güvenlik sayısı (FS)")
+        title = "Factor of safety (FS)"
         w = max(wn + wv, fm.horizontalAdvance(title) + 16)
         h = rh * (len(rows) + 1) + 10
         x0, y0 = self.width() - w - 12, self.height() - h - 12
@@ -1394,17 +1391,17 @@ class CadCanvas(QWidget):
         elif kind == "grid":
             p.drawEllipse(s, 4, 4)
         label = {
-            "end": "Uç nokta",
-            "mid": "Orta nokta",
-            "int": "Kesişim",
-            "near": "En yakın",
-            "grid": "Izgara",
-            "ortho": "Orto",
+            "end": "Endpoint",
+            "mid": "Midpoint",
+            "int": "Intersection",
+            "near": "Nearest",
+            "grid": "Grid",
+            "ortho": "Ortho",
         }.get(kind)
         if label:
             p.setFont(QFont("Source Sans 3", 8))
             p.setPen(QPen(SNAP_COLOR, 1))
-            p.drawText(QPointF(s.x() + 9, s.y() + 16), tr(label))
+            p.drawText(QPointF(s.x() + 9, s.y() + 16), label)
 
     def _paint_cursor(self, p: QPainter) -> None:
         if self.mouse_pos is None:

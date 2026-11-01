@@ -16,7 +16,6 @@ from slipsurface.project import (  # noqa: E402
     nailed_shotcrete_project,
 )
 from slipsurface.report import ReportOptions, build_pdf  # noqa: E402
-from slipsurface.report.pdf import _tr_upper  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -33,20 +32,16 @@ def _text(path) -> str:
     return "\n".join(pg.extract_text() for pg in PdfReader(str(path)).pages)
 
 
-def test_tr_upper():
-    assert _tr_upper("Şev stabilite ı") == "ŞEV STABİLİTE I"
-
-
 def test_pdf_without_figures(tmp_path, acads_results):
     out = tmp_path / "r.pdf"
     n = build_pdf(acads_results, out, ReportOptions(author="Test", target_fs=1.3))
     assert out.exists() and n >= 5
     txt = _text(out)
-    assert "İçindekiler" in txt and "Analiz Sonuçları" in txt
+    assert "Table of contents" in txt and "Analysis Results" in txt
     assert f"{acads_results.results['bishop'].fos:.3f}" in txt
-    assert "Yetersiz" in txt  # FS ≈ 0.99 < 1.3
-    assert f"Sayfa 2 / {n}" in txt
-    assert "Dilim Verileri" in txt
+    assert "Inadequate" in txt  # FS ≈ 0.99 < 1.3
+    assert f"Page 2 / {n}" in txt
+    assert "Slice Data" in txt
 
 
 def test_pdf_sections_off(tmp_path, acads_results):
@@ -62,8 +57,8 @@ def test_pdf_sections_off(tmp_path, acads_results):
     out = tmp_path / "r.pdf"
     n = build_pdf(acads_results, out, o)
     txt = _text(out)
-    assert "İçindekiler" not in txt and "Dilim Verileri" not in txt
-    assert "Hedef FS tanımlanmadı" in txt
+    assert "Table of contents" not in txt and "Slice Data" not in txt
+    assert "No target FS defined" in txt
     assert n <= 4
 
 
@@ -82,11 +77,11 @@ def test_pdf_with_figures_supports_and_facing(tmp_path):
     txt = _text(out)
     assert n >= 6
     for s in (
-        "Bulon / ankraj paternleri",
-        "Kaplama tipleri",
-        "Mobilize destek kuvvetleri",
-        "Şekil 1",
-        "Koordinatlar",
+        "Bolt / anchor patterns",
+        "Facing types",
+        "Mobilised support forces",
+        "Figure 1",
+        "Coordinates",
     ):
         assert s in txt, s
     from pypdf import PdfReader

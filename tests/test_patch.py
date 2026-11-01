@@ -164,7 +164,7 @@ def test_apply_update_copies_only_changed_files(tmp_path, monkeypatch):
     backup = root / ".update-backup" / "2026.2.0-to-2026.3.0"
     assert (backup / "main.py").read_text() == "old"
     assert (backup / "slipsurface" / "drop.py").read_text() == "drop"
-    assert "1 değişti" in summary or "değişti" in summary
+    assert "1 changed" in summary
     # only the two changed files were downloaded
     file_fetches = [u for u in net.fetched if not u.endswith("manifest.json")]
     assert len(file_fetches) == 2

@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QFileDialog, QMessageBox
 
 def export_image(parent, widget, default_name: str) -> str | None:
     path, selected_filter = QFileDialog.getSaveFileName(
-        parent, "Resmi dışa aktar", default_name, "PNG (*.png);;JPEG (*.jpg *.jpeg)"
+        parent, "Export image", default_name, "PNG (*.png);;JPEG (*.jpg *.jpeg)"
     )
     if not path:
         return None
@@ -16,11 +16,9 @@ def export_image(parent, widget, default_name: str) -> str | None:
     if not widget.grab().save(path):
         QMessageBox.warning(
             parent,
-            "Resim kaydedilemedi",
-            f"Dosya yazılamadı:\n{path}\n\n"
-            "Klasörün yazılabilir olduğunu ve dosya uzantısının "
-            "PNG veya JPEG olduğunu kontrol edin.",
+            "Image could not be saved",
+            f"The file could not be written:\n{path}\n\nCheck that the folder is writable and the file extension is PNG or JPEG.",
         )
         return None
-    parent.statusBar().showMessage(f"Kaydedildi: {path}", 5000)
+    parent.statusBar().showMessage(f"Saved: {path}", 5000)
     return path

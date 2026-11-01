@@ -6,7 +6,6 @@ from slipsurface.ui.preferences import fit_to_screen
 
 from slipsurface.lem.bishop import slice_strength
 
-from slipsurface.ui.i18n import tr
 
 import numpy as np
 from PySide6.QtCore import Qt
@@ -31,8 +30,8 @@ from PySide6.QtWidgets import (
 
 def _ok_cancel(dlg, ok_slot=None):
     btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-    btns.button(QDialogButtonBox.Ok).setText(tr("Tamam"))
-    btns.button(QDialogButtonBox.Cancel).setText(tr("İptal"))
+    btns.button(QDialogButtonBox.Ok).setText("OK")
+    btns.button(QDialogButtonBox.Cancel).setText("Cancel")
     btns.accepted.connect(ok_slot or dlg.accept)
     btns.rejected.connect(dlg.reject)
     return btns
@@ -42,7 +41,7 @@ def parse_float(text: str, what: str) -> float:
     try:
         return float(str(text).strip().replace(",", "."))
     except ValueError:
-        raise ValueError(f"'{what}' sayısal olmalı (girilen: '{text}').") from None
+        raise ValueError(f"'{what}' must be numeric (entered: '{text}').") from None
 
 
 class CoordinatesDialog(QDialog):
@@ -50,7 +49,7 @@ class CoordinatesDialog(QDialog):
 
     def __init__(self, title: str, pts, parent=None, min_points: int = 2) -> None:
         super().__init__(parent)
-        self.setWindowTitle(f"Koordinatlar — {title}")
+        self.setWindowTitle(f"Coordinates — {title}")
         fit_to_screen(self, 380, 460)
         self.min_points = min_points
         self.table = QTableWidget(0, 2)
@@ -59,7 +58,7 @@ class CoordinatesDialog(QDialog):
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         for x, y in pts:
             self._append(x, y)
-        add, rem = QPushButton(tr("Satır ekle")), QPushButton(tr("Satır sil"))
+        add, rem = QPushButton("Add Row"), QPushButton("Delete Row")
         add.clicked.connect(self._add)
         rem.clicked.connect(self._remove)
         row = QHBoxLayout()
@@ -106,7 +105,7 @@ class CoordinatesDialog(QDialog):
                 [
                     parse_float(
                         self.table.item(r, c).text() if self.table.item(r, c) else "",
-                        f"satır {r + 1}, {'xy'[c]}",
+                        f"row {r + 1}, {'xy'[c]}",
                     )
                     for c in range(2)
                 ]
@@ -117,16 +116,16 @@ class CoordinatesDialog(QDialog):
         try:
             pts = self.points()
         except ValueError as exc:
-            self.error.setText(tr(f"⚠ {exc}"))
+            self.error.setText(f"⚠ {exc}")
             return
         if len(pts) < self.min_points:
-            self.error.setText(tr(f"⚠ En az {self.min_points} nokta gerekli."))
+            self.error.setText(f"⚠ At least {self.min_points} points are required.")
             return
         self.accept()
 
 
 class InfoViewer(QDialog):
-    def __init__(self, text: str, parent=None, title: str = tr("Bilgi Görüntüleyici")) -> None:
+    def __init__(self, text: str, parent=None, title: str = "Information Viewer") -> None:
         super().__init__(parent)
         self.setWindowTitle(title)
         fit_to_screen(self, 860, 620)
@@ -137,9 +136,9 @@ class InfoViewer(QDialog):
         f.setPointSize(9)
         self.edit.setFont(f)
         copy_b, save_b, close_b = (
-            QPushButton(tr("Kopyala")),
-            QPushButton(tr("Kaydet…")),
-            QPushButton(tr("Kapat")),
+            QPushButton("Copy"),
+            QPushButton("Save…"),
+            QPushButton("Close"),
         )
         copy_b.clicked.connect(lambda: QGuiApplication.clipboard().setText(self.edit.toPlainText()))
         save_b.clicked.connect(self._save)
@@ -154,7 +153,7 @@ class InfoViewer(QDialog):
         lay.addLayout(row)
 
     def _save(self) -> None:
-        path, _ = QFileDialog.getSaveFileName(self, "Raporu kaydet", "rapor.txt", "Metin (*.txt)")
+        path, _ = QFileDialog.getSaveFileName(self, "Save report", "report.txt", "Text (*.txt)")
         if path:
             with open(path, "w", encoding="utf-8") as fh:
                 fh.write(self.edit.toPlainText())
@@ -165,42 +164,42 @@ def slice_rows(res, i: int) -> list[tuple[str, str]]:
     mat = s.materials[s.mat_idx[i]]
     c, tp = (np.array([v]) for v in slice_strength(s, i))
     rows = [
-        ("Dilim no", f"{i + 1} / {s.n}"),
-        ("Taban malzemesi", mat.name),
-        ("Sol / sağ kenar x [m]", f"{s.xl[i]:.3f} / {s.xr[i]:.3f}"),
-        ("Genişlik b [m]", f"{s.b[i]:.3f}"),
-        ("Taban kotu (orta) [m]", f"{s.y_base[i]:.3f}"),
-        ("Zemin kotu (orta) [m]", f"{s.y_top[i]:.3f}"),
-        ("Taban açısı α [°]", f"{np.degrees(s.alpha[i]) * (-s.direction):.2f}"),
-        ("Taban uzunluğu l [m]", f"{s.l[i]:.3f}"),
-        ("Ağırlık W [kN/m]", f"{s.W[i]:.3f}"),
-        ("Boşluk suyu basıncı u [kPa]", f"{s.u[i]:.3f}"),
-        ("Kohezyon c [kPa] (σn ≈ W/b − u)", f"{c[0]:.3f}"),
-        ("Sürtünme açısı φ [°]", f"{np.degrees(np.arctan(tp[0])):.2f}"),
+        ("Slice no.", f"{i + 1} / {s.n}"),
+        ("Base material", mat.name),
+        ("Left / right edge x [m]", f"{s.xl[i]:.3f} / {s.xr[i]:.3f}"),
+        ("Width b [m]", f"{s.b[i]:.3f}"),
+        ("Base elevation (mid) [m]", f"{s.y_base[i]:.3f}"),
+        ("Ground elevation (mid) [m]", f"{s.y_top[i]:.3f}"),
+        ("Base angle α [°]", f"{np.degrees(s.alpha[i]) * (-s.direction):.2f}"),
+        ("Base length l [m]", f"{s.l[i]:.3f}"),
+        ("Weight W [kN/m]", f"{s.W[i]:.3f}"),
+        ("Pore pressure u [kPa]", f"{s.u[i]:.3f}"),
+        ("Cohesion c [kPa] (σn ≈ W/b − u)", f"{c[0]:.3f}"),
+        ("Friction angle φ [°]", f"{np.degrees(np.arctan(tp[0])):.2f}"),
     ]
     if s.kh:
-        rows.append(("Sismik yatay kuvvet kh·W [kN/m]", f"{s.Fh[i]:.3f}"))
+        rows.append(("Seismic horizontal force kh·W [kN/m]", f"{s.Fh[i]:.3f}"))
     return rows
 
 
 class SliceDataDialog(QDialog):
     def __init__(self, res, i: int, method: str, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle(f"Dilim Verisi — {method}")
+        self.setWindowTitle(f"Slice Data — {method}")
         fit_to_screen(self, 430, 420)
         rows = slice_rows(res, i)
         t = QTableWidget(len(rows), 2)
-        t.setHorizontalHeaderLabels([tr("Büyüklük"), tr("Değer")])
+        t.setHorizontalHeaderLabels(["Quantity", "Value"])
         t.verticalHeader().setVisible(False)
         t.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         t.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         for r, (k, v) in enumerate(rows):
-            t.setItem(r, 0, QTableWidgetItem(tr(k)))
+            t.setItem(r, 0, QTableWidgetItem(k))
             it = QTableWidgetItem(v)
             it.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             t.setItem(r, 1, it)
         t.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        b = QPushButton(tr("Kapat"))
+        b = QPushButton("Close")
         b.clicked.connect(self.accept)
         lay = QVBoxLayout(self)
         lay.addWidget(t, 1)
@@ -210,15 +209,15 @@ class SliceDataDialog(QDialog):
 class GridSettingsDialog(QDialog):
     def __init__(self, spacing: float, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle(tr("Izgara ve Yakalama Ayarları"))
+        self.setWindowTitle("Grid and Snap Settings")
         self.spacing = QDoubleSpinBox()
         self.spacing.setRange(0.001, 1000)
         self.spacing.setDecimals(3)
         self.spacing.setValue(spacing)
         self.spacing.setSuffix(" m")
         f = QFormLayout()
-        f.addRow(tr("Izgara / SNAP aralığı:"), self.spacing)
-        note = QLabel("SNAP açıkken noktalar bu aralıktaki ızgara noktalarına yakalanır.")
+        f.addRow("Grid / SNAP Spacing:", self.spacing)
+        note = QLabel("With SNAP on, points snap to grid points at this spacing.")
         note.setWordWrap(True)
         lay = QVBoxLayout(self)
         lay.addLayout(f)

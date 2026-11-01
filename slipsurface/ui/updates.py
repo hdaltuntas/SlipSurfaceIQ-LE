@@ -15,7 +15,6 @@ from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QMessageBox, QWidget
 
 from slipsurface import __version__
-from slipsurface.ui.i18n import tr, trf
 from slipsurface.ui.preferences import settings
 from slipsurface.updates import ReleaseInfo, UpdateCheckError, fetch_latest, is_newer
 
@@ -76,7 +75,7 @@ class UpdateChecker(QObject):
         if self._busy:
             return False
         self._busy = True
-        self._status(tr("Güncellemeler denetleniyor…"))
+        self._status("Checking for updates…")
         threading.Thread(target=self._run, args=(manual,), daemon=True).start()
         return True
 
@@ -98,17 +97,17 @@ class UpdateChecker(QObject):
         self._busy = False
         settings().setValue(LAST_KEY, time.time())
         if not is_newer(info.version):
-            self._status(trf("SlipSurfaceIQ LE güncel (sürüm {}).", __version__))
+            self._status(f"SlipSurfaceIQ LE is up to date (version {__version__}).")
             if manual:
                 self._show(
                     QMessageBox.Information,
-                    tr("Güncelleme yok"),
-                    trf("En güncel sürümü kullanıyorsunuz ({}).", __version__),
+                    "No Update Available",
+                    f"You are using the latest version ({__version__}).",
                 )
             return
         if not manual and settings().value(SKIP_KEY, "") == info.version:
             return
-        self._status(trf("Yeni sürüm mevcut: {}", info.version))
+        self._status(f"New version available: {info.version}")
         self._offer(info)
 
     def _on_failed(self, reason: str, manual: bool) -> None:
@@ -117,8 +116,8 @@ class UpdateChecker(QObject):
         if manual:
             self._show(
                 QMessageBox.Warning,
-                tr("Güncelleme denetimi"),
-                trf("Güncellemeler denetlenemedi: {}", reason),
+                "Update Check",
+                f"Could not check for updates: {reason}",
             )
 
     def _on_applied(self, version: str, summary: str) -> None:
@@ -127,15 +126,12 @@ class UpdateChecker(QObject):
         self._status("")
         box = self._box(
             QMessageBox.Information,
-            tr("Güncelleme tamam"),
-            trf("SlipSurfaceIQ LE {} dosyaları güncellendi.", version)
+            "Update Complete",
+            f"SlipSurfaceIQ LE {version} files updated."
             + "\n"
-            + tr(summary)
+            + summary
             + "\n\n"
-            + tr(
-                "Değişikliklerin tamamı için uygulamayı yeniden başlatın. "
-                "Eski dosyalar .update-backup klasöründedir."
-            ),
+            + "Restart the application for all changes to take effect. Previous files are backed up in .update-backup.",
         )
         box.addButton(QMessageBox.Ok)
         box.open()
@@ -143,24 +139,17 @@ class UpdateChecker(QObject):
     def _offer(self, info: ReleaseInfo) -> None:
         box = self._box(
             QMessageBox.Information,
-            tr("Güncelleme mevcut"),
-            trf(
-                "SlipSurfaceIQ LE {} yayımlandı (kullandığınız sürüm: {}).",
-                info.version,
-                __version__,
-            )
+            "Update Available",
+            f"SlipSurfaceIQ LE {info.version} has been released (you are using {__version__})."
             + "\n"
-            + tr(
-                "Sadece değişen dosyalar indirilip yerinde kopyalanabilir; "
-                "eski dosyalar .update-backup klasörüne yedeklenir."
-            ),
+            + "Only the changed files are downloaded and copied in place; replaced files are backed up to .update-backup.",
         )
         if info.notes.strip():
             box.setInformativeText(notes_excerpt(info.notes))
-        patch = box.addButton(tr("Değişen Dosyaları Güncelle"), QMessageBox.AcceptRole)
-        download = box.addButton(tr("Kaynak Kod Sayfasını Aç"), QMessageBox.AcceptRole)
-        skip = box.addButton(tr("Bu Sürümü Atla"), QMessageBox.DestructiveRole)
-        box.addButton(tr("Daha Sonra"), QMessageBox.RejectRole)
+        patch = box.addButton("Update Changed Files", QMessageBox.AcceptRole)
+        download = box.addButton("Open Source Release Page", QMessageBox.AcceptRole)
+        skip = box.addButton("Skip This Version", QMessageBox.DestructiveRole)
+        box.addButton("Later", QMessageBox.RejectRole)
         box.setDefaultButton(patch)
 
         def clicked(button) -> None:
@@ -180,7 +169,7 @@ class UpdateChecker(QObject):
         if self._busy:
             return
         self._busy = True
-        self._status(tr("Güncelleme planlanıyor…"))
+        self._status("Planning update…")
 
         def run() -> None:
             from slipsurface.patch import apply_update, plan_against_local
@@ -205,7 +194,7 @@ class UpdateChecker(QObject):
         return False
 
     def _on_progressed(self, done: int, total: int, relpath: str) -> None:
-        self._status(trf("Güncelleniyor: {}/{} ({})", done, total, relpath))
+        self._status(f"Updating: {done}/{total} ({relpath})")
 
     # ---------------------------------------------------------- helpers
     def _box(self, kind, title: str, text: str) -> QMessageBox:

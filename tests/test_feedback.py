@@ -140,14 +140,14 @@ def test_new_models_run_through_the_search():
 # ---------------------------------------------------------------- supports
 def test_micro_pile_and_geosynthetic_capacity():
     pile = SupportType("P", "micro_pile", pile_shear=150)
-    assert support_capacity(pile, 3, 3) == (150, "kazık kesme dayanımı")
+    assert support_capacity(pile, 3, 3) == (150, "pile shear strength")
     geo = SupportType("G", "geosynthetic", tensile=80, coverage=50)
     T, gov = support_capacity(geo, 2, 2, po_in=30.0, po_out=60.0)
-    assert (T, gov) == (30.0, "sıyrılma (iç)")
+    assert (T, gov) == (30.0, "pullout (inside)")
     geo.anchorage = "embedded"
     assert support_capacity(geo, 2, 2, 30.0, 60.0)[0] == 30.0
     geo.anchorage = "face"
-    assert support_capacity(geo, 2, 2, 30.0, 60.0) == (40.0, "çekme dayanımı")
+    assert support_capacity(geo, 2, 2, 30.0, 60.0) == (40.0, "tensile strength")
     geo.anchorage = "both"
     assert support_capacity(geo, 2, 2, 1.0, 1.0)[0] == 40.0
 
@@ -312,32 +312,6 @@ def test_note_picking_by_shape(app):
     assert at(45.5, 10.5) is None  # bounding-box corner, outside ellipse
     c.selection = ("annot", 1)
     c.grab()  # paints grips + frame
-
-
-def test_example_aliases():
-    from slipsurface.project import EXAMPLE_ALIASES, EXAMPLES, example_project
-
-    assert all(v in EXAMPLES for v in EXAMPLE_ALIASES.values())
-    assert example_project("Katmanlı şev + YASS").summary.title == "Layered slope with water table"
-
-
-def test_english_templates():
-    from slipsurface.ui import i18n
-
-    old = i18n.language()
-    i18n._language = "en"
-    try:
-        assert (
-            i18n.tr("Hesaplama tamamlandı (3.2 s). Global minimum: Spencer FS = 0.984")
-            == "Computation finished (3.2 s). Global minimum: Spencer FS = 0.984"
-        )
-        assert i18n.tr("⚠ Yakında köşe yok.") == "⚠ No vertex nearby."
-        assert i18n.tr("Destek 2: Ankraj 1") == "Support 2: Ankraj 1"  # user name kept
-        assert i18n.tr("Göçme yönü         : Sağdan sola") == "Failure direction  : Right to left"
-        assert i18n.trf("Malzeme {}", 3) == "Material 3"
-        assert i18n.tr("Zemin 1") == "Zemin 1"
-    finally:
-        i18n._language = old
 
 
 def test_fit_to_screen(app):

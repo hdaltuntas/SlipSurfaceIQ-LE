@@ -19,7 +19,7 @@ from slipsurface.project import MaterialSpec, Project, default_project
 
 def hb_case():
     p = default_project()
-    p.materials = [MaterialSpec("Zemin 1", "HB", sigma_ci=8000, gsi=35, mi=8, d=0.3)]
+    p.materials = [MaterialSpec("Soil 1", "HB", sigma_ci=8000, gsi=35, mi=8, d=0.3)]
     g = p.build_geometry()
     surf = circle_from_chord(g, 10, 45, np.radians(35))
     return p, g, surf

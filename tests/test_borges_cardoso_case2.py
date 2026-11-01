@@ -131,7 +131,7 @@ def test_real_slices_use_depth_gradient_and_unanchored_geosynthetic():
     assert force.T <= 200
     assert force.passive
     assert force.fx >= 0
-    assert force.governing in ("çekme dayanımı", "sıyrılma (iç)", "sıyrılma (dış)")
+    assert force.governing in ("tensile strength", "pullout (inside)", "pullout (outside)")
 
 
 @pytest.mark.parametrize("method", ["bishop", "janbu_simplified", "gle"])

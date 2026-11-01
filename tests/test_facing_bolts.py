@@ -16,7 +16,7 @@ FORCE_EQ = ["spencer", "gle", "janbu_simplified", "corps1", "lowe_karafiath", "o
 
 def acads():
     g = simple_slope(10, 2, toe_x=20, left_bench=20, right_bench=20, depth_below_toe=5)
-    return g, {"Zemin 1": MohrCoulomb("Zemin 1", gamma=20, c=3, phi=19.6)}
+    return g, {"Soil 1": MohrCoulomb("Soil 1", gamma=20, c=3, phi=19.6)}
 
 
 def exact_block(Px, Py, Qx, Qy, passive=True):
@@ -125,7 +125,7 @@ def test_project_patterns_and_facings_roundtrip_and_analysis():
     assert q.to_dict() == p.to_dict()
     ls = p.load_set()
     assert len(ls.supports) == len(pattern_positions(p.build_geometry(), 21, 39, 2.0, 1.0))
-    assert ls.supports[0].label == "Patern 1/1" and len(ls.facings) == 1
+    assert ls.supports[0].label == "Pattern 1/1" and len(ls.facings) == 1
     p.methods.methods = ["bishop"]
     p.surfaces.effort = "fast"
     base = acads_1a_project()
@@ -134,4 +134,4 @@ def test_project_patterns_and_facings_roundtrip_and_analysis():
     r = run_analysis(p)
     assert r.results["bishop"].fos > run_analysis(base).results["bishop"].fos
     txt = report_text(r)
-    assert "Bulon paternleri" in txt and "Kaplamalar" in txt
+    assert "Bolt patterns" in txt and "Facings" in txt

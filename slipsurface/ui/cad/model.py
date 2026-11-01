@@ -6,7 +6,6 @@ key = ("external", 0) | ("material", i) | ("water", 0) | ("user", 0)
 
 from __future__ import annotations
 
-from slipsurface.ui.i18n import tr
 
 from dataclasses import dataclass
 
@@ -15,16 +14,16 @@ import numpy as np
 from slipsurface.project import Project
 
 LABELS = {
-    "external": tr("Dış sınır"),
-    "material": tr("Malzeme sınırı"),
-    "water": "YASS",
-    "user": tr("Kullanıcı yüzeyi"),
-    "load": "Yük",
-    "support": tr("Destek"),
-    "crack": tr("Gerilme çatlağı"),
-    "pattern": "Bulon paterni",
-    "facing": "Kaplama",
-    "annot": "Not",
+    "external": "External boundary",
+    "material": "Material boundary",
+    "water": "Water Table",
+    "user": "User surface",
+    "load": "Load",
+    "support": "Support",
+    "crack": "Tension crack",
+    "pattern": "Bolt pattern",
+    "facing": "Facing",
+    "annot": "Note",
 }
 MIN_POINTS = {
     "external": 3,
@@ -134,14 +133,16 @@ def _check_x_increasing(kind: str, pts) -> list[list[float]]:
             pts = pts[::-1]
         xs = [q[0] for q in pts]
         if any(b <= a for a, b in zip(xs, xs[1:], strict=False)):
-            raise ValueError(f"{LABELS[kind]} noktaları soldan sağa (x artan) sıralı olmalı.")
+            raise ValueError(
+                f"{LABELS[kind]} points must be ordered from left to right (increasing x)."
+            )
     return pts
 
 
 def set_points(p: Project, key, pts) -> None:
     kind, i = key
     if len(pts) < MIN_POINTS[kind]:
-        raise ValueError(f"{LABELS[kind]} en az {MIN_POINTS[kind]} nokta içermeli.")
+        raise ValueError(f"{LABELS[kind]} must contain at least {MIN_POINTS[kind]} points.")
     pts = _check_x_increasing(kind, pts)
     if kind == "external":
         p.external = pts
@@ -174,7 +175,7 @@ def set_points(p: Project, key, pts) -> None:
 
 def add_entity(p: Project, kind: str, pts) -> tuple:
     if len(pts) < MIN_POINTS[kind]:
-        raise ValueError(f"{LABELS[kind]} en az {MIN_POINTS[kind]} nokta içermeli.")
+        raise ValueError(f"{LABELS[kind]} must contain at least {MIN_POINTS[kind]} points.")
     pts = _check_x_increasing(kind, pts)
     if kind == "external":
         p.external = pts

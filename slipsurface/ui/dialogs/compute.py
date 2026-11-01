@@ -17,22 +17,21 @@ from PySide6.QtWidgets import (
 )
 
 from slipsurface.lem import method_name
-from slipsurface.ui.i18n import tr
 
 STAGES = {
-    "presearch": "Dairesel ön arama (Bishop, popülasyon tohumu)",
-    "evolution": "Diferansiyel evrim (global arama)",
-    "polish": "Nelder-Mead iyileştirme",
-    "vertices": "Poligon köşelerinin serbest optimizasyonu",
-    "refine": "Ara köşe ekleme ve yeniden optimizasyon",
-    "final": "Kritik yüzeyin son çözümü",
-    "user": "Kullanıcı tanımlı yüzey çözülüyor",
+    "presearch": "Circular pre-search (Bishop, population seed)",
+    "evolution": "Differential evolution (global search)",
+    "polish": "Nelder-Mead refinement",
+    "vertices": "Free optimisation of the polyline vertices",
+    "refine": "Inserting mid vertices and re-optimising",
+    "final": "Final solution of the critical surface",
+    "user": "Solving the user-defined surface",
 }
 SURFACES = {
-    "circular": "Dairesel",
-    "polyline": "Dairesel olmayan (poligonal)",
-    "spline": "Dairesel olmayan (B-spline)",
-    "user": "Kullanıcı tanımlı",
+    "circular": "Circular",
+    "polyline": "Non-circular (polyline)",
+    "spline": "Non-circular (B-spline)",
+    "user": "User-defined",
 }
 
 
@@ -52,7 +51,7 @@ class ComputeDialog(QDialog):
 
     def __init__(self, n_methods: int, title: str = "", parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle(tr("Hesapla"))
+        self.setWindowTitle("Compute")
         self.setWindowModality(Qt.WindowModal)
         self.setMinimumWidth(780)
         self.n = max(n_methods, 1)
@@ -61,7 +60,7 @@ class ComputeDialog(QDialog):
         self._done_seen: set = set()
         self._finished = False
 
-        self.header = QLabel(tr("Hesaplanıyor…"))
+        self.header = QLabel("Computing…")
         self.header.setStyleSheet("font-size:16px;font-weight:600;")
         self.subtitle = QLabel(title)
         self.subtitle.setStyleSheet("color:#6b7a90;")
@@ -69,10 +68,10 @@ class ComputeDialog(QDialog):
         self.label.setWordWrap(True)
         self.overall = QProgressBar()
         self.overall.setRange(0, self.n * 100)
-        self.overall.setFormat(tr("Toplam") + "  %p%")
+        self.overall.setFormat("Total" + "  %p%")
         self.stage_bar = QProgressBar()
         self.stage_bar.setRange(0, 100)
-        self.stage_bar.setFormat(tr("Aşama") + "  %p%")
+        self.stage_bar.setFormat("Stage" + "  %p%")
 
         grid = QGridLayout()
         grid.setHorizontalSpacing(18)
@@ -80,17 +79,17 @@ class ComputeDialog(QDialog):
         grid.setColumnStretch(3, 1)
         self.fields = {}
         rows = [
-            ("method", tr("Yöntem")),
-            ("stage", tr("Aşama")),
-            ("surface", tr("Yüzey tipi")),
-            ("slices", tr("Dilim sayısı")),
-            ("generation", tr("Nesil")),
-            ("evaluated", tr("Değerlendirilen yüzey")),
-            ("valid", tr("Geçerli / reddedilen")),
-            ("best", tr("En düşük FS")),
-            ("current", tr("Son geçerli FS")),
-            ("elapsed", tr("Geçen süre")),
-            ("remaining", tr("Tahmini kalan süre")),
+            ("method", "Method"),
+            ("stage", "Stage"),
+            ("surface", "Surface type"),
+            ("slices", "Number of slices"),
+            ("generation", "Generation"),
+            ("evaluated", "Surfaces evaluated"),
+            ("valid", "Valid / rejected"),
+            ("best", "Lowest FS"),
+            ("current", "Last valid FS"),
+            ("elapsed", "Elapsed time"),
+            ("remaining", "Estimated time left"),
         ]
         for r, (key, text) in enumerate(rows):
             lab = QLabel(text + ":")
@@ -109,7 +108,7 @@ class ComputeDialog(QDialog):
 
         buttons = QDialogButtonBox(QDialogButtonBox.Cancel)
         self.cancel_button = buttons.button(QDialogButtonBox.Cancel)
-        self.cancel_button.setText(tr("İptal"))
+        self.cancel_button.setText("Cancel")
         buttons.rejected.connect(self._cancel)
 
         lay = QVBoxLayout(self)
@@ -119,10 +118,10 @@ class ComputeDialog(QDialog):
         lay.addWidget(self.stage_bar)
         lay.addWidget(self.label)
         lay.addLayout(grid)
-        lay.addWidget(QLabel(tr("İşlem günlüğü")))
+        lay.addWidget(QLabel("Log"))
         lay.addWidget(self.log, 1)
         lay.addWidget(buttons)
-        self._log(tr("Analiz başlatıldı"))
+        self._log("Analysis started")
 
     # ----------------------------------------------- QProgressDialog-like API
     def labelText(self) -> str:
@@ -136,8 +135,8 @@ class ComputeDialog(QDialog):
 
     def _cancel(self) -> None:
         self.cancel_button.setEnabled(False)
-        self.header.setText(tr("İptal ediliyor…"))
-        self._log(tr("İptal istendi"))
+        self.header.setText("Cancelling…")
+        self._log("Cancellation requested")
         self.canceled.emit()
 
     def reject(self) -> None:  # Esc / window close = cancel
@@ -176,17 +175,17 @@ class ComputeDialog(QDialog):
                 continue
             self._done_seen.add(key)
             if isinstance(value, (int, float)):
-                self._log(f"{method_name(key)}: {tr('tamamlandı')}, FS = {value:.3f}")
+                self._log(f"{method_name(key)}: finished, FS = {value:.3f}")
             else:
-                self._log(f"{method_name(key)}: {tr('sonuç yok')} — {value}")
+                self._log(f"{method_name(key)}: no result — {value}")
         if (m, stage) != self._stage_key and stage:
             self._stage_key = (m, stage)
-            self._log(f"{mname}: {tr(STAGES.get(stage, stage))}")
+            self._log(f"{mname}: {STAGES.get(stage, stage)}")
 
         f = self.fields
         f["method"].setText(f"{i + 1} / {self.n}   {mname}")
-        f["stage"].setText(tr(STAGES.get(stage, stage or "—")))
-        f["surface"].setText(tr(SURFACES.get(st.get("surface_type"), "—")))
+        f["stage"].setText(STAGES.get(stage, stage or "—"))
+        f["surface"].setText(SURFACES.get(st.get("surface_type"), "—"))
         f["slices"].setText(str(st.get("n_slices", "—")))
         f["generation"].setText(f"{gen} / {maxiter}" if maxiter else "—")
         f["evaluated"].setText(str(st.get("evaluated", 0)))
@@ -195,8 +194,8 @@ class ComputeDialog(QDialog):
         f["current"].setText(_fs(st.get("current")))
         f["elapsed"].setText(_clock(elapsed))
         f["remaining"].setText(_clock(remaining) if math.isfinite(remaining) else "—")
-        pre = f" ({tr('ön arama')})" if stage == "presearch" else ""
+        pre = " (pre-search)" if stage == "presearch" else ""
         self.label.setText(
-            f"{tr('Yöntem')} {i + 1}/{self.n}: {mname}{pre} — "
-            f"{tr('Nesil')} {gen}, {tr('en düşük FS')} {_fs(st.get('best'))}"
+            f"Method {i + 1}/{self.n}: {mname}{pre} — "
+            f"Generation {gen}, lowest FS {_fs(st.get('best'))}"
         )

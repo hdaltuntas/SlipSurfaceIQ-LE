@@ -164,7 +164,7 @@ def apply_theme(dark=None):
 
 TECHNOLOGIES = f"""
 <h3>SlipSurfaceIQ LE {__version__}</h3>
-<p>2D Limit Equilibrium / Limit Denge</p>
+<p>2D Limit Equilibrium Slope Stability</p>
 <p>© 2026 Hasan Deniz Altuntaş — GNU AGPL v3 or later. No warranty.</p>
 <table cellpadding="5">
 <tr><th>Technology</th><th>License</th></tr>

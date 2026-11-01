@@ -45,7 +45,7 @@ def test_boundary_geometry_rejects_invalid_water_table(water_table):
     from slipsurface.geometry.builder import boundary_geometry
 
     external = [[0, -5], [20, -5], [20, 5], [0, 5]]
-    with pytest.raises(ValueError, match="YASS"):
+    with pytest.raises(ValueError, match="Water table"):
         boundary_geometry(external, water_table=water_table)
 
 

@@ -1,4 +1,4 @@
-"""Breadcrumb workflow bar (Geometri › Özellikler › Yüzeyler), Slide2 style."""
+"Breadcrumb workflow bar (Geometry › Properties › Surfaces), Slide2 style."
 
 from __future__ import annotations
 

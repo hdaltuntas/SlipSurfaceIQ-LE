@@ -23,7 +23,7 @@ FORCE_EQ = [
 
 def acads():
     g = simple_slope(10, 2, toe_x=20, left_bench=20, right_bench=20, depth_below_toe=5)
-    return g, {"Zemin 1": MohrCoulomb("Zemin 1", gamma=20, c=3, phi=19.6)}
+    return g, {"Soil 1": MohrCoulomb("Soil 1", gamma=20, c=3, phi=19.6)}
 
 
 def block_exact(theta, kh=0.0, kv=0.0, c=3.0, phi=19.6, gamma=20.0):
@@ -92,10 +92,10 @@ def test_janbu_correction_does_not_fall_below_one():
 
     geom = SlopeGeometry(
         np.array([[0.0, 0.0], [30.0, 0.0]]),
-        [Region(Polygon([(0.0, -25.0), (30.0, -25.0), (30.0, 0.0), (0.0, 0.0)]), "Zemin 1")],
+        [Region(Polygon([(0.0, -25.0), (30.0, -25.0), (30.0, 0.0), (0.0, 0.0)]), "Soil 1")],
     )
     surf = PolylineSurface(np.array([[2.0, 0.0], [8.0, -12.0], [14.0, 0.0]]))
-    mats = {"Zemin 1": MohrCoulomb("Zemin 1", gamma=20, c=5, phi=25)}
+    mats = {"Soil 1": MohrCoulomb("Soil 1", gamma=20, c=5, phi=25)}
     slices = make_slices(geom, surf, mats, opts=SliceOptions(pore="none"))
     assert janbu_correction_factor(slices) == 1.0
 
@@ -122,7 +122,7 @@ def test_material_without_water_ignores_table():
     surf = CircularSurface(20, 28, 28)
     g.water_table = np.array([[0.0, 0.0], [20.0, 0.0], [40.0, 6.0], [60.0, 6.0]])
     wet, _ = analyze(g, surf, mats)
-    mats["Zemin 1"].use_water = False
+    mats["Soil 1"].use_water = False
     nowater, s = analyze(g, surf, mats)
     assert np.all(s.u == 0) and nowater.fos > wet.fos
 

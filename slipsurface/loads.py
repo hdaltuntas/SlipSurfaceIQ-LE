@@ -48,18 +48,18 @@ import shapely
 from scipy.optimize import brentq
 
 SUPPORT_KINDS = {
-    "end_anchored": "Uç ankrajlı",
-    "grouted_tieback": "Enjeksiyonlu ankraj (tieback)",
-    "soil_nail": "Zemin çivisi",
-    "geotextile": "Geotekstil",
-    "geosynthetic": "Geosentetik",
-    "micro_pile": "Mikro kazık",
+    "end_anchored": "End anchored",
+    "grouted_tieback": "Grouted tieback",
+    "soil_nail": "Soil nail",
+    "geotextile": "Geotextile",
+    "geosynthetic": "Geosynthetic",
+    "micro_pile": "Micro-pile",
 }
 ANCHORAGES = {
-    "none": "Yok",
-    "face": "Şev yüzünde",
-    "embedded": "Gömülü uçta",
-    "both": "Her iki uçta",
+    "none": "None",
+    "face": "Slope face",
+    "embedded": "Embedded end",
+    "both": "Both ends",
 }
 
 
@@ -93,7 +93,7 @@ class LineLoad:
 
 @dataclass
 class SupportType:
-    name: str = "Ankraj 1"
+    name: str = "Anchor 1"
     kind: str = "end_anchored"
     spacing: float = 1.5  # out-of-plane spacing [m]; ignored for geotextile/geosynthetic
     tensile: float = 200.0  # kN; kN/m for geotextile/geosynthetic
@@ -146,14 +146,14 @@ class SupportForce:
 
 @dataclass
 class FacingType:
-    """Shotcrete facing with welded wire mesh (püskürtme beton + hasır çelik).
+    """Shotcrete facing with welded wire mesh.
 
     capacity per metre of slope = tau * thickness + As * fy   [kN/m]
       tau        shear strength of the shotcrete [kPa]
       As         mesh steel area [mm2/m] (e.g. Q188 -> 188), fy [MPa]
     """
 
-    name: str = "Püskürtme beton"
+    name: str = "Shotcrete"
     thickness: float = 0.10  # m
     gamma: float = 24.0  # kN/m3
     tau: float = 400.0  # kPa
@@ -292,29 +292,29 @@ def support_capacity(
     """Force [kN] and which component governs. `po_in` / `po_out` are the
     geosynthetic pullout resistances inside / outside the sliding mass."""
     if st.kind == "end_anchored":
-        return st.tensile, "çekme kapasitesi"
+        return st.tensile, "tensile capacity"
     if st.kind == "grouted_tieback":
         bond = st.bond_strength * min(st.bond_length, L_out)
-        return (st.tensile, "çekme kapasitesi") if st.tensile <= bond else (bond, "kök sıyrılma")
+        return (st.tensile, "tensile capacity") if st.tensile <= bond else (bond, "bond pullout")
     if st.kind == "soil_nail":
         cands = [
-            (st.tensile, "çekme kapasitesi"),
-            (st.bond_strength * L_out, "sıyrılma (dış)"),
-            (st.plate + st.bond_strength * L_in, "plaka + sıyrılma (iç)"),
+            (st.tensile, "tensile capacity"),
+            (st.bond_strength * L_out, "pullout (outside)"),
+            (st.plate + st.bond_strength * L_in, "plate + pullout (inside)"),
         ]
         return min(cands, key=lambda c: c[0])
     if st.kind == "geotextile":
         po = st.pullout * min(L_in, L_out)
-        return (st.tensile, "çekme dayanımı") if st.tensile <= po else (po, "sıyrılma")
+        return (st.tensile, "tensile strength") if st.tensile <= po else (po, "pullout")
     if st.kind == "geosynthetic":
-        cands = [(st.coverage / 100.0 * st.tensile, "çekme dayanımı")]
+        cands = [(st.coverage / 100.0 * st.tensile, "tensile strength")]
         if st.anchorage in ("none", "embedded"):
-            cands.append((po_in if po_in is not None else np.inf, "sıyrılma (iç)"))
+            cands.append((po_in if po_in is not None else np.inf, "pullout (inside)"))
         if st.anchorage in ("none", "face"):
-            cands.append((po_out if po_out is not None else np.inf, "sıyrılma (dış)"))
+            cands.append((po_out if po_out is not None else np.inf, "pullout (outside)"))
         return min(cands, key=lambda c: c[0])
     if st.kind == "micro_pile":
-        return st.pile_shear, "kazık kesme dayanımı"
+        return st.pile_shear, "pile shear strength"
     raise ValueError(f"unknown support kind {st.kind}")
 
 
@@ -427,7 +427,7 @@ def slice_forces(
                 L_in,
                 L_out,
                 gov,
-                sup.label or f"Destek {k + 1}",
+                sup.label or f"Support {k + 1}",
             )
         )
 
@@ -477,7 +477,7 @@ def slice_forces(
                     passive,
                     0.0,
                     0.0,
-                    "kaplama (τ·t + As·fy)",
+                    "facing (τ·t + As·fy)",
                     ft.name,
                 )
             )

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from slipsurface.ui.preferences import fit_to_screen
 
-from slipsurface.ui.i18n import tr
 
 import copy
 
@@ -49,7 +48,7 @@ MESHES = {
     "Q424": 424,
     "Q524": 524,
     "Q589": 589,
-    "Özel": None,
+    "Custom": None,
 }
 
 
@@ -65,8 +64,8 @@ def _spin(lo, hi, dec, val, suffix=""):
 
 def _buttons(dlg, ok=None):
     b = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-    b.button(QDialogButtonBox.Ok).setText(tr("Tamam"))
-    b.button(QDialogButtonBox.Cancel).setText(tr("İptal"))
+    b.button(QDialogButtonBox.Ok).setText("OK")
+    b.button(QDialogButtonBox.Cancel).setText("Cancel")
     b.accepted.connect(ok or dlg.accept)
     b.rejected.connect(dlg.reject)
     return b
@@ -78,7 +77,7 @@ class FacingTypesDialog(QDialog):
 
     def __init__(self, types: list[FacingType], parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Kaplama Tiplerini Tanımla — Püskürtme Beton + Hasır Çelik")
+        self.setWindowTitle("Define Facing Types — Shotcrete + Wire Mesh")
         fit_to_screen(self, 820, 540)
         self.types = [copy.deepcopy(t) for t in types] or [FacingType()]
         self.renames: dict[str, str] = {}
@@ -89,7 +88,7 @@ class FacingTypesDialog(QDialog):
         self.list = QListWidget()
         self.list.currentRowChanged.connect(self._select)
         bar = QHBoxLayout()
-        for txt, tip, slot in (("+", tr("Ekle"), self._add), ("✕", tr("Sil"), self._delete)):
+        for txt, tip, slot in (("+", "Add", self._add), ("✕", "Delete", self._delete)):
             b = QToolButton()
             b.setText(txt)
             b.setToolTip(tip)
@@ -115,8 +114,8 @@ class FacingTypesDialog(QDialog):
             self.mesh.addItem(k if v is None else f"{k}  (As = {v} mm²/m)", k)
         self.mesh_as = _spin(0, 5000, 1, 188, " mm²/m")
         self.mesh_fy = _spin(0, 2000, 0, 500, " MPa")
-        self.r_passive = QRadioButton("Pasif (T / F) — önerilen")
-        self.r_active = QRadioButton(tr("Aktif"))
+        self.r_passive = QRadioButton("Passive (T / F) — recommended")
+        self.r_active = QRadioButton("Active")
         g = QButtonGroup(self)
         g.addButton(self.r_passive)
         g.addButton(self.r_active)
@@ -124,25 +123,21 @@ class FacingTypesDialog(QDialog):
         self.capacity.setStyleSheet("font-weight:bold;color:#1b3a63;")
 
         form = QFormLayout()
-        form.addRow(tr("Ad:"), self.name)
-        form.addRow(tr("Renk:"), self.color)
-        form.addRow("Püskürtme beton kalınlığı t:", self.thickness)
-        form.addRow("Birim hacim ağırlık γ:", self.gamma)
-        form.addRow("Beton kayma dayanımı τ:", self.tau)
-        form.addRow("Hasır çelik:", self.mesh)
-        form.addRow("Hasır çelik alanı As:", self.mesh_as)
-        form.addRow("Çelik akma dayanımı fy:", self.mesh_fy)
+        form.addRow("Name:", self.name)
+        form.addRow("Color:", self.color)
+        form.addRow("Shotcrete thickness t:", self.thickness)
+        form.addRow("Unit weight γ:", self.gamma)
+        form.addRow("Shotcrete shear strength τ:", self.tau)
+        form.addRow("Wire mesh:", self.mesh)
+        form.addRow("Mesh steel area As:", self.mesh_as)
+        form.addRow("Steel yield strength fy:", self.mesh_fy)
         appl = QHBoxLayout()
         appl.addWidget(self.r_passive)
         appl.addWidget(self.r_active)
-        form.addRow("Kuvvet uygulama:", appl)
-        form.addRow("Kapasite:", self.capacity)
+        form.addRow("Force application:", appl)
+        form.addRow("Capacity:", self.capacity)
         note = QLabel(
-            "Kaplama şev yüzüne atanır. Analizde: (1) ağırlığı γ·t yüzeye yük olarak eklenir; "
-            "(2) kayma yüzeyi kaplamalı yüzeyden çıkıyor veya giriyorsa, kaplamanın kesilmesi "
-            "için gereken kuvvet T = τ·t + As·fy, o noktada kayma yüzeyine teğet ve kaymaya "
-            "karşı uygulanır. τ için tipik değer: 0.02–0.04·fck (C25 için ≈ 0.5–1.0 MPa, "
-            "güvenli tarafta 0.3–0.5 MPa)."
+            "The facing is assigned to the slope face. In the analysis: (1) its weight γ·t is added as a surface load; (2) where the slip surface exits or enters through the faced surface, the force needed to shear the facing, T = τ·t + As·fy, acts there tangent to the slip surface against sliding. Typical τ: 0.02–0.04·fck (≈ 0.5–1.0 MPa for C25, 0.3–0.5 MPa on the safe side)."
         )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
@@ -194,7 +189,7 @@ class FacingTypesDialog(QDialog):
         self.gamma.setValue(t.gamma)
         self.tau.setValue(t.tau)
         i = self.mesh.findData(t.mesh)
-        self.mesh.setCurrentIndex(i if i >= 0 else self.mesh.findData("Özel"))
+        self.mesh.setCurrentIndex(i if i >= 0 else self.mesh.findData("Custom"))
         self.mesh_as.setValue(t.mesh_as)
         self.mesh_fy.setValue(t.mesh_fy)
         (self.r_passive if t.application == "passive" else self.r_active).setChecked(True)
@@ -229,11 +224,7 @@ class FacingTypesDialog(QDialog):
             return
         t = self.types[self.cur]
         self.capacity.setText(
-            tr(
-                f"T = τ·t + As·fy = {t.tau * t.thickness:.1f} + "
-                f"{t.mesh_as * t.mesh_fy / 1000:.1f} = {t.capacity:.1f} kN/m   "
-                f"·   ağırlık {t.weight_per_m:.2f} kN/m²"
-            )
+            f"T = τ·t + As·fy = {t.tau * t.thickness:.1f} + {t.mesh_as * t.mesh_fy / 1000:.1f} = {t.capacity:.1f} kN/m   ·   weight {t.weight_per_m:.2f} kN/m²"
         )
 
     def _rename(self, text):
@@ -252,7 +243,7 @@ class FacingTypesDialog(QDialog):
 
     def _pick_color(self):
         t = self.types[self.cur]
-        c = QColorDialog.getColor(QColor(t.color), self, "Kaplama rengi")
+        c = QColorDialog.getColor(QColor(t.color), self, "Facing colour")
         if c.isValid():
             t.color = c.name()
             self.color.setIcon(color_icon(t.color, 18))
@@ -261,15 +252,15 @@ class FacingTypesDialog(QDialog):
     def _add(self):
         names = {t.name for t in self.types}
         i = 1
-        while f"Kaplama {i}" in names:
+        while f"Facing {i}" in names:
             i += 1
-        self.types.append(FacingType(f"Kaplama {i}"))
+        self.types.append(FacingType(f"Facing {i}"))
         self._refresh()
         self.list.setCurrentRow(len(self.types) - 1)
 
     def _delete(self):
         if len(self.types) <= 1:
-            self.error.setText(tr("⚠ En az bir kaplama tipi kalmalı."))
+            self.error.setText("⚠ At least one facing type must remain.")
             return
         del self.types[self.cur]
         self._refresh()
@@ -278,7 +269,7 @@ class FacingTypesDialog(QDialog):
     def _accept(self):
         names = [t.name.strip() for t in self.types]
         if any(not n for n in names) or len(set(names)) != len(names):
-            self.error.setText(tr("⚠ Adlar boş olamaz ve benzersiz olmalı."))
+            self.error.setText("⚠ Names must not be empty and must be unique.")
             return
         self.accept()
 
@@ -288,16 +279,16 @@ class FacingEditDialog(QDialog):
 
     def __init__(self, f: dict, type_names: list[str], parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Kaplama")
+        self.setWindowTitle("Facing")
         self.type = QComboBox()
         self.type.addItems(type_names)
         self.type.setCurrentText(f["type"])
         self.x1 = _spin(-1e6, 1e6, 3, f["x1"], " m")
         self.x2 = _spin(-1e6, 1e6, 3, f["x2"], " m")
         form = QFormLayout()
-        form.addRow("Kaplama tipi:", self.type)
-        form.addRow(tr("Başlangıç x₁:"), self.x1)
-        form.addRow(tr("Bitiş x₂:"), self.x2)
+        form.addRow("Facing type:", self.type)
+        form.addRow("Start x₁:", self.x1)
+        form.addRow("End x₂:", self.x2)
         lay = QVBoxLayout(self)
         lay.addLayout(form)
         lay.addWidget(_buttons(self))
@@ -314,7 +305,7 @@ class FacingEditDialog(QDialog):
 class PatternDialog(QDialog):
     def __init__(self, pt: dict, type_names: list[str], count_fn=None, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Bulon / Ankraj Paterni")
+        self.setWindowTitle("Bolt / Anchor Pattern")
         self.pt = pt
         self.count_fn = count_fn
         self.type = QComboBox()
@@ -329,18 +320,16 @@ class PatternDialog(QDialog):
         self.count = QLabel()
         self.count.setStyleSheet("font-weight:bold;color:#1b3a63;")
         f = QFormLayout()
-        f.addRow("Destek tipi:", self.type)
-        f.addRow(tr("Başlangıç x₁:"), self.x1)
-        f.addRow(tr("Bitiş x₂:"), self.x2)
-        f.addRow("Aralık (şev yüzü boyunca):", self.spacing)
-        f.addRow("İlk bulon mesafesi:", self.offset)
-        f.addRow("Eğim (yataydan aşağı):", self.angle)
-        f.addRow("Boy:", self.length)
-        f.addRow("Bulon sayısı:", self.count)
+        f.addRow("Support type:", self.type)
+        f.addRow("Start x₁:", self.x1)
+        f.addRow("End x₂:", self.x2)
+        f.addRow("Spacing (along the slope face):", self.spacing)
+        f.addRow("First bolt offset:", self.offset)
+        f.addRow("Inclination (below horizontal):", self.angle)
+        f.addRow("Length:", self.length)
+        f.addRow("Number of bolts:", self.count)
         note = QLabel(
-            "Bulonlar zemin yüzeyi boyunca x₁'den itibaren eşit aralıkla yerleştirilir, "
-            "başlıklar yüzeyde, doğrultu şevin içine doğrudur. Düzlem dışı aralık "
-            "destek tipinde tanımlıdır."
+            "Bolts are placed at equal spacing along the ground surface from x₁, heads on the surface, pointing into the slope. The out-of-plane spacing is set in the support type."
         )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
@@ -382,11 +371,11 @@ class AnnotationDialog(QDialog):
         kind = ann["kind"]
         self.setWindowTitle(
             {
-                "text": tr("Yazı"),
-                "line": tr("Çizgi"),
-                "arrow": tr("Ok"),
-                "rect": tr("Dikdörtgen"),
-                "ellipse": tr("Elips"),
+                "text": "Text",
+                "line": "Line",
+                "arrow": "Arrow",
+                "rect": "Rectangle",
+                "ellipse": "Ellipse",
             }[kind]
         )
         self.ann = ann
@@ -402,19 +391,19 @@ class AnnotationDialog(QDialog):
             self.size = QSpinBox()
             self.size.setRange(6, 72)
             self.size.setValue(int(ann.get("size", 10)))
-            self.bold = QCheckBox(tr("Kalın"))
+            self.bold = QCheckBox("Bold")
             self.bold.setChecked(bool(ann.get("bold", False)))
-            self.box = QCheckBox("Arka plan kutusu")
+            self.box = QCheckBox("Background box")
             self.box.setChecked(bool(ann.get("box", True)))
-            f.addRow(tr("Metin:"), self.text)
-            f.addRow("Yazı boyutu (pt):", self.size)
+            f.addRow("Text:", self.text)
+            f.addRow("Font size (pt):", self.size)
             f.addRow(self.bold)
             f.addRow(self.box)
         else:
             self.width = _spin(0.5, 10, 1, float(ann.get("width", 1.5)), " px")
-            f.addRow("Çizgi kalınlığı:", self.width)
+            f.addRow("Line width:", self.width)
             if kind in ("rect", "ellipse"):
-                self.fill_cb = QCheckBox("Dolgu")
+                self.fill_cb = QCheckBox("Fill")
                 self.fill_cb.setChecked(self.fill is not None)
                 self.fill_btn = QToolButton()
                 self.fill_btn.setIcon(color_icon(self.fill or "#f6d65a", 18))
@@ -423,20 +412,20 @@ class AnnotationDialog(QDialog):
                 row.addWidget(self.fill_cb)
                 row.addWidget(self.fill_btn)
                 row.addStretch(1)
-                f.addRow(tr("Dolgu:"), row)
-        f.addRow(tr("Renk:"), self.color_btn)
+                f.addRow("Fill:", row)
+        f.addRow("Color:", self.color_btn)
         lay = QVBoxLayout(self)
         lay.addLayout(f)
         lay.addWidget(_buttons(self))
 
     def _pick_color(self):
-        c = QColorDialog.getColor(QColor(self.color), self, tr("Renk"))
+        c = QColorDialog.getColor(QColor(self.color), self, "Color")
         if c.isValid():
             self.color = c.name()
             self.color_btn.setIcon(color_icon(self.color, 18))
 
     def _pick_fill(self):
-        c = QColorDialog.getColor(QColor(self.fill or "#f6d65a"), self, tr("Dolgu rengi"))
+        c = QColorDialog.getColor(QColor(self.fill or "#f6d65a"), self, "Fill Color")
         if c.isValid():
             self.fill = c.name()
             self.fill_btn.setIcon(color_icon(self.fill, 18))

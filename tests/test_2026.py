@@ -79,50 +79,6 @@ def test_strength_envelopes():
         PowerLaw("invalid", gamma=19, exponent=1.2)
 
 
-def test_live_language_preserves_document_and_dialog_values(monkeypatch):
-    from PySide6.QtWidgets import QApplication, QDialog, QVBoxLayout, QLabel, QLineEdit
-    from slipsurface.ui import i18n
-    from slipsurface.ui.modeler import ModelerWindow
-
-    app = QApplication.instance() or QApplication([])
-    # Do not change the user's persisted language during tests.
-    monkeypatch.setattr(i18n, "settings", lambda: _MemorySettings())
-    original_language = i18n._language
-    win = ModelerWindow(default_project())
-    dialog = QDialog(win)
-    layout = QVBoxLayout(dialog)
-    label = QLabel("Malzemeler")
-    editor = QLineEdit("Malzemeler")
-    layout.addWidget(label)
-    layout.addWidget(editor)
-    win.doc.edit("edit", lambda p: setattr(p.materials[0], "c", 12))
-    snapshot = win.doc.project.to_dict()
-    undo_count = win.doc.undo_stack.count()
-    try:
-        win.change_language("en")
-        app.processEvents()
-        assert win.a_new.text() == "&New"
-        assert win.workflow.steps[0] == "Geometry"
-        assert label.text() == "Materials"
-        assert editor.text() == "Malzemeler"  # User data stays untouched.
-        assert win.doc.project.to_dict() == snapshot
-        assert win.doc.undo_stack.count() == undo_count
-        assert win.doc.dirty
-        win.change_language("tr")
-        assert win.a_new.text() == "&Yeni"
-        assert label.text() == "Malzemeler"
-    finally:
-        i18n._language = original_language
-        win.doc.mark_clean()
-        dialog.close()
-        win.close()
-
-
-class _MemorySettings:
-    def setValue(self, *args):
-        pass
-
-
 @pytest.mark.parametrize("method", ["bishop", "spencer", "gle", "ordinary"])
 @pytest.mark.parametrize("model", ["UD", "PL"])
 def test_new_models_against_equivalent_linear_material(method, model):
@@ -190,10 +146,5 @@ def test_new_models_in_pdf(tmp_path, model, expected):
     path = tmp_path / "new-model.pdf"
     build_pdf(results, path)
     text = "\n".join(page.extract_text() for page in PdfReader(path).pages)
-    assert "diğer dayanım modelleri" in text and expected in text
-    from slipsurface.report import ReportOptions
-
-    build_pdf(results, path, ReportOptions(language="en"))
-    text = "\n".join(page.extract_text() for page in PdfReader(path).pages)
     assert "other strength models" in text and expected in text
-    assert "Analysis Results" in text and "Analiz Sonuçları" not in text
+    assert "Analysis Results" in text

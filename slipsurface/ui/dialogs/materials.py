@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from slipsurface.ui.preferences import fit_to_screen
 
-from slipsurface.ui.i18n import tr
 
 import copy
 
@@ -42,8 +41,7 @@ TITLE_CSS = "color:#2a7ad0;font-size:16px;"
 
 # (attribute, label, min, max, decimals) per model, from the shared catalogue
 ROWS = {
-    k: [(a, tr(lab), lo, hi, dec) for a, lab, lo, hi, dec in info.rows]
-    for k, info in MODELS.items()
+    k: [(a, lab, lo, hi, dec) for a, lab, lo, hi, dec in info.rows] for k, info in MODELS.items()
 }
 FORMULA = {k: info.formula for k, info in MODELS.items()}
 MC_ROWS, HB_ROWS = ROWS["MC"], ROWS["HB"]
@@ -64,7 +62,7 @@ class MaterialsDialog(QDialog):
         self, materials: list[MaterialSpec], parent=None, select: str | None = None
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle(tr("Malzeme Özelliklerini Tanımla"))
+        self.setWindowTitle("Define Material Properties")
         fit_to_screen(self, 980, 700)
         self.mats = [copy.deepcopy(m) for m in materials] or [MaterialSpec()]
         self.renames: dict[str, str] = {}
@@ -77,11 +75,11 @@ class MaterialsDialog(QDialog):
         self.list.currentRowChanged.connect(self._select)
         tb = QHBoxLayout()
         for name, tip, slot in (
-            ("add", tr("Malzeme ekle"), self._add),
-            ("delete", tr("Seçili malzemeyi sil"), self._delete),
-            ("up", tr("Yukarı taşı"), lambda: self._move(-1)),
-            ("down", tr("Aşağı taşı"), lambda: self._move(1)),
-            ("copy", tr("Kopyala"), self._copy),
+            ("add", "Add Material", self._add),
+            ("delete", "Delete Selected Material", self._delete),
+            ("up", "Move Up", lambda: self._move(-1)),
+            ("down", "Move Down", lambda: self._move(1)),
+            ("copy", "Copy", self._copy),
         ):
             b = QToolButton()
             b.setToolTip(tip)
@@ -103,15 +101,15 @@ class MaterialsDialog(QDialog):
         self.color_btn.setFixedWidth(90)
         self.color_btn.clicked.connect(self._pick_color)
         self.gamma = _spin(0.1, 100, 3, 19)
-        self.use_sat = QCheckBox(tr("Doygun birim hacim ağırlık (kN/m³):"))
+        self.use_sat = QCheckBox("Saturated Unit Weight (kN/m³):")
         self.gamma_sat = _spin(0.1, 100, 3, 20)
         self.use_sat.toggled.connect(self.gamma_sat.setEnabled)
         grid = QGridLayout()
-        grid.addWidget(QLabel(tr("Ad:")), 0, 0)
+        grid.addWidget(QLabel("Name:"), 0, 0)
         grid.addWidget(self.name, 0, 1)
-        grid.addWidget(QLabel(tr("Dolgu:")), 0, 2)
+        grid.addWidget(QLabel("Fill:"), 0, 2)
         grid.addWidget(self.color_btn, 0, 3)
-        grid.addWidget(QLabel(tr("Birim hacim ağırlık (kN/m³):")), 1, 0)
+        grid.addWidget(QLabel("Unit Weight (kN/m³):"), 1, 0)
         grid.addWidget(self.gamma, 1, 1)
         grid.addWidget(self.use_sat, 1, 2)
         grid.addWidget(self.gamma_sat, 1, 3)
@@ -120,10 +118,10 @@ class MaterialsDialog(QDialog):
         strength = QWidget()
         sl = QVBoxLayout(strength)
         row = QHBoxLayout()
-        row.addWidget(QLabel(tr("Göçme kriteri:")))
+        row.addWidget(QLabel("Failure Criterion:"))
         self.model = QComboBox()
         for key, info in MODELS.items():
-            self.model.addItem(tr(info.name), key)
+            self.model.addItem(info.name, key)
         self.model.currentIndexChanged.connect(self._model_changed)
         row.addWidget(self.model, 1)
         self.formula = QLabel()
@@ -131,7 +129,7 @@ class MaterialsDialog(QDialog):
         row.addWidget(self.formula, 2)
         sl.addLayout(row)
         self.table = QTableWidget(0, 2)
-        self.table.setHorizontalHeaderLabels([tr("Özellik"), tr("Değer")])
+        self.table.setHorizontalHeaderLabels(["Property", "Value"])
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
@@ -146,25 +144,23 @@ class MaterialsDialog(QDialog):
         # water tab
         water = QWidget()
         wl = QFormLayout(water)
-        self.use_water = QCheckBox(tr("Su tablosu bu malzemeye etki eder"))
+        self.use_water = QCheckBox("Apply Water Table to This Material")
         self.hu = _spin(0, 2, 3, 1.0)
         self.hu.setButtonSymbols(QDoubleSpinBox.UpDownArrows)
         wl.addRow(self.use_water)
-        wl.addRow(tr("Hu (piyezometrik yükseklik katsayısı):"), self.hu)
+        wl.addRow("Hu (Piezometric Head Factor):", self.hu)
         hint = QLabel(
-            "u = Hu · γw · h  (h: dilim tabanından su tablosuna düşey mesafe). "
-            "Hu = 1 hidrostatik; Hu < 1 akım nedeniyle azaltılmış basınç."
+            "u = Hu · γw · h  (h: vertical distance from the slice base to the water table). Hu = 1 hydrostatic; Hu < 1 pressure reduced by seepage."
         )
         hint.setWordWrap(True)
         wl.addRow(hint)
 
         self.tabs = QTabWidget()
-        self.tabs.addTab(strength, tr("Dayanım"))
-        self.tabs.addTab(water, tr("Su Parametreleri"))
+        self.tabs.addTab(strength, "Strength")
+        self.tabs.addTab(water, "Water Parameters")
 
         note = QLabel(
-            "Not: Malzeme özellikleri tüm projede ortaktır. Bir malzeme silinirse, "
-            "ona atanmış bölgeler ilk malzemeye döner."
+            "Note: material properties are shared by the whole project. Deleting a material reassigns its regions to the first material."
         )
         note.setWordWrap(True)
 
@@ -184,8 +180,8 @@ class MaterialsDialog(QDialog):
         self.error = QLabel("")
         self.error.setStyleSheet("color:#b03a2e;")
         btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        btns.button(QDialogButtonBox.Ok).setText(tr("Tamam"))
-        btns.button(QDialogButtonBox.Cancel).setText(tr("İptal"))
+        btns.button(QDialogButtonBox.Ok).setText("OK")
+        btns.button(QDialogButtonBox.Cancel).setText("Cancel")
         btns.accepted.connect(self._accept)
         btns.rejected.connect(self.reject)
         lay = QVBoxLayout(self)
@@ -244,7 +240,7 @@ class MaterialsDialog(QDialog):
     def _fill_table(self, m: MaterialSpec) -> None:
         rows = ROWS[m.model]
         self.formula.setText(FORMULA[m.model])
-        self.formula.setToolTip(tr(MODELS[m.model].note))
+        self.formula.setToolTip(MODELS[m.model].note)
         self.table.blockSignals(True)
         self.table.setRowCount(len(rows))
         for r, (attr, label, lo, hi, _dec) in enumerate(rows):
@@ -263,19 +259,17 @@ class MaterialsDialog(QDialog):
                 hb = HoekBrown(
                     m.name, gamma=m.gamma, sigma_ci=m.sigma_ci, gsi=m.gsi, mi=m.mi, d=m.d
                 )
-                self.derived.setText(
-                    tr(f"{tr('Türetilen')}: mb = {hb.mb:.4f}   s = {hb.s:.5f}   a = {hb.a:.4f}")
-                )
+                self.derived.setText(f"Derived: mb = {hb.mb:.4f}   s = {hb.s:.5f}   a = {hb.a:.4f}")
             except ValueError:
                 self.derived.setText("")
         elif m.model == "BB":
             try:
                 bb = m.to_material()
-                self.derived.setText(tr(f"JRCn = {bb.jrc_n:.3f}   JCSn = {bb.jcs_n:.1f} kPa"))
+                self.derived.setText(f"JRCn = {bb.jrc_n:.3f}   JCSn = {bb.jcs_n:.1f} kPa")
             except ValueError:
                 self.derived.setText("")
         else:
-            self.derived.setText(tr(MODELS[m.model].note))
+            self.derived.setText(MODELS[m.model].note)
         self.derived.setWordWrap(True)
 
     def _store(self, *_) -> None:
@@ -294,11 +288,11 @@ class MaterialsDialog(QDialog):
             try:
                 v = float(item.text().replace(",", "."))
             except ValueError:
-                self.error.setText(tr(f"⚠ '{self.table.item(r, 0).text()}' sayısal olmalı."))
+                self.error.setText(f"⚠ '{self.table.item(r, 0).text()}' must be numeric.")
                 continue
             if not lo <= v <= hi:
                 self.error.setText(
-                    tr(f"⚠ '{self.table.item(r, 0).text()}' {lo:g} – {hi:g} aralığında olmalı.")
+                    f"⚠ '{self.table.item(r, 0).text()}' must be between {lo:g} and {hi:g}."
                 )
                 continue
             setattr(m, attr, v)
@@ -341,7 +335,7 @@ class MaterialsDialog(QDialog):
         if self.cur < 0:
             return
         m = self.mats[self.cur]
-        c = QColorDialog.getColor(QColor(m.color), self, tr("Dolgu rengi"))
+        c = QColorDialog.getColor(QColor(m.color), self, "Fill Color")
         if c.isValid():
             m.color = c.name()
             self.color_btn.setIcon(color_icon(m.color, 18))
@@ -359,7 +353,7 @@ class MaterialsDialog(QDialog):
     def _add(self) -> None:
         n = len(self.mats) + 1
         self.mats.append(
-            MaterialSpec(name=self._unique(f"Malzeme {n}"), color=PALETTE[(n - 1) % len(PALETTE)])
+            MaterialSpec(name=self._unique(f"Material {n}"), color=PALETTE[(n - 1) % len(PALETTE)])
         )
         self._refresh_list()
         self.list.setCurrentRow(len(self.mats) - 1)
@@ -368,14 +362,14 @@ class MaterialsDialog(QDialog):
         if self.cur < 0:
             return
         m = copy.deepcopy(self.mats[self.cur])
-        m.name = self._unique(m.name + " kopya")
+        m.name = self._unique(m.name + " copy")
         self.mats.insert(self.cur + 1, m)
         self._refresh_list()
         self.list.setCurrentRow(self.cur + 1)
 
     def _delete(self) -> None:
         if self.cur < 0 or len(self.mats) <= 1:
-            self.error.setText(tr("⚠ En az bir malzeme kalmalı."))
+            self.error.setText("⚠ At least one material must remain.")
             return
         del self.mats[self.cur]
         self._refresh_list()
@@ -392,10 +386,10 @@ class MaterialsDialog(QDialog):
     def _accept(self) -> None:
         names = self._names()
         if any(not n.strip() for n in names):
-            self.error.setText(tr("⚠ Malzeme adı boş olamaz."))
+            self.error.setText("⚠ Material name must not be empty.")
             return
         if len(set(names)) != len(names):
-            self.error.setText(tr("⚠ Malzeme adları benzersiz olmalı."))
+            self.error.setText("⚠ Material names must be unique.")
             return
         if self.error.text():
             return

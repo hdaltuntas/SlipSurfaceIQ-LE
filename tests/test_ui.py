@@ -86,19 +86,19 @@ def test_layout(win):
     assert win.workflow.width() > 200
     titles = [a.text().replace("&", "") for a in win.menuBar().actions()]
     assert titles == [
-        "Dosya",
-        "Düzen",
-        "Görünüm",
-        "Analiz",
-        "Sınırlar",
-        "Yükleme",
-        "Destek",
-        "Yüzeyler",
-        "Özellikler",
-        "Araçlar",
-        "Yardım",
+        "File",
+        "Edit",
+        "View",
+        "Analysis",
+        "Boundaries",
+        "Loading",
+        "Support",
+        "Surfaces",
+        "Properties",
+        "Tools",
+        "Help",
     ]
-    assert win.workflow.steps == ["Geometri", "Destek", "Yükleme", "Özellikler", "Yüzeyler"]
+    assert win.workflow.steps == ["Geometry", "Support", "Loading", "Properties", "Surfaces"]
     assert set(win.status.toggles) == {"snap_on", "grid_on", "ortho_on", "osnap_on"}
     assert win.doc.geometry is not None and len(win.doc.geometry.regions) == 4
 
@@ -147,14 +147,14 @@ def test_empty_results_disable_result_actions(win):
 
 def test_interpret_reuses_window_and_explains_partial_results(win):
     win.last_results = fixed_results(win)
-    win.last_results.errors["spencer"] = "Yakınsama sağlanamadı."
+    win.last_results.errors["spencer"] = "Did not converge."
     win.interpret()
     iw = win.interpret_windows[-1]
     win.interpret()
     assert len(win.interpret_windows) == 1
     assert iw.result_warning.isVisible()
     assert "Spencer" in iw.result_warning.text()
-    assert "Yakınsama" in iw.result_warning.text()
+    assert "converge" in iw.result_warning.text()
     iw._display_option("show_fs_legend", False)
     iw._display_option("show_all_surfaces", True)
     iw._display_reset()
@@ -224,12 +224,12 @@ def test_user_surface_disables_search_controls(win):
     assert not dlg.opt_btn.isEnabled() and not dlg.use_limits.isEnabled()
     dlg.r_non.setChecked(True)
     assert dlg.opt_btn.isEnabled() and dlg.shape.isEnabled()
-    assert "poligonal" in dlg.r_non.text()
+    assert "polyline" in dlg.r_non.text()
     dlg.use_limits.setChecked(True)
     dlg.l0.setValue(1000)
     dlg.l1.setValue(1100)
     dlg._accept()
-    assert "kesişmeli" in dlg.error.text()
+    assert "must overlap" in dlg.error.text()
 
 
 def test_stale_background_result_is_not_installed(win):
@@ -408,7 +408,7 @@ def test_cancel_compute(app, win):
     p.surfaces.effort = "fine"
     win.load_project(p)
     win.compute()
-    wait_for(app, lambda: win.progress is not None and "Nesil" in win.progress.labelText())
+    wait_for(app, lambda: win.progress is not None and "Generation" in win.progress.labelText())
     win._cancel_compute()
     wait_for(app, lambda: not win.busy)
     assert win.last_results is None
@@ -572,7 +572,7 @@ def test_bolt_pattern_dialog_and_engine(app, win, monkeypatch):
     face = np.hypot(20, 10)
     assert len(bolts) == int((face - 1.0) / 2.5) + 1
     ls = win.doc.project.load_set()
-    assert len(ls.supports) == len(bolts) and ls.supports[0].label == "Patern 1/1"
+    assert len(ls.supports) == len(bolts) and ls.supports[0].label == "Pattern 1/1"
     # double click opens the pattern dialog (edits the pattern)
     win.edit_coordinates(("pattern", 0))
     assert len(win.doc.project.support_patterns) == 1
@@ -601,7 +601,7 @@ def test_annotations_in_modeler(app, win, monkeypatch):
     from slipsurface.ui.dialogs import facing_pattern_annot as D
 
     def fake_exec(self):
-        self.text.setPlainText("Kritik bölge")
+        self.text.setPlainText("Critical zone")
         return 1
 
     monkeypatch.setattr(D.AnnotationDialog, "exec", fake_exec)
@@ -617,13 +617,13 @@ def test_annotations_in_modeler(app, win, monkeypatch):
     c.command("44,12")
     ann = win.doc.project.annotations
     assert [a["kind"] for a in ann] == ["text", "arrow", "rect"]
-    assert ann[0]["text"] == "Kritik bölge"
+    assert ann[0]["text"] == "Critical zone"
     c.grab()  # paints annotations (hit rects)
     assert 0 in c._annot_rects
     # translate the arrow
     from slipsurface.ui.cad.model import set_points
 
-    win.doc.edit("taşı", lambda p: set_points(p, ("annot", 1), [[13, 14], [26, 4]]))
+    win.doc.edit("move", lambda p: set_points(p, ("annot", 1), [[13, 14], [26, 4]]))
     assert win.doc.project.annotations[1]["pts"][0] == [13, 14]
     win.doc.undo_stack.undo()
     assert win.doc.project.annotations[1]["pts"][0] == [12.0, 14.0]
@@ -689,7 +689,7 @@ def test_interpret_fs_legend_and_notes(app, win, monkeypatch):
     assert c.material_at(20.0, -1.0) is not None
     c._fill_context_menu(menu, screen(c, 20.0, -1.0))
     texts = [a.text() for a in menu.actions() if a.text()]
-    assert not any("Malzemeyi" in t for t in texts)
+    assert not any("Edit This Material" in t for t in texts)
 
 
 def test_interpret_window_close_and_recompute(app, win):
@@ -779,7 +779,7 @@ def test_material_tooltip_and_context_activation(app, win):
     menu = QMenu()
     c._fill_context_menu(menu, screen(c, 20.0, -1.0))
     texts = [a.text() for a in menu.actions() if a.text()]
-    assert any("Malzemeyi" in t for t in texts)
+    assert any("Edit This Material" in t for t in texts)
     # the signal lets the Modeler open the dialog for that material
     opened = {}
     win.define_materials = lambda n: opened.setdefault("name", n)  # type: ignore
@@ -791,7 +791,7 @@ def test_material_tooltip_and_context_activation(app, win):
 
 def test_modeler_has_no_left_dock(app, win):
     """The left Project dock is Interpret-only; the Modeler is all canvas.
-    Display options remain on View → Görüntü Seçenekleri."""
+    Display options remain on View → Display Options."""
     from slipsurface.ui.docks import DisplayOptions
 
     assert win.dock is None

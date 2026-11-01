@@ -15,8 +15,7 @@ Slide2: a **Modeler** window for building the model and a separate **Interpret**
 the results, which shows a slip-centre FS contour map, the critical surface, slice data and
 a professional PDF report.
 
-The interface and reports are available in **English and Turkish** and the language can be
-switched at any time without losing work. The program runs on Windows, Linux and macOS.
+The interface and reports are in English. The program runs on Windows, Linux and macOS.
 
 > **Engineering disclaimer.** SlipSurfaceIQ LE is provided without any warranty. Results
 > depend entirely on the input geometry, strength parameters, groundwater and loads.
@@ -74,8 +73,7 @@ switched at any time without losing work. The program runs on Windows, Linux and
   evaluated / valid / rejected, best FS, elapsed and remaining time and a log.
 - **Professional PDF report** with cover, contents, summary, tables, figures and appendices.
 - **DXF import/export** of the geometry and a built-in **Python scripting** console.
-- **English / Turkish** interface and reports, light / dark theme, windows sized to the
-  detected screen.
+- Light / dark theme, windows sized to the detected screen.
 
 ---
 
@@ -135,7 +133,7 @@ python main.py --check                            # check Python and the require
 
 The update checker (**Help → Check for Updates…**, or once a day at start-up)
 queries the latest published GitHub release. When a newer release is found, you
-can click **Update Changed Files** (*Değişen Dosyaları Güncelle*) to download
+can click **Update Changed Files** to download
 and replace only the modified source files in place (with automatic backups in
 `.update-backup`), or open the release page on GitHub. Always start the
 application with `python main.py`. Automatic checks can be disabled under
@@ -175,7 +173,7 @@ asks for a new computation; display-only changes (colours, labels, notes) do not
 - **Menus:** File, Edit, View, Analysis, Boundaries, Loading, Support, Surfaces, Properties,
   Tools, Help.
 - **Workflow bar:** Geometry › Support › Loading › Properties › Surfaces.
-- **View menu:** theme, language, zoom, grid settings, material labels, and *Display
+- **View menu:** theme, zoom, grid settings, material labels, and *Display
   Options* (colours, line width, grid, ruler, material fill, legend, slope limits).
   Hovering a region with the Select tool shows the material name and strength
   parameters; the context menu offers *Edit This Material*.
@@ -188,9 +186,7 @@ asks for a new computation; display-only changes (colours, labels, notes) do not
 - **Material labels** on the regions: none, name, or name + strength parameters and unit
   weights.
 - **Notes:** text, line, arrow, rectangle and ellipse annotations, also on the results.
-- **View → Language** switches between English and Turkish instantly (open project, undo
-  history and results are kept); the theme (light / dark) is in the same menu. Both are
-  remembered.
+- **View → Dark mode** switches the theme (remembered).
 - On first start the Modeler and Interpret windows open at the size of the detected screen;
   dialogs scale with the screen resolution. **F11** toggles full screen.
 
@@ -367,8 +363,7 @@ surface against sliding (passive by default).
 
 ## PDF report
 
-*File → PDF Report* (Ctrl+P) in either window creates a report in the current interface
-language:
+*File → PDF Report* (Ctrl+P) in either window creates a report with:
 
 - cover with project data and a **critical FS card** assessed against a target FS
   (Adequate / Marginal / Inadequate);

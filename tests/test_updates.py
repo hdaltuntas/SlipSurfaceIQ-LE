@@ -192,7 +192,7 @@ def test_help_menu_has_update_actions(app, prefs):
     w = ModelerWindow(empty_project())
     try:
         texts = [a.text() for a in w.menuBar().actions()[-1].menu().actions()]
-        assert any("Güncellemeleri Kontrol Et" in t or "Check for Updates" in t for t in texts)
+        assert any("Check for Updates" in t for t in texts)
         assert w.a_auto_updates.isChecked()
         w.a_auto_updates.setChecked(False)
         assert not ui.auto_enabled()

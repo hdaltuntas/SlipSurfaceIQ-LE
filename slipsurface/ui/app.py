@@ -24,7 +24,7 @@ def _install_excepthook() -> None:
         app = QApplication.instance()
         if app is not None and not app.closingDown():
             box = QMessageBox(
-                QMessageBox.Critical, "Beklenmeyen hata", f"{exc_type.__name__}: {exc}"
+                QMessageBox.Critical, "Unexpected error", f"{exc_type.__name__}: {exc}"
             )
             box.setDetailedText(text)
             box.exec()
@@ -73,18 +73,14 @@ def run(
     app.setOrganizationName("SlipSurface")  # settings storage key, kept for existing preferences
     app.setStyle("Fusion")
     from slipsurface.ui.preferences import apply_theme
-    from slipsurface.ui.i18n import initialize
 
-    initialize()
     apply_theme()
     app.setWindowIcon(icon("interpret"))
     _install_excepthook()
 
-    from slipsurface.project import EXAMPLE_ALIASES, EXAMPLES
+    from slipsurface.project import EXAMPLES
     from slipsurface.ui.modeler import ModelerWindow
 
-    if example is not None:
-        example = EXAMPLE_ALIASES.get(example, example)
     if example is not None and example not in EXAMPLES:
         print(f"[ERROR] Example not found: {example!r}. Options: {', '.join(EXAMPLES)}")
         return 1
