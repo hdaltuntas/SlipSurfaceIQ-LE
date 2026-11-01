@@ -643,7 +643,7 @@ def test_material_labels_option(app, win):
 
     opts = DisplayOptions(interpret=True)
     opts.set_values(win.doc.project.display)
-    g = opts.grids[0]
+    g = next(g for g in opts.grids if "material_labels" in g._items)
     _, typ, cb = g._items["material_labels"]
     assert typ == "choice" and cb.currentData() == "full"
 
