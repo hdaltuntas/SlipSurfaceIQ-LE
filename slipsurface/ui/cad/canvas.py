@@ -73,6 +73,7 @@ def fs_color(t: float) -> QColor:
 class CadCanvas(QWidget):
     view_changed = Signal()
     mouse_world = Signal(float, float)
+    material_activated = Signal(str)  # double-click a material region to edit it
     status = Signal(str)
     selection_changed = Signal(object)  # key or None
     entity_double_clicked = Signal(object)  # key
@@ -420,8 +421,51 @@ class CadCanvas(QWidget):
             return
         wx, wy = self.s2w(ev.position())
         self.mouse_world.emit(wx, wy)
+        self._hover_material(wx, wy, ev)
         self.tool.move(ev)
         self.update()
+
+    def material_at(self, wx: float, wy: float) -> str | None:
+        """Name of the material region under a world point, if any."""
+        if self.geometry is None:
+            return None
+        for r in self.geometry.regions:
+            if shapely.contains_xy(r.polygon, wx, wy):
+                return r.material
+        return None
+
+    def _hover_material(self, wx: float, wy: float, ev) -> None:
+        """Show the material name and parameters when the cursor rests on a
+        material region (SelectTool only, so drawing tools stay quiet)."""
+        from PySide6.QtWidgets import QToolTip
+
+        if self.geometry is None or self.project is None:
+            if QToolTip.isVisible():
+                QToolTip.hideText()
+            return
+        from slipsurface.ui.cad.tools import SelectTool
+
+        if not isinstance(self.tool, SelectTool):
+            if QToolTip.isVisible():
+                QToolTip.hideText()
+            return
+        hit = self.material_at(wx, wy)
+        if hit is None:
+            if QToolTip.isVisible():
+                QToolTip.hideText()
+            return
+        spec = self.project.material(hit)
+        if spec is None:
+            return
+        from slipsurface.materials.catalog import model_name, parameter_text
+
+        lines = [f"{hit} ({model_name(spec.model)})" if spec.model != "MC" else hit]
+        lines.append(parameter_text(spec))
+        lines.append(
+            f"\u03b3 = {spec.gamma:g} kN/m\u00b3"
+            + (f", \u03b3sat = {spec.gamma_sat:g}" if spec.use_sat else "")
+        )
+        QToolTip.showText(ev.globalPosition().toPoint(), "\n".join(lines), self)
 
     def mouseReleaseEvent(self, ev) -> None:
         if ev.button() == Qt.MiddleButton:
@@ -467,6 +511,13 @@ class CadCanvas(QWidget):
         menu = QMenu(self)
         self.tool.context_menu(menu, ev.pos())
         if not menu.isEmpty():
+            menu.addSeparator()
+        wx, wy = self.s2w(ev.pos())
+        hit = self.material_at(wx, wy)
+        if hit is not None:
+            menu.addAction(
+                tr("Bu Malzemeyi Düzenle…"), lambda n=hit: self.material_activated.emit(n)
+            )
             menu.addSeparator()
         menu.addAction(tr("Tümünü göster (F2)"), self.zoom_extents)
         menu.addAction(tr("Yakınlaştır"), lambda: self.zoom(1.25))

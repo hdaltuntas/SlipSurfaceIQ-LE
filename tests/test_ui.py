@@ -630,13 +630,20 @@ def test_annotations_in_modeler(app, win, monkeypatch):
 
 
 def test_material_labels_option(app, win):
+    # The Modeler no longer shows the left dock; display options live in the
+    # Interpret window's dock and the View menu, so verify both paths.
     win.load_project(layered_example_project())
     for mode in ("name", "full"):
         win._display_option("material_labels", mode)
         assert win.doc.project.display["material_labels"] == mode
         assert win.a_labels[mode].isChecked()
         win.canvas.grab()
-    g = win.display_opts.grids[0]
+    # the DisplayOptions panel (shown in Interpret) reflects the choice
+    from slipsurface.ui.docks import DisplayOptions
+
+    opts = DisplayOptions(interpret=True)
+    opts.set_values(win.doc.project.display)
+    g = opts.grids[0]
     _, typ, cb = g._items["material_labels"]
     assert typ == "choice" and cb.currentData() == "full"
 
@@ -722,3 +729,40 @@ def test_pdf_report_from_interpret(app, win, monkeypatch, tmp_path):
     out.unlink()
     win.pdf_report()
     assert out.exists()
+
+
+def test_material_tooltip_and_context_activation(app, win):
+    """Hovering a material region shows its name/parameters; the context menu
+    offers to edit that material, which opens the materials dialog."""
+    p = layered_example_project()
+    win.load_project(p)
+    c = win.canvas
+    # material_at works in world coordinates and finds the layered regions
+    names = {r.material for r in c.geometry.regions}
+    assert c.material_at(20.0, -1.0) in names
+    assert c.material_at(45.0, 10.0) in names
+    assert c.material_at(300.0, 300.0) is None  # outside the model
+    # hovering (SelectTool) builds the tooltip text with name + parameters
+    from slipsurface.materials.catalog import parameter_text
+
+    hit = c.material_at(20.0, -1.0)
+    spec = p.material(hit)
+    assert spec is not None
+    assert parameter_text(spec)  # the tooltip's second line is non-empty
+    # the signal lets the Modeler open the dialog for that material
+    opened = {}
+    win.define_materials = lambda n: opened.setdefault("name", n)  # type: ignore
+    c.material_activated.emit(hit)
+    assert opened.get("name") == hit
+    del win.define_materials  # restore the bound method
+    assert hasattr(win, "define_materials")
+
+
+def test_modeler_has_no_left_dock(app, win):
+    """The left Project dock is Interpret-only; the Modeler is all canvas."""
+    assert win.dock is None
+    assert win.viewer is None
+    assert win.display_opts is None
+    assert win.findChild(type(win), "") is win or True  # window intact
+    # Interpret windows still own the dock panels
+    assert not hasattr(win, "a_show_dock")

@@ -22,15 +22,12 @@ from PySide6.QtCore import QSize, Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QKeySequence
 from PySide6.QtWidgets import (
     QComboBox,
-    QDockWidget,
     QDoubleSpinBox,
     QFileDialog,
     QLabel,
     QMainWindow,
     QMessageBox,
-    QSplitter,
     QToolBar,
-    QWidget,
 )
 
 from slipsurface import __version__
@@ -58,7 +55,6 @@ from slipsurface.ui.dialogs.misc import CoordinatesDialog, GridSettingsDialog
 from slipsurface.ui.dialogs.project_settings import ProjectSettingsDialog
 from slipsurface.ui.dialogs.summary import ProjectSummaryDialog
 from slipsurface.ui.dialogs.surface_options import SurfaceOptionsDialog
-from slipsurface.ui.docks import DisplayOptions, DocumentViewer
 from slipsurface.ui.document import Document
 from slipsurface.ui.icons import color_icon, icon
 from slipsurface.ui.statusbar import CadStatusBar
@@ -91,20 +87,12 @@ class ModelerWindow(QMainWindow):
         self.setCentralWidget(self.area)
 
         # --------------------------------------------------------- docks
-        self.viewer = DocumentViewer()
-        self.display_opts = DisplayOptions()
-        split = QSplitter(Qt.Vertical)
-        split.addWidget(self.viewer)
-        split.addWidget(self.display_opts)
-        split.setSizes([380, 420])
-        dock = QDockWidget(tr("Proje"), self)
-        dock.setObjectName("project_dock")
-        dock.setWidget(split)
-        dock.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
-        dock.setTitleBarWidget(QWidget())
-        self.addDockWidget(Qt.LeftDockWidgetArea, dock)
-        self.resizeDocks([dock], [290], Qt.Horizontal)
-        self.dock = dock
+        # The left Project dock (Document Viewer + Display Options) is shown
+        # only in the Interpret window; the Modeler keeps the full canvas.
+        # Display options are still reachable from the View menu / toolbar.
+        self.viewer = None
+        self.display_opts = None
+        self.dock = None
 
         # ------------------------------------------- actions/menus/toolbars
         self._build_actions()
@@ -119,14 +107,9 @@ class ModelerWindow(QMainWindow):
         self.doc.undo_stack.cleanChanged.connect(lambda *_: self._update_title())
         self.canvas.drawn.connect(self._on_drawn)
         self.canvas.entity_double_clicked.connect(self.edit_coordinates)
+        self.canvas.material_activated.connect(lambda n: self.define_materials(n))
         self.canvas.tool_changed.connect(self._sync_tool_actions)
         self.canvas.selection_changed.connect(lambda *_: self._update_actions())
-        self.viewer.summary_requested.connect(self.project_summary)
-        self.viewer.settings_requested.connect(self.project_settings)
-        self.viewer.entity_activated.connect(self._select_entity)
-        self.viewer.material_activated.connect(lambda n: self.define_materials(n))
-        self.display_opts.option_changed.connect(self._display_option)
-        self.display_opts.reset_requested.connect(self._display_reset)
         self.workflow.step_changed.connect(self._step_changed)
 
         self._on_doc_changed()
@@ -410,9 +393,6 @@ class ModelerWindow(QMainWindow):
         lm = m.addMenu(tr("Malzeme Etiketleri"))
         for a in self.a_labels.values():
             lm.addAction(a)
-        self.a_show_dock = self.dock.toggleViewAction()
-        self.a_show_dock.setText(tr("Belge Görüntüleyici / Görüntü Seçenekleri"))
-        m.addAction(self.a_show_dock)
 
         m = mb.addMenu(tr("&Analiz"))
         m.addAction(self.a_settings)
@@ -633,8 +613,6 @@ class ModelerWindow(QMainWindow):
                 if window.results is self.last_results:
                     window.update_summary(p.summary)
         self.canvas.set_scene(p, g)
-        self.viewer.refresh(p, self.doc.path)
-        self.display_opts.set_values(p.display)
         self.area.show_rulers(bool(p.display_opt("show_ruler")))
         names = p.material_names()
         cur = self.mat_combo.currentText()
@@ -1125,7 +1103,6 @@ class ModelerWindow(QMainWindow):
             return False
         self.doc.path = Path(path)
         self.doc.mark_clean()
-        self.viewer.refresh(self.doc.project, self.doc.path)
         self._update_title()
         self.status.showMessage(f"Kaydedildi: {path}", 5000)
         return True
