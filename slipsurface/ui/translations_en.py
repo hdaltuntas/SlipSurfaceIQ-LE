@@ -648,8 +648,44 @@ EXTRA.update(
         "Kaynak kodu GitHub sürüm sayfasından edinin; bağımlılıkları kurup python main.py ile çalıştırın.": (
             "Get the source from the GitHub release page, install dependencies, and run python main.py."
         ),
+        "Sadece değişen dosyalar indirilip yerinde kopyalanabilir; eski dosyalar .update-backup klasörüne yedeklenir.": (
+            "Only the changed files are downloaded and copied in place; "
+            "replaced files are backed up to .update-backup."
+        ),
+        "Değişen Dosyaları Güncelle": "Update Changed Files",
+        "Güncelleme planlanıyor…": "Planning update…",
+        "Güncelleniyor: {}/{} ({})": "Updating: {}/{} ({})",
+        "Güncelleme tamam": "Update Complete",
+        "SlipSurfaceIQ LE {} dosyaları güncellendi.": "SlipSurfaceIQ LE {} files updated.",
+        "{} → {}: {} değişti, {} yeni, {} silindi": "{} → {}: {} changed, {} new, {} removed",
+        "Değişikliklerin tamamı için uygulamayı yeniden başlatın. Eski dosyalar .update-backup klasöründedir.": (
+            "Restart the application for all changes to take effect. "
+            "Previous files are backed up in .update-backup."
+        ),
         "Kaynak Kod Sayfasını Aç": "Open Source Release Page",
         "Bu Sürümü Atla": "Skip This Version",
         "Daha Sonra": "Later",
+        "Dik şev yüzü veya çıkmalı geometri desteklenmiyor. Zemin yüzeyi sürekli ve x artan bir profil olmalı.": (
+            "Vertical slope faces and overhangs are not supported. "
+            "The ground surface must be a continuous profile with increasing x."
+        ),
+        "YASS çizgisi en az 2 adet (x, y) noktası içermeli.": (
+            "Water table polyline must contain at least 2 (x, y) points."
+        ),
+        "YASS koordinatları sonlu olmalı.": "Water table coordinates must be finite.",
+        "Verilen daire için [Xc, Yc, R] sonlu olmalı ve R > 0.": (
+            "Fixed circle [Xc, Yc, R] must be finite with R > 0."
+        ),
+        "γw > 0 ve 0 ≤ Ru ≤ 1 olmalı.": "γw > 0 and 0 ≤ Ru ≤ 1 required.",
+        "kh ≥ 0 ve −1 ≤ kv ≤ 1 olmalı.": "kh ≥ 0 and −1 ≤ kv ≤ 1 required.",
+        "Çözüm toleransı pozitif olmalı.": "Solver tolerance must be positive.",
+        "Arayüz fonksiyonu uç değerleri 0 ile 1 arasında olmalı.": (
+            "Interslice function end values must be between 0 and 1."
+        ),
+        "Minimum derinlik negatif olamaz.": "Minimum depth cannot be negative.",
+        "yük değerleri sonlu olmalı": "load values must be finite",
+        "yayılı yükün yatay uzunluğu pozitif olmalı": (
+            "distributed load horizontal length must be positive"
+        ),
     }
 )

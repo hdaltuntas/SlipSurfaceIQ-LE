@@ -1,8 +1,9 @@
 """Check GitHub for a newer published release (no Qt; used by the UI).
 
 Only the public "latest release" endpoint is queried: drafts and
-pre-releases are never offered. Nothing is downloaded or installed;
-users are directed to a source-code release, then run main.py.
+pre-releases are never offered. Users can update changed source files in
+place (via slipsurface.patch) or open the GitHub release page, then run
+main.py.
 """
 
 from __future__ import annotations

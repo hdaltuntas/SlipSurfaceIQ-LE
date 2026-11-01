@@ -1,3 +1,25 @@
+# SlipSurfaceIQ LE 2026.3.3
+
+Delta-update HTTP 404 fix and strict `main.py` source-only execution
+
+- Fix the HTTP 404 error when clicking *Değişen Dosyaları Güncelle*
+  (*Update Changed Files*): `fetch_manifest` now checks the release-asset
+  `manifest.json` URL (`releases/download/.../manifest.json`) instead of
+  `raw.githubusercontent.com`, and automatically falls back to GitHub's
+  Git Trees API (`/git/trees/{tag}?recursive=1` with Git blob SHA-1
+  verification) when a release has no `manifest.json` asset attached.
+- Support both `v`-prefixed (`v2026.3.3`) and bare (`2026.3.3`) release
+  tags when fetching manifests and changed files, and normalize CRLF line
+  endings when comparing local files on Windows so unchanged files are not
+  re-downloaded.
+- Report delta-update progress to the status bar via a thread-safe Qt
+  signal and complete English translations for all update and geometry
+  validation messages.
+- Remove `slipsurface/patch/__main__.py` and all remaining Windows/Linux
+  package references so `python main.py` is the only entry point.
+
+Version 2026.3.3.
+
 # SlipSurfaceIQ LE 2026.3.2
 
 Groundwater geometry validation

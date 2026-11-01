@@ -95,7 +95,7 @@ def build_regions(
 ):
     """Return (domain polygon, [Region], clipped material lines)."""
     ext = np.asarray(external, dtype=float)
-    if len(ext) < 3:
+    if ext.ndim != 2 or ext.shape[1] != 2 or len(ext) < 3 or not np.all(np.isfinite(ext)):
         raise ValueError("Dış sınır en az 3 köşe içermeli.")
     domain = Polygon(ext)
     if not domain.is_valid:
@@ -111,7 +111,7 @@ def build_regions(
     clipped = []
     for i, ml in enumerate(material_lines or []):
         ml = np.asarray(ml, dtype=float)
-        if len(ml) < 2:
+        if ml.ndim != 2 or ml.shape[1] != 2 or len(ml) < 2 or not np.all(np.isfinite(ml)):
             raise ValueError(f"Malzeme sınırı {i + 1}: en az 2 nokta gerekli.")
         ml = _attach_ends(ml, boundary, domain, tol)
         ls = LineString(ml)
