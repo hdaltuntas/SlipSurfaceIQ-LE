@@ -19,6 +19,21 @@ from slipsurface.patch import (
 from slipsurface.updates import UpdateCheckError
 
 
+@pytest.fixture(autouse=True)
+def no_trusted_keys(monkeypatch):
+    """Unsigned-manifest behaviour by default; ``trusted_key`` turns signing on."""
+    from slipsurface.patch import signing
+
+    monkeypatch.setattr(signing, "TRUSTED_PUBLIC_KEYS", ())
+
+
+def test_configured_public_keys_are_valid_ed25519_points():
+    from slipsurface.patch import signing
+
+    for key in signing.TRUSTED_PUBLIC_KEYS:
+        signing._decompress(signing._hex_bytes(key, 32, "public key"))
+
+
 # ------------------------------------------------------------ classification
 @pytest.mark.parametrize(
     "rel,managed",
