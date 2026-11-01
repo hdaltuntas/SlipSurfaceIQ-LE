@@ -148,3 +148,40 @@ def test_new_models_in_pdf(tmp_path, model, expected):
     text = "\n".join(page.extract_text() for page in PdfReader(path).pages)
     assert "other strength models" in text and expected in text
     assert "Analysis Results" in text
+
+
+def test_script_from_file_needs_confirmation_once(tmp_path, monkeypatch):
+    from PySide6.QtWidgets import QApplication, QFileDialog
+
+    from slipsurface.ui.dialogs.script import ScriptDialog
+
+    QApplication.instance() or QApplication([])
+
+    class Doc:
+        project = default_project()
+        edits = 0
+
+        def edit(self, label, fn):
+            Doc.edits += 1
+            fn(self.project)
+
+    path = tmp_path / "foreign.py"
+    path.write_text('project.summary.title = "From file"\n', encoding="utf-8")
+    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a, **k: (str(path), ""))
+    dialog = ScriptDialog(Doc())
+    asked = []
+    answers = iter([False, True])
+
+    def confirm(source):
+        asked.append(source)
+        return next(answers)
+
+    dialog.confirm = confirm
+    dialog.load()
+    dialog.run()  # declined: nothing runs
+    assert Doc.edits == 0 and "Not run" in dialog.output.toPlainText()
+    dialog.run()  # accepted
+    assert Doc.edits == 1 and Doc.project.summary.title == "From file"
+    dialog.run()  # already trusted in this dialog: no second question
+    assert asked == [str(path), str(path)] and Doc.edits == 2
+    dialog.close()

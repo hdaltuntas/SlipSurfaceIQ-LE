@@ -97,6 +97,7 @@ def test_pattern_positions_follow_arc_length():
     assert xs[3] == pytest.approx(20 + 2 / math.hypot(1, 0.5))
 
 
+@pytest.mark.slow
 def test_project_patterns_and_facings_roundtrip_and_analysis():
     from slipsurface.analysis import report_text, run_analysis
     from slipsurface.loads import SupportType

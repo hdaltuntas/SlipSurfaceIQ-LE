@@ -19,6 +19,8 @@ import hashlib
 import json
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 import urllib.error
 import urllib.request
@@ -27,6 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from slipsurface import __version__
+from slipsurface.patch import signing
 from slipsurface.updates import REPOSITORY, UpdateCheckError, ssl_context
 
 RAW_BASE = f"https://raw.githubusercontent.com/{REPOSITORY}"
@@ -157,19 +160,38 @@ def _fetch_tree_manifest(version: str, timeout: float = 30.0, opener=None) -> di
     raise last_err or UpdateCheckError(f"manifest not found for {version}")
 
 
-def fetch_manifest(version: str, timeout: float = 30.0, opener=None) -> dict:
+def fetch_manifest(
+    version: str,
+    timeout: float = 30.0,
+    opener=None,
+    require_signature: bool | None = None,
+) -> dict:
     """The published file inventory for a release: {"files": {relpath: hash}}.
 
     Checks the release-asset ``manifest.json`` first (SHA-256), and falls back
     to GitHub's Git Trees API (Git blob SHA-1) when a release has no manifest
     asset attached.
+
+    When signature checking is on (a key in ``signing.TRUSTED_PUBLIC_KEYS``,
+    or ``require_signature=True``) only a release-asset manifest whose
+    ``manifest.json.sig`` verifies is accepted; there is no unsigned fallback.
     """
+    if require_signature is None:
+        require_signature = signing.signature_required()
     last_err: UpdateCheckError | None = None
     for ref in _candidate_refs(version):
         url = f"{RELEASE_BASE}/{ref}/manifest.json"
         try:
-            data = _fetch_json(url, timeout, opener)
-            files = data.get("files")
+            raw = _fetch_bytes(url, timeout, opener)
+            if require_signature:
+                sig = _fetch_bytes(url + signing.SIGNATURE_SUFFIX, timeout, opener)
+                if not signing.verify_manifest(raw, sig.decode("ascii", "replace")):
+                    raise UpdateCheckError(f"manifest signature of {ref} is not valid")
+            try:
+                data = json.loads(raw.decode("utf-8"))
+            except (UnicodeDecodeError, ValueError) as exc:
+                raise UpdateCheckError(f"manifest of {ref} is not valid JSON") from exc
+            files = data.get("files") if isinstance(data, dict) else None
             if not isinstance(files, dict):
                 raise UpdateCheckError(f"manifest of {ref} has no file table")
             return data
@@ -177,6 +199,10 @@ def fetch_manifest(version: str, timeout: float = 30.0, opener=None) -> dict:
             last_err = exc
             if "404" not in str(exc):
                 raise
+    if require_signature:
+        raise UpdateCheckError(
+            f"release {version} has no signed manifest; update from the release page instead"
+        )
     try:
         return _fetch_tree_manifest(version, timeout, opener)
     except UpdateCheckError:
@@ -209,11 +235,18 @@ def plan_update(
     opener=None,
 ) -> UpdatePlan:
     """Diff the two releases' manifests. Raises UpdateCheckError."""
-    old = fetch_manifest(from_version, timeout, opener)
     new = fetch_manifest(to_version, timeout, opener)
+    # The old inventory only decides what to skip; it need not be signed.
+    try:
+        old = fetch_manifest(from_version, timeout, opener, require_signature=False)
+    except UpdateCheckError:
+        old = {"files": {}}
     if old.get("hash", "sha256") != new.get("hash", "sha256"):
-        old = _fetch_tree_manifest(from_version, timeout, opener)
-        new = _fetch_tree_manifest(to_version, timeout, opener)
+        if signing.signature_required():
+            old = {"files": {}}  # never trade the signed target for a tree listing
+        else:
+            old = _fetch_tree_manifest(from_version, timeout, opener)
+            new = _fetch_tree_manifest(to_version, timeout, opener)
     changed, added, removed = diff_manifests(old, new)
     return UpdatePlan(from_version, to_version, changed, added, removed)
 
@@ -285,7 +318,6 @@ MANAGED_PREFIXES = (
     "slipsurface/",
     "examples/",
     "docs/",
-    "tests/",
 )
 MANAGED_FILES = (
     "main.py",
@@ -423,6 +455,37 @@ def apply_update(
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
     return plan.summary()
+
+
+REQUIREMENTS = "requirements.txt"
+
+
+def requirements_changed(plan: UpdatePlan) -> bool:
+    """Whether the update brings a different runtime requirements file."""
+    return any(d.relpath == REQUIREMENTS for d in [*plan.changed, *plan.new])
+
+
+def pip_command(root: Path | None = None) -> list[str]:
+    """The command that installs the runtime requirements into this Python."""
+    root = root or application_root()
+    return [sys.executable, "-m", "pip", "install", "-r", str(root / REQUIREMENTS)]
+
+
+def install_requirements(
+    root: Path | None = None, timeout: float = 1800.0, run=subprocess.run
+) -> tuple[bool, str]:
+    """Run pip for requirements.txt with the running interpreter.
+
+    Returns (success, last lines of pip's output) and never raises.
+    """
+    cmd = pip_command(root)
+    try:
+        done = run(cmd, capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return False, str(exc)
+    output = (done.stdout or "") + (done.stderr or "")
+    tail = "\n".join(output.strip().splitlines()[-6:])
+    return done.returncode == 0, tail
 
 
 def plan_against_local_verifies(delta: FileDelta, digest: str) -> bool:

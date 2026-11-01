@@ -33,6 +33,7 @@ from slipsurface.updates import UpdateCheckError
         (".venv/bin/python", False),
         ("slipsurface/__pycache__/x.pyc", False),
         ("random.txt", False),
+        ("tests/test_patch.py", False),  # the test suite is not shipped in updates
     ],
 )
 def test_managed_files(rel, managed):
@@ -352,3 +353,87 @@ def test_each_update_gets_its_own_backup(tmp_path):
         apply_update(plan, "2026.3.0", root=root, opener=FakeNet({"main.py": new}))
     backups = sorted(p.read_text() for p in (root / ".update-backup").rglob("main.py"))
     assert backups == ["v1", "v2"]
+
+
+# -------------------------------------------------------- signed manifests
+SEED = bytes(range(32))
+
+
+class SignedNet(FakeNet):
+    """Serves manifest.json plus a manifest.json.sig made with ``seed``."""
+
+    def __init__(self, files, seed=SEED, tamper=False, unsigned=False):
+        super().__init__(files)
+        self.seed, self.tamper, self.unsigned = seed, tamper, unsigned
+
+    def _serve(self, url, rel):
+        from slipsurface.patch import signing
+
+        if url.endswith("manifest.json.sig"):
+            if self.unsigned:
+                raise UpdateCheckError("HTTP 404 manifest.json.sig")
+            manifest = super()._serve(url[: -len(".sig")], rel)
+            return signing.sign(self.seed, manifest).hex().encode()
+        payload = super()._serve(url, rel)
+        if self.tamper and url.endswith("manifest.json"):
+            payload = payload.replace(b"2026.3.0", b"2026.3.9")
+        return payload
+
+
+@pytest.fixture
+def trusted_key(monkeypatch):
+    from slipsurface.patch import signing
+
+    monkeypatch.setattr(signing, "TRUSTED_PUBLIC_KEYS", (signing.public_key(SEED).hex(),))
+
+
+def test_ed25519_rfc8032_vector():
+    from slipsurface.patch import signing
+
+    seed = bytes.fromhex("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
+    public = signing.public_key(seed)
+    assert public.hex() == "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+    signature = signing.sign(seed, b"")
+    assert signature.hex() == (
+        "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e06522490155"
+        "5fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b"
+    )
+    assert signing.verify(public, b"", signature)
+    assert not signing.verify(public, b"x", signature)
+    assert not signing.verify(public, b"", signature[:-1] + b"\x00")
+
+
+def test_signed_manifest_is_accepted(tmp_path, trusted_key):
+    root = tmp_path / "app"
+    root.mkdir()
+    net = SignedNet({"main.py": b"new"})
+    plan = plan_against_local("2026.3.0", root=root, opener=net)
+    apply_update(plan, "2026.3.0", root=root, opener=net)
+    assert (root / "main.py").read_bytes() == b"new"
+
+
+@pytest.mark.parametrize(
+    "net",
+    [
+        SignedNet({"main.py": b"new"}, tamper=True),
+        SignedNet({"main.py": b"new"}, unsigned=True),
+        SignedNet({"main.py": b"new"}, seed=bytes(32)),  # signed by an unknown key
+    ],
+    ids=["tampered", "unsigned", "wrong-key"],
+)
+def test_unverified_manifest_is_refused(tmp_path, trusted_key, net):
+    root = tmp_path / "app"
+    root.mkdir()
+    with pytest.raises(UpdateCheckError):
+        plan_against_local("2026.3.0", root=root, opener=net)
+    # no fall-back to the unsigned Git tree listing
+    assert not any("/git/trees/" in url for url in net.fetched)
+    assert not (root / "main.py").exists()
+
+
+def test_signing_off_without_trusted_keys(tmp_path):
+    root = tmp_path / "app"
+    root.mkdir()
+    net = SignedNet({"main.py": b"new"}, unsigned=True)
+    plan = plan_against_local("2026.3.0", root=root, opener=net)
+    assert [d.relpath for d in plan.new] == ["main.py"]

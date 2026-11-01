@@ -103,6 +103,7 @@ def test_v1_file_is_converted():
         assert a1 == pytest.approx(a2, rel=1e-6), m
 
 
+@pytest.mark.slow
 def test_run_analysis_multiple_methods():
     p = acads_1a_project()
     p.methods.methods = ["bishop", "spencer", "janbu_simplified"]

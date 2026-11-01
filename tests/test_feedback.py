@@ -126,6 +126,7 @@ def test_shansep_uses_effective_vertical_stress():
     assert res.ok and np.isfinite(res.fos)
 
 
+@pytest.mark.slow
 def test_new_models_run_through_the_search():
     p = acads_1a_project()
     p.methods.methods = ["bishop"]
@@ -152,6 +153,7 @@ def test_micro_pile_and_geosynthetic_capacity():
     assert support_capacity(geo, 2, 2, 1.0, 1.0)[0] == 40.0
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "kind,extra",
     [
@@ -208,6 +210,7 @@ def test_search_reports_status_and_keeps_centres():
     assert res.centres[:, 3].min() == pytest.approx(min(f for f, _ in res.top))
 
 
+@pytest.mark.slow
 def test_run_analysis_status_lists_finished_methods():
     p = acads_1a_project()
     p.methods.methods = ["bishop", "spencer"]

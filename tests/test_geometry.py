@@ -82,6 +82,7 @@ def test_layer_end_near_a_concave_vertex_snaps_onto_it():
     assert len(regions) == 2
 
 
+@pytest.mark.slow
 def test_acads_1b_matches_published_factors_of_safety():
     from slipsurface.analysis import run_analysis
     from slipsurface.project import acads_1b_project

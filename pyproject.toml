@@ -4,6 +4,9 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q -p no:warnings"
+markers = [
+    "slow: long analyses (searches, published benchmarks); deselect with -m 'not slow'",
+]
 
 [tool.ruff]
 line-length = 100

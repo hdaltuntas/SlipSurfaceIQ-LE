@@ -135,9 +135,24 @@ The update checker (**Help → Check for Updates…**, or once a day at start-up
 queries the latest published GitHub release. When a newer release is found, you
 can click **Update Changed Files** to download
 and replace only the modified source files in place (with automatic backups in
-`.update-backup`), or open the release page on GitHub. Always start the
-application with `python main.py`. Automatic checks can be disabled under
+`.update-backup`), or open the release page on GitHub. Every file is downloaded
+and hash-checked before anything is replaced, so a failed or cancelled update
+leaves the installation unchanged; the test suite (`tests/`) is not part of
+updates, and files you keep in `examples/` or `docs/` are never deleted. When a
+release changes `requirements.txt`, the completion dialog offers **Install
+Requirements**, which runs `python -m pip install -r requirements.txt` with the
+same Python that runs the application. Always start the application with
+`python main.py`. Automatic checks can be disabled under
 **Help → Check for Updates at Start-up**.
+
+**Signed manifests (maintainers).** Releases can sign `manifest.json` with an
+Ed25519 key (pure Python, no extra package). Run
+`python -m slipsurface.patch.signing genkey` once, store the private key only as
+the repository secret `MANIFEST_SIGNING_KEY`, and add the printed public key to
+`TRUSTED_PUBLIC_KEYS` in `slipsurface/patch/signing.py`. From then on the release
+workflow publishes `manifest.json.sig`, and the updater installs only from a
+manifest whose signature verifies. With no public key configured, updates rely on
+HTTPS and the per-file hashes.
 
 ---
 
@@ -417,7 +432,8 @@ results.
 `SupportType`, `FacingType`, `Project` and `empty_project` are available. The script runs on
 a copy of the project; if validation succeeds, all changes become a single undoable step,
 otherwise the open project is left unchanged. Scripts run with your local Python
-permissions — run trusted code only.
+permissions — run trusted code only. Scripts never run when a project is opened; a script
+opened from a `.py` file asks for confirmation before its first run.
 
 A complete example that builds a model with geometry, loads, supports, facings and materials
 is [`examples/scripted_slope.py`](examples/scripted_slope.py).
@@ -545,12 +561,15 @@ The test suite checks the engine against reference solutions, among them:
 ```bash
 python -m pip install -r requirements-dev.txt
 python -m pytest -p no:cacheprovider --durations=15    # Qt tests run headless
+python -m pytest -p no:cacheprovider -m "not slow"     # quick run without long analyses
 python -m ruff check .
 python -m mypy                                         # computation core
 ```
 
 The full suite takes a few minutes because of the non-circular searches and the PDF and GUI
-tests. GitHub Actions runs the lint and type checks, `python main.py` checks, and the test suite.
+tests (tests marked `slow` hold the long benchmark analyses). GitHub Actions runs the lint
+(including the 100-character line limit) and type checks, and the `python main.py` checks with
+the full suite on Python 3.12 and the quick suite on Python 3.10.
 
 ---
 
@@ -570,9 +589,9 @@ slipsurface/
   analysis.py        multi-method runner and text report
   exchange.py        DXF import / export
   scripting.py       Python scripting
-  textcat.py         translation catalogue with templates
+  patch/             delta self-updater and manifest signatures
   report/            PDF report (ReportLab) and fonts (Source Sans 3, SIL OFL)
-  ui/                Modeler, Interpret, CAD canvas and tools, dialogs, translations
+  ui/                Modeler, Interpret, CAD canvas and tools, dialogs
 examples/            example projects and the scripting example
 tests/               test suite
 ```

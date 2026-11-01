@@ -112,6 +112,7 @@ def test_polyline_from_params_convex():
     assert np.all(np.diff(slopes) >= -1e-9)  # convex (lower hull)
 
 
+@pytest.mark.slow
 def test_noncircular_search_is_polygonal_and_beats_circle():
     p = layered_example_project()
     p.methods.methods = ["spencer"]

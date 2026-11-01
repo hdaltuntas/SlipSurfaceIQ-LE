@@ -160,6 +160,7 @@ def test_case2_search_config_reproducible_and_water_free():
     assert len(st.slice_opts.loads.supports) == 1
 
 
+@pytest.mark.slow
 def test_case2_search_finds_reinforced_mechanism():
     """The critical search must not stop at a degenerate tangent circle.
 

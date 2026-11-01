@@ -52,7 +52,8 @@ class UpdateChecker(QObject):
 
     found = Signal(object, bool)  # ReleaseInfo, manual
     failed = Signal(str, bool)  # reason, manual
-    applied = Signal(str, str)  # version, summary (delta update finished)
+    applied = Signal(str, str, bool)  # version, summary, requirements.txt changed
+    installed = Signal(bool, str)  # pip succeeded, last lines of its output
     progressed = Signal(int, int, str)  # done, total, relpath
 
     def __init__(self, parent: QWidget, fetch=fetch_latest) -> None:
@@ -65,6 +66,7 @@ class UpdateChecker(QObject):
         self.failed.connect(self._on_failed)
         self.applied.connect(self._on_applied)
         self.progressed.connect(self._on_progressed)
+        self.installed.connect(self._on_installed)
 
     @property
     def busy(self) -> bool:
@@ -120,35 +122,75 @@ class UpdateChecker(QObject):
                 f"Could not check for updates: {reason}",
             )
 
-    def _on_applied(self, version: str, summary: str) -> None:
+    def _on_applied(self, version: str, summary: str, requirements: bool = False) -> None:
         """A delta update finished successfully."""
         self._busy = False
         self._status("")
-        box = self._box(
-            QMessageBox.Information,
-            "Update Complete",
-            f"SlipSurfaceIQ LE {version} files updated."
-            + "\n"
-            + summary
-            + "\n\n"
-            + (
-                "Restart the application for all changes to take effect. Previous files "
-                "are backed up in .update-backup."
-            ),
+        text = (
+            f"SlipSurfaceIQ LE {version} files updated.\n{summary}\n\n"
+            "Restart the application for all changes to take effect. Previous files "
+            "are backed up in .update-backup."
         )
-        box.addButton(QMessageBox.Ok)
+        if requirements:
+            text += (
+                "\n\nThis release changes requirements.txt. Install the required "
+                "packages before restarting."
+            )
+        box = self._box(QMessageBox.Information, "Update Complete", text)
+        if requirements:
+            install = box.addButton("Install Requirements", QMessageBox.AcceptRole)
+            box.addButton("Later", QMessageBox.RejectRole)
+            box.setDefaultButton(install)
+            box.buttonClicked.connect(
+                lambda button: self.install_requirements() if button is install else None
+            )
+        else:
+            box.addButton(QMessageBox.Ok)
         box.open()
+
+    def install_requirements(self) -> bool:
+        """Run pip for requirements.txt on a worker thread; False if busy."""
+        if self._busy:
+            return False
+        self._busy = True
+        self._status("Installing requirements…")
+
+        def run() -> None:
+            from slipsurface.patch import install_requirements
+
+            ok, output = install_requirements()
+            self.installed.emit(ok, output)
+
+        threading.Thread(target=run, daemon=True).start()
+        return True
+
+    def _on_installed(self, ok: bool, output: str) -> None:
+        self._busy = False
+        self._status("")
+        if ok:
+            self._show(
+                QMessageBox.Information,
+                "Requirements Installed",
+                "The required packages are installed. Restart the application.",
+            )
+        else:
+            from slipsurface.patch.core import pip_command
+
+            self._show(
+                QMessageBox.Warning,
+                "Requirements",
+                "Installing the requirements failed. Run this command in a terminal:\n"
+                + " ".join(pip_command())
+                + (f"\n\n{output}" if output else ""),
+            )
 
     def _offer(self, info: ReleaseInfo) -> None:
         box = self._box(
             QMessageBox.Information,
             "Update Available",
-            f"SlipSurfaceIQ LE {info.version} has been released (you are using {__version__})."
-            + "\n"
-            + (
-                "Only the changed files are downloaded and copied in place; replaced "
-                "files are backed up to .update-backup."
-            ),
+            f"SlipSurfaceIQ LE {info.version} has been released (you are using {__version__}).\n"
+            "Only the changed files are downloaded and copied in place; replaced "
+            "files are backed up to .update-backup.",
         )
         if info.notes.strip():
             box.setInformativeText(notes_excerpt(info.notes))
@@ -178,7 +220,7 @@ class UpdateChecker(QObject):
         self._status("Planning update…")
 
         def run() -> None:
-            from slipsurface.patch import apply_update, plan_against_local
+            from slipsurface.patch import apply_update, plan_against_local, requirements_changed
 
             try:
                 plan = plan_against_local(info.version)
@@ -190,7 +232,7 @@ class UpdateChecker(QObject):
             except Exception as exc:  # UpdateCheckError or any network error
                 self.failed.emit(str(exc), True)
             else:
-                self.applied.emit(info.version, summary)
+                self.applied.emit(info.version, summary, requirements_changed(plan))
 
         threading.Thread(target=run, daemon=True).start()
 

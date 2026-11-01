@@ -22,6 +22,7 @@ jobs:
       - name: Mypy (computation core)
         run: mypy
 
+  # Full suite, including the slow benchmark analyses.
   test:
     runs-on: ubuntu-latest
     env:
@@ -43,3 +44,27 @@ jobs:
           python main.py --smoke 0.2
       - name: Pytest
         run: python -m pytest -q -p no:cacheprovider --durations=15
+
+  # Fast suite on the oldest supported Python (main.py requires 3.10+).
+  # The application is only ever started with main.py; nothing is packaged.
+  test-py310:
+    runs-on: ubuntu-latest
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Qt system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
+      - name: Install
+        run: python -m pip install -r requirements-dev.txt
+      - name: Entry point check (main.py)
+        run: |
+          python main.py --check
+          python main.py --smoke 0.2
+      - name: Pytest (without slow analyses)
+        run: python -m pytest -q -p no:cacheprovider -m "not slow"

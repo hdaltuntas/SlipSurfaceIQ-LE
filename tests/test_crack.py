@@ -118,6 +118,7 @@ def test_bishop_gle_moment_consistency_with_crack_water():
     assert abs(r2) < 1e-8
 
 
+@pytest.mark.slow
 def test_project_crack_roundtrip_and_analysis():
     from slipsurface.analysis import report_text, run_analysis
     from slipsurface.project import Project, acads_1a_project
