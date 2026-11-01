@@ -41,7 +41,10 @@ MODELS: dict[str, ModelInfo] = {
             ("su_y_bottom", "Bottom elevation (m)", -1e6, 1e6, 3),
         ),
         total_stress=True,
-        note="su(y) at the slice base is interpolated linearly; outside the top/bottom elevations the end value is kept.",
+        note=(
+            "su(y) at the slice base is interpolated linearly; outside the top/bottom "
+            "elevations the end value is kept."
+        ),
     ),
     "SH": ModelInfo(
         "SHANSEP",
@@ -53,7 +56,11 @@ MODELS: dict[str, ModelInfo] = {
             ("shansep_su_min", "A — minimum undrained strength (kPa)", 0, 1e6, 3),
         ),
         total_stress=True,
-        note="A is additive. σ′v = max(W/b − u, 0): effective vertical overburden stress; m is typically 0.75–1. Short-term fill requires the pre-loading effective stress; B-bar/staged construction is not modelled.",
+        note=(
+            "A is additive. σ′v = max(W/b − u, 0): effective vertical overburden "
+            "stress; m is typically 0.75–1. Short-term fill requires the pre-loading "
+            "effective stress; B-bar/staged construction is not modelled."
+        ),
     ),
     "HS": ModelInfo(
         "Mohr-Coulomb (HS envelope)",
@@ -69,7 +76,10 @@ MODELS: dict[str, ModelInfo] = {
             ("hs_pref", "pref (kPa)", 0.001, 1e6, 3),
             ("hs_rf", "Rf (failure ratio)", 0.01, 1, 3),
         ),
-        note="Limit equilibrium uses only the failure envelope (c′, φ′); the stiffness parameters are stored for reference.",
+        note=(
+            "Limit equilibrium uses only the failure envelope (c′, φ′); the stiffness "
+            "parameters are stored for reference."
+        ),
     ),
     "SS": ModelInfo(
         "Approximate peak φ (SANISAND)",
@@ -83,7 +93,10 @@ MODELS: dict[str, ModelInfo] = {
             ("ss_nb", "nb", 0, 10, 3),
             ("ss_pat", "pat (kPa)", 0.001, 1e4, 3),
         ),
-        note="The constitutive model is not solved. Peak φ is approximated from triaxial compression with p′ ≈ σ′n; plane strain is not used.",
+        note=(
+            "The constitutive model is not solved. Peak φ is approximated from "
+            "triaxial compression with p′ ≈ σ′n; plane strain is not used."
+        ),
     ),
     "PL": ModelInfo(
         "Power-law envelope",
@@ -114,7 +127,10 @@ MODELS: dict[str, ModelInfo] = {
             ("bb_l0", "Laboratory sample length L0 (m)", 0.001, 100, 3),
             ("bb_ln", "Field block size Ln (m)", 0.001, 100, 3),
         ),
-        note="JRCn = JRC0 (Ln/L0)^(−0.02 JRC0), JCSn = JCS0 (Ln/L0)^(−0.03 JRC0); total friction angle ≤ 70°.",
+        note=(
+            "JRCn = JRC0 (Ln/L0)^(−0.02 JRC0), JCSn = JCS0 (Ln/L0)^(−0.03 JRC0); "
+            "total friction angle ≤ 70°."
+        ),
     ),
     "CN": ModelInfo(
         "CNI Rock Mass",

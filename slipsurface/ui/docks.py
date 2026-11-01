@@ -120,7 +120,10 @@ class DocumentViewer(QWidget):
             if project.tension_crack:
                 it = QTreeWidgetItem(
                     [
-                        f"Tension crack ({len(project.tension_crack)} vertices, water {100 * project.groundwater.crack_water:.0f}%)"
+                        (
+                            f"Tension crack ({len(project.tension_crack)} vertices, water "
+                            f"{100 * project.groundwater.crack_water:.0f}%)"
+                        )
                     ]
                 )
                 it.setData(0, Qt.UserRole, ("entity", ("crack", 0)))
@@ -144,7 +147,10 @@ class DocumentViewer(QWidget):
                 for i, pt in enumerate(project.support_patterns):
                     it = QTreeWidgetItem(
                         [
-                            f"Bolt pattern {i + 1}: {pt['type']}, @{pt['spacing']:g} m, {pt.get('angle', 15):g}°"
+                            (
+                                f"Bolt pattern {i + 1}: {pt['type']}, @{pt['spacing']:g} m, "
+                                f"{pt.get('angle', 15):g}°"
+                            )
                         ]
                     )
                     it.setIcon(0, icon("bolt_pattern"))

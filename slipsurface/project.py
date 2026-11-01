@@ -344,9 +344,16 @@ class GroundwaterSettings:
 
 
 # Positive kv is upward (vertical load (1-kv)W). Slide2's positive kv is downward.
-SEISMIC_BOTH = "kh = {}, kv = ±{} (positive upward, vertical load (1 − kv)·W; in Slide2 a positive kv acts downward)"
+SEISMIC_BOTH = (
+    "kh = {}, kv = ±{} (positive upward, vertical load (1 − kv)·W; in Slide2 "
+    "a positive kv acts downward)"
+)
 SEISMIC_ONE = "kh = {}, kv = {} ({}; Slide2 kv = {}; vertical load (1 − kv)·W)"
-SEISMIC_NOTE = "The horizontal force kh·W acts in the failure direction at the slice centroid. Positive kv is upward: vertical load (1 − kv)·W. In Slide2 a positive kv acts downward (the sign is opposite)."
+SEISMIC_NOTE = (
+    "The horizontal force kh·W acts in the failure direction at the slice "
+    "centroid. Positive kv is upward: vertical load (1 − kv)·W. In Slide2 a "
+    "positive kv acts downward (the sign is opposite)."
+)
 
 
 @dataclass

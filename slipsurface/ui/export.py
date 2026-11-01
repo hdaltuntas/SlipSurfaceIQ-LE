@@ -17,7 +17,10 @@ def export_image(parent, widget, default_name: str) -> str | None:
         QMessageBox.warning(
             parent,
             "Image could not be saved",
-            f"The file could not be written:\n{path}\n\nCheck that the folder is writable and the file extension is PNG or JPEG.",
+            (
+                f"The file could not be written:\n{path}\n\nCheck that the folder is "
+                "writable and the file extension is PNG or JPEG."
+            ),
         )
         return None
     parent.statusBar().showMessage(f"Saved: {path}", 5000)

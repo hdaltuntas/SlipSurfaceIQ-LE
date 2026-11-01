@@ -75,7 +75,10 @@ def _register_fonts() -> None:
         )
     except Exception:  # fonts missing: fall back (no Turkish glyphs)
         log.warning(
-            "PDF fonts could not be loaded; falling back to Helvetica (some characters may be missing).",
+            (
+                "PDF fonts could not be loaded; falling back to Helvetica (some "
+                "characters may be missing)."
+            ),
             exc_info=True,
         )
         F_REG, F_BOLD, F_SEMI, F_IT = (
@@ -705,18 +708,24 @@ class _Builder:
             "user": "user-defined",
         }[p.surfaces.surface_type]
         n = len(r.results)
-        txt = f"This report presents the 2D limit equilibrium analysis of the <b>{_e(o.project or p.summary.title)}</b> slope. {n} method(s) were used and the critical slip surface was found by a {kind} surface search."
+        txt = (
+            "This report presents the 2D limit equilibrium analysis of the <b>"
+            f"{_e(o.project or p.summary.title)}</b> slope. {n} method(s) were used "
+            f"and the critical slip surface was found by a {kind} surface search."
+        )
         if gm:
             k, res = gm
-            txt += " The lowest factor of safety, <b>FS = {}</b>, was obtained with the <b>{}</b> method".format(
-                f"{res.fos:.3f}", _e(method_name(k))
-            )
+            txt += (
+                " The lowest factor of safety, <b>FS = {}</b>, was obtained with the "
+                "<b>{}</b> method"
+            ).format(f"{res.fos:.3f}", _e(method_name(k)))
             if o.target_fs is not None:
                 label, col = self.status(res.fos)
                 cmp = "above" if res.fos >= o.target_fs else "below"
-                txt += "; this value is {} the target factor of safety FS = {} (<font color='{}'><b>{}</b></font>).".format(
-                    cmp, f"{o.target_fs:.2f}", col.hexval(), label
-                )
+                txt += (
+                    "; this value is {} the target factor of safety FS = {} (<font "
+                    "color='{}'><b>{}</b></font>)."
+                ).format(cmp, f"{o.target_fs:.2f}", col.hexval(), label)
             else:
                 txt += "."
             fs = [x.fos for x in r.results.values() if np.isfinite(x.fos)]
@@ -798,7 +807,10 @@ class _Builder:
         self.table(header, rows, widths, caption, align, row_colors=rc, bold_rows=bold)
         if gm:
             self.para(
-                "The bold row is the global minimum. λ: interslice force scale factor (Spencer / GLE). Surfaces: number of surfaces evaluated in the search.",
+                (
+                    "The bold row is the global minimum. λ: interslice force scale factor "
+                    "(Spencer / GLE). Surfaces: number of surfaces evaluated in the search."
+                ),
                 "small",
             )
             self.story.append(Spacer(1, 6))
@@ -915,7 +927,11 @@ class _Builder:
         self.h1("Model and Geometry")
         g = self.r.geometry
         self.para(
-            f"The model consists of {len(g.regions)} region(s) and {len(p.materials)} material(s). The external boundary has {len(p.external)} vertices; the model spans x = {g.x_min:.2f} – {g.x_max:.2f} m."
+            (
+                f"The model consists of {len(g.regions)} region(s) and {len(p.materials)} "
+                f"material(s). The external boundary has {len(p.external)} vertices; the "
+                f"model spans x = {g.x_min:.2f} – {g.x_max:.2f} m."
+            )
             + (" " + "A water table is defined." if p.water_table else "")
             + (" " + "A tension crack boundary is defined." if p.tension_crack else "")
         )
@@ -1081,7 +1097,10 @@ class _Builder:
             ("Slip surface", surf_txt),
             (
                 "Search",
-                f"Differential evolution + Nelder-Mead (population {pop}, at most {it} generations, seed {s.seed})",
+                (
+                    f"Differential evolution + Nelder-Mead (population {pop}, at most {it} "
+                    f"generations, seed {s.seed})"
+                ),
             ),
             ("Slope limits", "; ".join(x for x in lim) if lim else "Whole model"),
             ("Minimum sliding mass depth", f"{p.advanced.min_depth:g} m"),
@@ -1329,14 +1348,22 @@ class _Builder:
                 ["c", "l", "r", "r"],
             )
             self.para(
-                "Facing capacity T = τ·t + A<sub>s</sub>·f<sub>y</sub>; applied tangent to the slip surface, against sliding, where the slip surface exits/enters through the faced surface. The facing weight γ·t is added as a surface load.",
+                (
+                    "Facing capacity T = τ·t + A<sub>s</sub>·f<sub>y</sub>; applied tangent "
+                    "to the slip surface, against sliding, where the slip surface "
+                    "exits/enters through the faced surface. The facing weight γ·t is added "
+                    "as a surface load."
+                ),
                 "small",
             )
         if p.tension_crack:
             self.h2("Tension crack")
             xs = [q[0] for q in p.tension_crack]
             self.para(
-                f"The tension crack boundary is defined between x = {min(xs):.2f} – {max(xs):.2f} m; the crack is {100 * p.groundwater.crack_water:.0f}% full of water. The water thrust V = ½·γ<sub>w</sub>·h<sub>w</sub>² acts in the failure direction at h<sub>w</sub>/3 height."
+                f"The tension crack boundary is defined between x = {min(xs):.2f} – "
+                f"{max(xs):.2f} m; the crack is {100 * p.groundwater.crack_water:.0f}% "
+                "full of water. The water thrust V = ½·γ<sub>w</sub>·h<sub>w</sub>² acts "
+                "in the failure direction at h<sub>w</sub>/3 height."
             )
 
     # ------------------------------------------------------------ results
@@ -1405,7 +1432,10 @@ class _Builder:
                     ["l", "l", "r", "r", "r", "r", "r", "r", "l", "c"],
                 )
                 self.para(
-                    "Tcap: capacity per unit width (kN/m). Tmob: mobilised force at equilibrium; Tcap/F for passive elements, Tcap for active elements.",
+                    (
+                        "Tcap: capacity per unit width (kN/m). Tmob: mobilised force at "
+                        "equilibrium; Tcap/F for passive elements, Tcap for active elements."
+                    ),
                     "small",
                 )
         if self.p.tension_crack:
@@ -1442,7 +1472,12 @@ class _Builder:
         s = res.slices
         self.appendix(letter, f"Slice Data — {method_name(k)}")
         self.para(
-            f"Data of the {s.n} slices of the global minimum slip surface ({method_name(k)}, FS = {res.fos:.3f}). α: base angle (positive in the failure direction), c, φ: strength used on the base (instantaneous values at σ<sub>n</sub>' ≈ W/b − u for non-linear models).",
+            (
+                f"Data of the {s.n} slices of the global minimum slip surface ("
+                f"{method_name(k)}, FS = {res.fos:.3f}). α: base angle (positive in the "
+                "failure direction), c, φ: strength used on the base (instantaneous "
+                "values at σ<sub>n</sub>' ≈ W/b − u for non-linear models)."
+            ),
             "small",
             keep_next=True,
         )
@@ -1527,7 +1562,12 @@ class _Builder:
     def closing(self) -> None:
         self.story.append(Spacer(1, 10))
         self.para(
-            f"This report was generated automatically with SlipSurfaceIQ LE {__version__}. The results rely on the geometry, material and loading data entered; evaluating and verifying them with engineering judgement is the responsibility of the user.",
+            (
+                "This report was generated automatically with SlipSurfaceIQ LE "
+                f"{__version__}. The results rely on the geometry, material and loading "
+                "data entered; evaluating and verifying them with engineering judgement "
+                "is the responsibility of the user."
+            ),
             "small",
         )
 

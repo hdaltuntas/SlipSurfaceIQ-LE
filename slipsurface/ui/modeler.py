@@ -255,14 +255,20 @@ class ModelerWindow(QMainWindow):
             "bolt",
             self._bolt_tool,
             None,
-            "Click on the slope face: a bolt/anchor of the selected support type is added with the toolbar inclination (default 15°)",
+            (
+                "Click on the slope face: a bolt/anchor of the selected support type is "
+                "added with the toolbar inclination (default 15°)"
+            ),
         )
         self.t_pattern = tool(
             "Bolt Pattern",
             "bolt_pattern",
             self._pattern_tool,
             None,
-            "Click the start and end points on the slope face; choose the spacing and the bolts are placed automatically (group)",
+            (
+                "Click the start and end points on the slope face; choose the spacing and "
+                "the bolts are placed automatically (group)"
+            ),
         )
         self.a_define_facing = A(
             "Define Facing Types…",
@@ -305,7 +311,10 @@ class ModelerWindow(QMainWindow):
         if not self.doc.project.support_types:
             self.doc.edit("Add support type", lambda p: p.support_types.append(SupportType()))
             self.status.showMessage(
-                "A default support type was created (change it with Support → Define Support Properties).",
+                (
+                    "A default support type was created (change it with Support → Define "
+                    "Support Properties)."
+                ),
                 8000,
             )
 
@@ -325,7 +334,10 @@ class ModelerWindow(QMainWindow):
         if not self.doc.project.facing_types:
             self.doc.edit("Add facing type", lambda p: p.facing_types.append(FacingType()))
             self.status.showMessage(
-                "A default facing type was created: 10 cm shotcrete + Q188 (Properties → Define Facing Types).",
+                (
+                    "A default facing type was created: 10 cm shotcrete + Q188 (Properties → "
+                    "Define Facing Types)."
+                ),
                 8000,
             )
 
@@ -338,7 +350,10 @@ class ModelerWindow(QMainWindow):
             ans = QMessageBox.question(
                 self,
                 "External boundary",
-                "The model already has an external boundary. Delete it and draw a new one?\n(Material boundaries and assignments are deleted too.)",
+                (
+                    "The model already has an external boundary. Delete it and draw a new "
+                    "one?\n(Material boundaries and assignments are deleted too.)"
+                ),
             )
             if ans != QMessageBox.Yes:
                 return T.SelectTool(self.canvas)
@@ -733,7 +748,11 @@ class ModelerWindow(QMainWindow):
             sp = {"a": pts[0], "b": pts[1], "type": name}
             if self.canvas.request_edit("Add bolt/anchor", lambda p: p.supports.append(sp)):
                 self.status.showMessage(
-                    f"{name} added: head ({pts[0][0]:.2f}, {pts[0][1]:.2f}), inclination {self.bolt_angle.value():g}°, length {self.bolt_length.value():g} m. Click to continue, Esc = finish.",
+                    (
+                        f"{name} added: head ({pts[0][0]:.2f}, {pts[0][1]:.2f}), inclination "
+                        f"{self.bolt_angle.value():g}°, length {self.bolt_length.value():g} m. "
+                        "Click to continue, Esc = finish."
+                    ),
                     8000,
                 )
             return  # tool stays active
@@ -871,7 +890,10 @@ class ModelerWindow(QMainWindow):
             QMessageBox.information(
                 self,
                 "Facing",
-                "No slope face found (no ground segment steeper than 20°). Use the Assign Facing tool.",
+                (
+                    "No slope face found (no ground segment steeper than 20°). Use the Assign "
+                    "Facing tool."
+                ),
             )
             return
         self._ensure_facing_type()
@@ -1213,7 +1235,10 @@ class ModelerWindow(QMainWindow):
         gm = results.global_minimum()
         if gm:
             self.status.showMessage(
-                f"Computation finished ({results.elapsed:.1f} s). Global minimum: {method_name(gm[0])} FS = {gm[1].fos:.3f}",
+                (
+                    f"Computation finished ({results.elapsed:.1f} s). Global minimum: "
+                    f"{method_name(gm[0])} FS = {gm[1].fos:.3f}"
+                ),
                 15000,
             )
         if results.errors and not results.results:
@@ -1302,7 +1327,16 @@ class ModelerWindow(QMainWindow):
             self,
             "Keyboard Shortcuts",
             (
-                "Mouse: wheel = zoom, middle drag = pan, middle double-click = zoom all\nF2 zoom all   F5 compute   F6 interpret\nF3 OSNAP   F7 GRID   F8 ORTHO   F9 SNAP\nDrawing: click / type coordinates (x,y  @dx,dy  @L<angle), Enter finish, C close,\nBackspace undo last point, Esc cancel\nSelect: drag a vertex, double-click = coordinate table, Delete = delete, right-click = menu\nCtrl+Z / Ctrl+Y undo / redo\nLoads and supports: double-click = properties, drag = move, Delete = delete\nSingle bolt: enter inclination/length in the Support step and click the slope face\nNotes (text/shapes): drag = move, double-click = properties, Delete = delete"
+                "Mouse: wheel = zoom, middle drag = pan, middle double-click = zoom "
+                "all\nF2 zoom all   F5 compute   F6 interpret\nF3 OSNAP   F7 GRID   F8 "
+                "ORTHO   F9 SNAP\nDrawing: click / type coordinates (x,y  @dx,dy  "
+                "@L<angle), Enter finish, C close,\nBackspace undo last point, Esc "
+                "cancel\nSelect: drag a vertex, double-click = coordinate table, Delete = "
+                "delete, right-click = menu\nCtrl+Z / Ctrl+Y undo / redo\nLoads and "
+                "supports: double-click = properties, drag = move, Delete = delete\nSingle "
+                "bolt: enter inclination/length in the Support step and click the slope "
+                "face\nNotes (text/shapes): drag = move, double-click = properties, Delete "
+                "= delete"
             ),
         )
 

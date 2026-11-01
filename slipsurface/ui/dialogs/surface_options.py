@@ -225,7 +225,8 @@ class SurfaceOptionsDialog(QDialog):
             and not self.use_circle.isChecked()
         ):
             self.error.setText(
-                "⚠ There is no user-defined surface. Draw one first with Surfaces → Draw User Surface."
+                "⚠ There is no user-defined surface. Draw one first with Surfaces → Draw "
+                "User Surface."
             )
             return
         if self._type() != "user" and self.use_limits.isChecked():
@@ -241,7 +242,8 @@ class SurfaceOptionsDialog(QDialog):
                 ):
                     if min(end, hi) <= max(start, lo):
                         self.error.setText(
-                            f"⚠ Each end range must overlap the horizontal extent of the model ({lo:g} – {hi:g} m)."
+                            "⚠ Each end range must overlap the horizontal extent of the model "
+                            f"({lo:g} – {hi:g} m)."
                         )
                         return
         self.accept()

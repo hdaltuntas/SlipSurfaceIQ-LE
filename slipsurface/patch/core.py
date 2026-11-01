@@ -115,7 +115,10 @@ class UpdatePlan:
         return len(self.changed) + len(self.new)
 
     def summary(self) -> str:
-        return f"{self.from_version} → {self.to_version}: {len(self.changed)} changed, {len(self.new)} new, {len(self.removed)} removed"
+        return (
+            f"{self.from_version} → {self.to_version}: {len(self.changed)} changed, "
+            f"{len(self.new)} new, {len(self.removed)} removed"
+        )
 
 
 def manifest_url(version: str) -> str:

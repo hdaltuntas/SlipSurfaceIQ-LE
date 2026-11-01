@@ -307,7 +307,11 @@ class ProjectSettingsDialog(QDialog):
         lay.addWidget(cbox)
         self._crack_mode_changed()
         note = QLabel(
-            "Water table: u = Hu · γw · (water table elevation − base elevation); Hu and whether water acts are set per material in Material Properties → Water Parameters."
+            (
+                "Water table: u = Hu · γw · (water table elevation − base elevation); Hu "
+                "and whether water acts are set per material in Material Properties → "
+                "Water Parameters."
+            )
             + "\n"
             + "Ru: u = Ru · σv (total vertical stress at the slice base)."
         )
@@ -342,7 +346,8 @@ class ProjectSettingsDialog(QDialog):
         self.both_kv = QCheckBox("Check both vertical directions and use the critical one")
         self.both_kv.setChecked(s.both_vertical)
         self.both_kv.setToolTip(
-            "kv and -kv are solved separately; the lower FS is kept. No second solution is run when kv = 0."
+            "kv and -kv are solved separately; the lower FS is kept. No second "
+            "solution is run when kv = 0."
         )
         f.addRow(self.both_kv)
         lay.addWidget(box)
@@ -373,7 +378,11 @@ class ProjectSettingsDialog(QDialog):
         v.addLayout(f)
         lay.addWidget(box)
         note = QLabel(
-            "If the mα check (Whitman & Bailey 1967) is switched off or its threshold lowered, numerically unreliable low FS values can be found on surfaces with steep negative base angles at the toe. The interslice force ratio caps the forces relative to the total weight to reject singular solutions."
+            "If the mα check (Whitman & Bailey 1967) is switched off or its threshold "
+            "lowered, numerically unreliable low FS values can be found on surfaces "
+            "with steep negative base angles at the toe. The interslice force ratio "
+            "caps the forces relative to the total weight to reject singular "
+            "solutions."
         )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")

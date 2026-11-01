@@ -72,7 +72,10 @@ class InterpretWindow(QMainWindow):
         if results.errors:
             details = "\n".join(f"{method_name(k)}: {v}" for k, v in results.errors.items())
             self.result_warning.setText(
-                f"No result for {len(results.errors)} method(s). The minimum shown covers the completed methods only.\n"
+                (
+                    f"No result for {len(results.errors)} method(s). The minimum shown covers "
+                    "the completed methods only.\n"
+                )
                 + details
             )
         self.result_warning.setVisible(bool(results.errors))
@@ -264,13 +267,17 @@ class InterpretWindow(QMainWindow):
         name = self.path.name if self.path else "Unsaved"
         mname = method_name(self.key) if self.key else "—"
         self.setWindowTitle(
-            f"SlipSurfaceIQ LE Interpret {__version__} — {name} — [{self.project.summary.title}] — {mname}"
+            f"SlipSurfaceIQ LE Interpret {__version__} — {name} — ["
+            f"{self.project.summary.title}] — {mname}"
         )
         r = self.results.results.get(self.key)
         if r is not None:
             lam = f", λ = {r.lem.lam:.3f}" if r.lem.lam == r.lem.lam else ""
             self.status.showMessage(
-                f"{mname}: FS = {r.fos:.3f}{lam} — exit x = {r.slices.x_exit:.2f}, entry x = {r.slices.x_entry:.2f} — {r.message}",
+                (
+                    f"{mname}: FS = {r.fos:.3f}{lam} — exit x = {r.slices.x_exit:.2f}, entry "
+                    f"x = {r.slices.x_entry:.2f} — {r.message}"
+                ),
                 0,
             )
 

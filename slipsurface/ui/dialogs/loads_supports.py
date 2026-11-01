@@ -85,7 +85,8 @@ class DistributedLoadDialog(QDialog):
         f.addRow("Magnitude q₂:", self.q2)
         f.addRow("Direction:", self.orient)
         note = QLabel(
-            "Positive q acts towards the ground (pressure). The load is applied to the ground surface between x₁ and x₂."
+            "Positive q acts towards the ground (pressure). The load is applied to "
+            "the ground surface between x₁ and x₂."
         )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
@@ -123,7 +124,9 @@ class LineLoadDialog(QDialog):
         f.addRow("Magnitude P:", self.mag)
         f.addRow("Force Angle:", self.angle)
         note = QLabel(
-            "The angle is measured counter-clockwise from +x: 270° = vertically down, 180° = to the left (driving for right-to-left failure). The point is placed on the ground surface."
+            "The angle is measured counter-clockwise from +x: 270° = vertically down, "
+            "180° = to the left (driving for right-to-left failure). The point is "
+            "placed on the ground surface."
         )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
@@ -146,7 +149,10 @@ FORMULAS = {
     "grouted_tieback": "T = min(tensile, bond strength × min(bond length, L_out))",
     "soil_nail": "T = min(tensile, bond strength × L_out, plate + bond strength × L_in)",
     "geotextile": "T = min(tensile strength, pullout strength × min(L_in, L_out))",
-    "geosynthetic": "T = min(C·tensile, P_in, P_out);  P = 2·C·∫(adhesion + σv·tan δ) ds,  σv = γ·depth (no pullout at an anchored end)",
+    "geosynthetic": (
+        "T = min(C·tensile, P_in, P_out);  P = 2·C·∫(adhesion + σv·tan δ) ds,  σv "
+        "= γ·depth (no pullout at an anchored end)"
+    ),
     "micro_pile": "T = pile shear strength / spacing  (where it crosses the slip surface)",
 }
 FIELDS = {  # which inputs apply to which kind
@@ -477,7 +483,11 @@ class CrackFromDepthDialog(QDialog):
         f.addRow("Crack Depth z:", self.z)
         f.addRow("Crack Water (Fill):", self.water)
         note = QLabel(
-            "The crack line is placed z below the ground surface between x₁ and x₂. A slip surface is cut where it crosses this line on the crest side and the crack face runs vertically up to the ground."
+            (
+                "The crack line is placed z below the ground surface between x₁ and x₂. A "
+                "slip surface is cut where it crosses this line on the crest side and the "
+                "crack face runs vertically up to the ground."
+            )
             + (f"\n{zc_note}" if zc_note else "")
         )
         note.setWordWrap(True)

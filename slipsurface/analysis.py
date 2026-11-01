@@ -213,7 +213,8 @@ def run_analysis(
             stat.update(method=m, index=i, n_methods=n)
             if p.surfaces.surface_type == "noncircular" and m == "bishop":
                 out.errors[m] = (
-                    "Bishop is valid for circular surfaces only; skipped in the non-circular search."
+                    "Bishop is valid for circular surfaces only; skipped in the non-circular "
+                    "search."
                 )
                 stat["done"][m] = out.errors[m]
                 continue
@@ -263,7 +264,10 @@ def report_text(r: AnalysisResults) -> str:
         "Project settings",
         "-" * 60,
         "Units              : Metric (kN, kPa, m)",
-        f"Failure direction  : {('Right to left' if g.failure_direction == 'right_to_left' else 'Left to right')}",
+        (
+            "Failure direction  : "
+            f"{('Right to left' if g.failure_direction == 'right_to_left' else 'Left to right')}"
+        ),
         f"Number of slices   : {p.methods.n_slices}",
         f"Tolerance / max it : {p.methods.tolerance} / {p.methods.max_iter}",
         f"Interslice function: {p.methods.interslice} (GLE)",
@@ -289,7 +293,10 @@ def report_text(r: AnalysisResults) -> str:
             "",
             "Tension crack",
             "-" * 60,
-            f"Crack line x = {min(xs):.2f} – {max(xs):.2f}, crack water: {100 * p.groundwater.crack_water:.0f}% full",
+            (
+                f"Crack line x = {min(xs):.2f} – {max(xs):.2f}, crack water: "
+                f"{100 * p.groundwater.crack_water:.0f}% full"
+            ),
         ]
     if p.loads:
         L += ["", "External loads", "-" * 60]
@@ -302,12 +309,14 @@ def report_text(r: AnalysisResults) -> str:
                     else "normal to surface"
                 )
                 L.append(
-                    f"{i:2d}. Distributed load  x = {x1:.2f} – {x2:.2f}  q = {ld['q'][0]:g} – {ld['q'][1]:g} kPa ({yon})"
+                    f"{i:2d}. Distributed load  x = {x1:.2f} – {x2:.2f}  q = {ld['q'][0]:g} – "
+                    f"{ld['q'][1]:g} kPa ({yon})"
                 )
             else:
                 x, y = ld["point"]
                 L.append(
-                    f"{i:2d}. Line load   ({x:.2f}, {y:.2f})  P = {ld['magnitude']:g} kN/m, angle {ld.get('angle', 270):g}°"
+                    f"{i:2d}. Line load   ({x:.2f}, {y:.2f})  P = {ld['magnitude']:g} kN/m, "
+                    f"angle {ld.get('angle', 270):g}°"
                 )
     if p.supports or p.support_patterns:
         from slipsurface.loads import SUPPORT_KINDS
@@ -315,7 +324,9 @@ def report_text(r: AnalysisResults) -> str:
         L += ["", "Support types", "-" * 60]
         for t in p.support_types:
             L.append(
-                f"{t.name:16s} {SUPPORT_KINDS[t.kind]:30s} spacing {t.spacing:g} m  tensile {t.tensile:g} kN  {('passive' if t.application == 'passive' else 'active')}"
+                f"{t.name:16s} {SUPPORT_KINDS[t.kind]:30s} spacing {t.spacing:g} m  "
+                f"tensile {t.tensile:g} kN  "
+                f"{('passive' if t.application == 'passive' else 'active')}"
             )
         L += ["", "Supports", "-" * 60]
         for i, sp in enumerate(p.supports, 1):
@@ -333,7 +344,10 @@ def report_text(r: AnalysisResults) -> str:
         s = res.surface
         lam = f"{res.lem.lam:7.3f}" if res.lem.lam == res.lem.lam else "      –"
         geo = (
-            f"centre ({cast(CircularSurface, s).xc:.2f}, {cast(CircularSurface, s).yc:.2f}), R={cast(CircularSurface, s).r:.2f}"
+            (
+                f"centre ({cast(CircularSurface, s).xc:.2f}, "
+                f"{cast(CircularSurface, s).yc:.2f}), R={cast(CircularSurface, s).r:.2f}"
+            )
             if hasattr(s, "r")
             else type(s).__name__
         )
@@ -351,13 +365,16 @@ def report_text(r: AnalysisResults) -> str:
                 L.append(f"{method_name(k):26s} critical surface does not cross the crack line")
             else:
                 L.append(
-                    f"{method_name(k):26s} x = {ck['x']:.2f}  depth = {ck['depth']:.2f} m  water = {ck['hw']:.2f} m  thrust V = {ck['Pw']:.2f} kN/m"
+                    f"{method_name(k):26s} x = {ck['x']:.2f}  depth = {ck['depth']:.2f} m  "
+                    f"water = {ck['hw']:.2f} m  thrust V = {ck['Pw']:.2f} kN/m"
                 )
     if p.facings:
         L += ["", "Facings (shotcrete + wire mesh)", "-" * 60]
         for ft in p.facing_types:
             L.append(
-                f"{ft.name:18s} t = {ft.thickness:g} m  γ = {ft.gamma:g}  τ = {ft.tau:g} kPa  mesh {ft.mesh} (As = {ft.mesh_as:g} mm²/m, fy = {ft.mesh_fy:g} MPa)  capacity = {ft.capacity:.1f} kN/m"
+                f"{ft.name:18s} t = {ft.thickness:g} m  γ = {ft.gamma:g}  τ = {ft.tau:g} "
+                f"kPa  mesh {ft.mesh} (As = {ft.mesh_as:g} mm²/m, fy = {ft.mesh_fy:g} "
+                f"MPa)  capacity = {ft.capacity:.1f} kN/m"
             )
         for f in p.facings:
             L.append(
@@ -367,7 +384,9 @@ def report_text(r: AnalysisResults) -> str:
         L += ["", "Bolt patterns", "-" * 60]
         for i, pt in enumerate(p.support_patterns, 1):
             L.append(
-                f"{i:2d}. {pt['type']}: x = {pt['p1'][0]:.2f} – {pt['p2'][0]:.2f}, spacing {pt['spacing']:g} m, first {pt.get('offset', 0):g} m, inclination {pt.get('angle', 15):g}°, length {pt['length']:g} m"
+                f"{i:2d}. {pt['type']}: x = {pt['p1'][0]:.2f} – {pt['p2'][0]:.2f}, "
+                f"spacing {pt['spacing']:g} m, first {pt.get('offset', 0):g} m, "
+                f"inclination {pt.get('angle', 15):g}°, length {pt['length']:g} m"
             )
     if p.supports or p.support_patterns or p.facings:
         L += ["", "Mobilised support forces on the critical surfaces [kN/m]", "-" * 60]
@@ -377,7 +396,10 @@ def report_text(r: AnalysisResults) -> str:
                 L.append(f"{method_name(k):26s} no support / facing crosses the critical surface")
             for f in sf:
                 L.append(
-                    f"{method_name(k):26s} {f.label}: T_cap = {f.T:8.2f}  T_mob = {f.mobilized(res.fos):8.2f}  (L_in = {f.L_in:.2f} m, L_out = {f.L_out:.2f} m, {f.governing}, {('passive' if f.passive else 'active')})"
+                    f"{method_name(k):26s} {f.label}: T_cap = {f.T:8.2f}  T_mob = "
+                    f"{f.mobilized(res.fos):8.2f}  (L_in = {f.L_in:.2f} m, L_out = "
+                    f"{f.L_out:.2f} m, {f.governing}, {('passive' if f.passive else 'active')}"
+                    ")"
                 )
     gm = r.global_minimum()
     if gm:

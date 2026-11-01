@@ -131,7 +131,10 @@ class UpdateChecker(QObject):
             + "\n"
             + summary
             + "\n\n"
-            + "Restart the application for all changes to take effect. Previous files are backed up in .update-backup.",
+            + (
+                "Restart the application for all changes to take effect. Previous files "
+                "are backed up in .update-backup."
+            ),
         )
         box.addButton(QMessageBox.Ok)
         box.open()
@@ -142,7 +145,10 @@ class UpdateChecker(QObject):
             "Update Available",
             f"SlipSurfaceIQ LE {info.version} has been released (you are using {__version__})."
             + "\n"
-            + "Only the changed files are downloaded and copied in place; replaced files are backed up to .update-backup.",
+            + (
+                "Only the changed files are downloaded and copied in place; replaced "
+                "files are backed up to .update-backup."
+            ),
         )
         if info.notes.strip():
             box.setInformativeText(notes_excerpt(info.notes))

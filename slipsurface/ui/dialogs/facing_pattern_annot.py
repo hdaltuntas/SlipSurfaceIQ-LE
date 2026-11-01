@@ -137,7 +137,12 @@ class FacingTypesDialog(QDialog):
         form.addRow("Force application:", appl)
         form.addRow("Capacity:", self.capacity)
         note = QLabel(
-            "The facing is assigned to the slope face. In the analysis: (1) its weight γ·t is added as a surface load; (2) where the slip surface exits or enters through the faced surface, the force needed to shear the facing, T = τ·t + As·fy, acts there tangent to the slip surface against sliding. Typical τ: 0.02–0.04·fck (≈ 0.5–1.0 MPa for C25, 0.3–0.5 MPa on the safe side)."
+            "The facing is assigned to the slope face. In the analysis: (1) its "
+            "weight γ·t is added as a surface load; (2) where the slip surface exits "
+            "or enters through the faced surface, the force needed to shear the "
+            "facing, T = τ·t + As·fy, acts there tangent to the slip surface against "
+            "sliding. Typical τ: 0.02–0.04·fck (≈ 0.5–1.0 MPa for C25, 0.3–0.5 MPa on "
+            "the safe side)."
         )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
@@ -224,7 +229,9 @@ class FacingTypesDialog(QDialog):
             return
         t = self.types[self.cur]
         self.capacity.setText(
-            f"T = τ·t + As·fy = {t.tau * t.thickness:.1f} + {t.mesh_as * t.mesh_fy / 1000:.1f} = {t.capacity:.1f} kN/m   ·   weight {t.weight_per_m:.2f} kN/m²"
+            f"T = τ·t + As·fy = {t.tau * t.thickness:.1f} + "
+            f"{t.mesh_as * t.mesh_fy / 1000:.1f} = {t.capacity:.1f} kN/m   ·   weight "
+            f"{t.weight_per_m:.2f} kN/m²"
         )
 
     def _rename(self, text):
@@ -329,7 +336,9 @@ class PatternDialog(QDialog):
         f.addRow("Length:", self.length)
         f.addRow("Number of bolts:", self.count)
         note = QLabel(
-            "Bolts are placed at equal spacing along the ground surface from x₁, heads on the surface, pointing into the slope. The out-of-plane spacing is set in the support type."
+            "Bolts are placed at equal spacing along the ground surface from x₁, "
+            "heads on the surface, pointing into the slope. The out-of-plane spacing "
+            "is set in the support type."
         )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")

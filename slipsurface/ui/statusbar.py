@@ -28,7 +28,8 @@ class CadStatusBar(QStatusBar):
             self.cmd.setPlaceholderText("x,y  |  @dx,dy  |  @L<angle")
             self.cmd.setFixedWidth(170)
             self.cmd.setToolTip(
-                "Coordinate entry (drawing tools): absolute x,y, relative @dx,dy, polar @length<angle. Empty Enter = finish, c = close, u = undo."
+                "Coordinate entry (drawing tools): absolute x,y, relative @dx,dy, polar "
+                "@length<angle. Empty Enter = finish, c = close, u = undo."
             )
             self.cmd.returnPressed.connect(self._command)
             self.addPermanentWidget(self.cmd)

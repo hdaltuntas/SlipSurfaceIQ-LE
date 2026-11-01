@@ -310,11 +310,19 @@ class DrawTool(Tool):
     }
     MAX = dict(MIN)
     HINTS = {
-        "load_distributed": "Distributed load: click the start and end points of the load on the ground surface.",
+        "load_distributed": (
+            "Distributed load: click the start and end points of the load on the ground surface."
+        ),
         "load_line": "Line load: click the point of application on the ground surface.",
-        "support": "Support: click the head on the slope face (A), then the end inside the ground (B), or enter coordinates.",
+        "support": (
+            "Support: click the head on the slope face (A), then the end inside the "
+            "ground (B), or enter coordinates."
+        ),
         "facing": "Facing: click the start and end points of the facing on the slope face.",
-        "pattern": "Bolt pattern: click the start and end points of the pattern on the slope face; spacing and angle are asked next.",
+        "pattern": (
+            "Bolt pattern: click the start and end points of the pattern on the slope "
+            "face; spacing and angle are asked next."
+        ),
         "annot_text": "Text: click the position of the text.",
         "annot_line": "Line: click two points.",
         "annot_arrow": "Arrow: click the start and the tip (arrow head).",
@@ -332,7 +340,9 @@ class DrawTool(Tool):
         self.max_points = self.MAX.get(kind)
         closing = " — close by clicking the first point or with C" if kind == "external" else ""
         self.hint = self.HINTS.get(kind) or (
-            f"{self.TITLES[kind]}: click points or enter coordinates (x,y | @dx,dy | @L<angle); Enter/right-click = finish{closing}, Backspace = undo point, Esc = cancel"
+            f"{self.TITLES[kind]}: click points or enter coordinates (x,y | @dx,dy | "
+            f"@L<angle); Enter/right-click = finish{closing}, Backspace = undo point, "
+            "Esc = cancel"
         )
 
     def ref_point(self):
@@ -347,7 +357,8 @@ class DrawTool(Tool):
             L = math.hypot(dx, dy)
             a = math.degrees(math.atan2(dy, dx))
             self.c.status.emit(
-                f"{self.TITLES[self.kind]}: point {len(self.pts) + 1}  x = {pt[0]:.3f}, y = {pt[1]:.3f}   (length {L:.3f} m, angle {a:.1f}°)"
+                f"{self.TITLES[self.kind]}: point {len(self.pts) + 1}  x = {pt[0]:.3f}, y "
+                f"= {pt[1]:.3f}   (length {L:.3f} m, angle {a:.1f}°)"
             )
 
     def press(self, ev) -> None:
@@ -568,7 +579,8 @@ class MeasureTool(Tool):
             self.b = pt
             dx, dy = self.b[0] - self.a[0], self.b[1] - self.a[1]
             self.c.status.emit(
-                f"Distance = {math.hypot(dx, dy):.3f} m   Δx = {dx:.3f}   Δy = {dy:.3f}   angle = {math.degrees(math.atan2(dy, dx)):.2f}°"
+                f"Distance = {math.hypot(dx, dy):.3f} m   Δx = {dx:.3f}   Δy = {dy:.3f}   "
+                f"angle = {math.degrees(math.atan2(dy, dx)):.2f}°"
             )
 
     def paint(self, p) -> None:
@@ -729,7 +741,10 @@ class BoltTool(Tool):
         super().__init__(canvas)
         self.angle_getter, self.length_getter = angle_getter, length_getter
         self.preview = None
-        self.hint = "Single bolt/anchor: click the head position on the slope face (inclination and length from the toolbar). Esc = finish."
+        self.hint = (
+            "Single bolt/anchor: click the head position on the slope face "
+            "(inclination and length from the toolbar). Esc = finish."
+        )
 
     def _bolt(self, x):
         from slipsurface.loads import bolt_at

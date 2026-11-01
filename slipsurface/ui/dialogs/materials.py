@@ -150,7 +150,8 @@ class MaterialsDialog(QDialog):
         wl.addRow(self.use_water)
         wl.addRow("Hu (Piezometric Head Factor):", self.hu)
         hint = QLabel(
-            "u = Hu · γw · h  (h: vertical distance from the slice base to the water table). Hu = 1 hydrostatic; Hu < 1 pressure reduced by seepage."
+            "u = Hu · γw · h  (h: vertical distance from the slice base to the water "
+            "table). Hu = 1 hydrostatic; Hu < 1 pressure reduced by seepage."
         )
         hint.setWordWrap(True)
         wl.addRow(hint)
@@ -160,7 +161,8 @@ class MaterialsDialog(QDialog):
         self.tabs.addTab(water, "Water Parameters")
 
         note = QLabel(
-            "Note: material properties are shared by the whole project. Deleting a material reassigns its regions to the first material."
+            "Note: material properties are shared by the whole project. Deleting a "
+            "material reassigns its regions to the first material."
         )
         note.setWordWrap(True)
 

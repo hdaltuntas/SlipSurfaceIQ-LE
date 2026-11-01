@@ -43,7 +43,8 @@ def upper_profile(poly: Polygon) -> np.ndarray:
             cut.bounds[3], 0.5 * (left[1] + right[1]), rtol=0.0, atol=1e-10 * scale
         ):
             raise ValueError(
-                "Vertical slope faces and overhangs are not supported. The ground surface must be a continuous profile with increasing x."
+                "Vertical slope faces and overhangs are not supported. The ground surface "
+                "must be a continuous profile with increasing x."
             )
     return profile
 

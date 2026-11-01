@@ -229,7 +229,8 @@ def search(
     )
     if st.surface_type in ("spline", "polyline") and st.method == "bishop":
         raise ValueError(
-            "Simplified Bishop is valid for circular surfaces only; choose Spencer or GLE for non-circular surfaces."
+            "Simplified Bishop is valid for circular surfaces only; choose Spencer or "
+            "GLE for non-circular surfaces."
         )
     if st.method not in METHODS:
         raise ValueError(f"Unknown method: {st.method}")

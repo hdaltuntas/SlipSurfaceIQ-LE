@@ -131,7 +131,8 @@ def apply_theme(dark=None):
         QToolButton:checked, QPushButton:checked {{
             background: {c["checked"]}; color: {c["sel_text"] if not dark else "#ffffff"};
             border-color: {c["highlight"]}; }}
-        QToolButton:disabled, QPushButton:disabled {{ background: {c["mid"]}; color: {c["disabled"]}; }}
+        QToolButton:disabled, QPushButton:disabled {{
+            background: {c["mid"]}; color: {c["disabled"]}; }}
         QLineEdit, QComboBox, QPlainTextEdit, QTextEdit, QAbstractItemView {{
             background: {c["base"]}; color: {c["text"]};
             selection-background-color: {c["sel_bg"]};
@@ -153,8 +154,11 @@ def apply_theme(dark=None):
         QDockWidget::title {{ background: {c["mid"]}; color: {c["text"]}; padding: 6px; }}
         QSplitter::handle {{ background: {c["mid"]}; }}
         QTreeWidget, QListWidget, QTableWidget {{ border: 1px solid {c["border"]}; }}
-        QStatusBar {{ background: {c["mid"]}; color: {c["text"]}; border-top: 1px solid {c["border"]}; }}
-        QProgressBar {{ background: {c["header"]}; color: {c["text"]}; border: 0; text-align: center; }}
+        QStatusBar {{
+            background: {c["mid"]}; color: {c["text"]};
+            border-top: 1px solid {c["border"]}; }}
+        QProgressBar {{
+            background: {c["header"]}; color: {c["text"]}; border: 0; text-align: center; }}
         QProgressBar::chunk {{ background: {c["highlight"]}; }}
         QToolTip {{ background: {c["text"]}; color: {c["bg"]}; border: 0; padding: 5px; }}
     """)
