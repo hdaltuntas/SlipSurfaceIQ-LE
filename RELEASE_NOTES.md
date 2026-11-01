@@ -8,6 +8,10 @@ Scripting tutorial, left icon column, ACADS-only examples and a safer updater
   options. Its field tables are generated from the code and every example is run when it is
   built (`scripts/build_scripting_tutorial.py`). Open it from *Help* or the editor's
   *Tutorial (PDF)* button.
+- New **DXF Import Guide** (`docs/DXF_Import_Guide.pdf`, also under *Help*) with a layer
+  template drawing (`docs/DXF_Layer_Template.dxf`): layers, entities and units, a CAD
+  checklist, exporting, DXF from Python and every import message with its fix. The build
+  checks the quoted messages against the code and imports the template again.
 - The Python scripting editor now opens empty.
 - The main icons and the note tools moved to a vertical column on the left of the Modeler,
   read from top to bottom; the workflow bar and the step toolbar stay at the top.

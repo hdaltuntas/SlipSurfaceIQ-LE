@@ -230,3 +230,49 @@ def test_scripting_tutorial_is_current_and_its_examples_run(tmp_path):
     text = "\n".join(page.extract_text() for page in shipped.pages)
     for key in ("SupportType", "support_patterns", "water_table", "annotations"):
         assert key in text
+
+
+def test_dxf_guide_is_current_and_template_imports(tmp_path):
+    import importlib.util
+
+    from pypdf import PdfReader
+
+    from slipsurface import __version__
+    from slipsurface.exchange import import_dxf
+
+    root = Path(__file__).parents[1]
+    spec = importlib.util.spec_from_file_location(
+        "build_dxf_guide", root / "scripts" / "build_dxf_guide.py"
+    )
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    # checks quoted messages against the code, the template round trip and the examples
+    out = builder.build(tmp_path / "guide.pdf", tmp_path / "template.dxf")
+    assert out.stat().st_size > 30_000 and len(builder.SNIPPETS) >= 2
+    shipped = PdfReader(root / "docs" / "DXF_Import_Guide.pdf")
+    # rebuild with: python scripts/build_dxf_guide.py
+    assert f"Version {__version__}" in shipped.pages[0].extract_text()
+    project, warnings = import_dxf(root / "docs" / "DXF_Layer_Template.dxf")
+    assert project.water_table and project.tension_crack and project.surfaces.user_surface
+    assert len(project.build_geometry().regions) == 2
+
+
+def test_help_menu_opens_both_guides(monkeypatch):
+    from PySide6.QtWidgets import QApplication
+
+    from slipsurface.ui import guides
+    from slipsurface.ui.modeler import ModelerWindow
+
+    QApplication.instance() or QApplication([])
+    opened = []
+    monkeypatch.setattr(guides, "open_guide", lambda path, parent=None: opened.append(path))
+    w = ModelerWindow(None)
+    try:
+        help_menu = next(a.menu() for a in w.menuBar().actions() if a.text() == "&Help")
+        items = {a.text(): a for a in help_menu.actions()}
+        items["Python Scripting Tutorial (PDF)"].trigger()
+        items["DXF Import Guide (PDF)"].trigger()
+    finally:
+        w.close()
+    assert opened == [guides.SCRIPTING_TUTORIAL, guides.DXF_GUIDE]
+    assert all(path.is_file() for path in opened)

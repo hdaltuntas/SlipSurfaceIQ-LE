@@ -426,6 +426,12 @@ taken as metres with a warning); geometry outside z = 0 is rejected and skipped 
 listed. DXF carries geometry only — use `.slp.json` for materials, loads, supports and
 results.
 
+The [**DXF Import Guide**](docs/DXF_Import_Guide.pdf) (PDF; also under *Help*) explains the
+layers, supported entities and units, a CAD preparation checklist, what happens after an
+import, exporting, using DXF from Python and every import message with its fix. Start a
+drawing from [`docs/DXF_Layer_Template.dxf`](docs/DXF_Layer_Template.dxf), which has every
+layer. Maintainers rebuild both with `python scripts/build_dxf_guide.py`.
+
 ### Python scripting
 
 *Tools → Python scripting* opens an empty editor where a script can modify the `project` object

@@ -1,7 +1,3 @@
-from pathlib import Path
-
-from PySide6.QtCore import QUrl
-from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -13,18 +9,16 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
+from slipsurface.ui import guides
 from slipsurface.ui.preferences import fit_to_screen
 from slipsurface.scripting import run_script
 
-TUTORIAL = Path(__file__).resolve().parents[3] / "docs" / "Python_Scripting_Tutorial.pdf"
+TUTORIAL = guides.SCRIPTING_TUTORIAL
 
 
 def open_tutorial(parent=None) -> bool:
     """Open the scripting tutorial PDF in the system viewer."""
-    if not TUTORIAL.is_file():
-        QMessageBox.warning(parent, "Python Scripting Tutorial", f"Not found: {TUTORIAL}")
-        return False
-    return QDesktopServices.openUrl(QUrl.fromLocalFile(str(TUTORIAL)))
+    return guides.open_guide(TUTORIAL, parent)
 
 
 class ScriptDialog(QDialog):

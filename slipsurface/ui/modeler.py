@@ -468,6 +468,7 @@ class ModelerWindow(QMainWindow):
         self.a_auto_updates.toggled.connect(set_auto_enabled)
         m.addSeparator()
         m.addAction("Python Scripting Tutorial (PDF)", self._scripting_tutorial)
+        m.addAction("DXF Import Guide (PDF)", self._dxf_guide)
         m.addSeparator()
         m.addAction("About", self._about)
 
@@ -1375,6 +1376,11 @@ class ModelerWindow(QMainWindow):
                 export_dxf(self.doc.project, path)
             except Exception as exc:
                 QMessageBox.warning(self, "DXF", str(exc))
+
+    def _dxf_guide(self) -> None:
+        from slipsurface.ui import guides
+
+        guides.open_guide(guides.DXF_GUIDE, self)
 
     def _scripting_tutorial(self) -> None:
         from slipsurface.ui.dialogs.script import open_tutorial
