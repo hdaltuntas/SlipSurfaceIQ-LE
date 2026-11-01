@@ -31,6 +31,33 @@ def test_invalid_inputs():
         simple_slope(height=-1)
 
 
+@pytest.mark.parametrize(
+    "water_table",
+    [
+        [[10, 0]],
+        [[0, 0, 1], [20, 1, 1]],
+        [[0, 0], [20, float("nan")]],
+        [[0, 0], [float("inf"), 1]],
+        [[10, 0], [10, 1]],
+    ],
+)
+def test_boundary_geometry_rejects_invalid_water_table(water_table):
+    from slipsurface.geometry.builder import boundary_geometry
+
+    external = [[0, -5], [20, -5], [20, 5], [0, 5]]
+    with pytest.raises(ValueError, match="YASS"):
+        boundary_geometry(external, water_table=water_table)
+
+
+def test_boundary_geometry_extends_valid_water_table():
+    from slipsurface.geometry.builder import boundary_geometry
+
+    external = [[0, -5], [20, -5], [20, 5], [0, 5]]
+    geom = boundary_geometry(external, water_table=[[5, 0], [15, 2]])
+    np.testing.assert_allclose(geom.water_table, [[0, 0], [5, 0], [15, 2], [20, 2]])
+    assert boundary_geometry(external, water_table=[]).water_table is None
+
+
 def test_layer_starting_at_a_concave_toe_vertex_splits_the_domain():
     # ACADS EX1(b): layer 1 starts at the toe (30, 25), a concave corner of the
     # external boundary. Its end used to be pushed ~tol inside the domain, so

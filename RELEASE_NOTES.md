@@ -1,3 +1,15 @@
+# SlipSurfaceIQ LE 2026.3.2
+
+Groundwater geometry validation
+
+- Reject single-point water tables instead of silently analysing a dry model.
+- Reject malformed coordinate dimensions, non-finite coordinates and non-increasing
+  x coordinates when building boundary geometry.
+- Preserve flat extension of valid water tables and empty water-table behaviour.
+- Add six regression cases for invalid and valid groundwater geometry.
+
+Version 2026.3.2.
+
 # SlipSurfaceIQ LE 2026.3.1
 
 Modeler display options after the left-dock removal, and material hover fixes

@@ -156,8 +156,12 @@ def boundary_geometry(
     surface = upper_profile(domain)
     x0, x1 = surface[0, 0], surface[-1, 0]
     wt = None
-    if water_table is not None and len(water_table) >= 2:
+    if water_table is not None and len(water_table) > 0:
         wt = np.asarray(water_table, dtype=float)
+        if wt.ndim != 2 or wt.shape[1] != 2 or len(wt) < 2:
+            raise ValueError("YASS çizgisi en az 2 adet (x, y) noktası içermeli.")
+        if not np.all(np.isfinite(wt)):
+            raise ValueError("YASS koordinatları sonlu olmalı.")
         if np.any(np.diff(wt[:, 0]) <= 0):
             raise ValueError("YASS noktaları x artan sırada olmalı.")
         wt = _extend_flat(wt, x0, x1)
