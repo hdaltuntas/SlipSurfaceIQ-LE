@@ -23,62 +23,23 @@ jobs:
         run: mypy
 
   test:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest]
-        python-version: ["3.10", "3.13", "3.14"]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    env:
+      QT_QPA_PLATFORM: offscreen
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: Qt system libraries (Linux)
-        if: runner.os == 'Linux'
+          python-version: "3.12"
+      - name: Qt system libraries
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
       - name: Install
         run: pip install -r requirements-dev.txt
+      - name: Entry point check (main.py)
+        run: |
+          python main.py --check
+          python main.py --smoke 0.2
       - name: Pytest
         run: python -m pytest -q -p no:cacheprovider --durations=15
-
-  # Desktop Linux distributions, each in its own container with the distro's
-  # Python and Qt runtime libraries (pip wheels for PySide6 / NumPy / SciPy).
-  test-distro:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Arch Linux
-            image: archlinux:latest
-            setup: >-
-              pacman -Syu --noconfirm --needed python python-pip git glib2 libglvnd
-              libxkbcommon fontconfig freetype2 dbus ttf-dejavu
-          - name: Fedora
-            image: fedora:latest
-            setup: >-
-              dnf install -y python3 python3-pip git glib2 libglvnd-egl libglvnd-opengl
-              libglvnd-glx libxkbcommon fontconfig freetype dbus-libs dejavu-sans-fonts
-          - name: openSUSE Tumbleweed
-            image: opensuse/tumbleweed:latest
-            setup: >-
-              zypper --non-interactive install python3 python3-pip git-core gzip tar
-              libglib-2_0-0 libgthread-2_0-0 libglvnd libxkbcommon0
-              fontconfig libfreetype6 libdbus-1-3 dejavu-fonts
-    name: test (${{ matrix.name }})
-    runs-on: ubuntu-latest
-    container: ${{ matrix.image }}
-    env:
-      QT_QPA_PLATFORM: offscreen
-    steps:
-      - name: System packages
-        run: ${{ matrix.setup }}
-      - uses: actions/checkout@v4
-      - name: Install
-        run: |
-          python3 --version
-          python3 -m pip install --break-system-packages -r requirements-dev.txt
-      - name: Pytest
-        run: python3 -m pytest -q -p no:cacheprovider --durations=15

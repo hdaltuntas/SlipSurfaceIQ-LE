@@ -555,8 +555,7 @@ python -m mypy                                         # computation core
 ```
 
 The full suite takes a few minutes because of the non-circular searches and the PDF and GUI
-tests. GitHub Actions runs the lint and type checks and the tests on Windows and Ubuntu
-(Python 3.10, 3.13, 3.14) and in Arch Linux, Fedora and openSUSE Tumbleweed containers.
+tests. GitHub Actions runs the lint and type checks, `python main.py` checks, and the test suite.
 
 ---
 
