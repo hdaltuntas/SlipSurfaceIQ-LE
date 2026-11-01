@@ -1,10 +1,13 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
 
 from slipsurface.exchange import export_dxf, import_dxf
 from slipsurface.materials.models import PowerLaw, Undrained
-from slipsurface.project import Project, default_project, layered_example_project, EXAMPLES
-from slipsurface.scripting import TEMPLATE, run_script
+from slipsurface.project import Project, EXAMPLES
+from tests.models import default_project, layered_example_project
+from slipsurface.scripting import run_script
 
 
 def test_dxf_roundtrip(tmp_path):
@@ -42,9 +45,10 @@ def test_dxf_millimetres_and_ambiguity(tmp_path):
 def test_script_transaction_and_complete_model():
     original = default_project()
     before = original.to_dict()
-    result, output = run_script(TEMPLATE, original)
+    source = (Path(__file__).parent / "data" / "scripted_slope.py").read_text(encoding="utf-8")
+    result, output = run_script(source, original)
     assert result.supports and result.loads
-    assert "Project ready" in output
+    assert "Ready: Scripted layered cut" in output
     assert original.to_dict() == before
     with pytest.raises(RuntimeError):
         run_script('project.external.clear()\nraise RuntimeError("failed")', original)
@@ -124,7 +128,7 @@ def test_undrained_ignores_global_ru():
 def test_complete_script_example():
     from pathlib import Path
 
-    source = Path(__file__).parents[1] / "examples" / "scripted_slope.py"
+    source = Path(__file__).parent / "data" / "scripted_slope.py"
     project, _ = run_script(source.read_text(encoding="utf-8"), default_project())
     assert project.support_patterns and project.facings and project.tension_crack
 
@@ -185,3 +189,90 @@ def test_script_from_file_needs_confirmation_once(tmp_path, monkeypatch):
     dialog.run()  # already trusted in this dialog: no second question
     assert asked == [str(path), str(path)] and Doc.edits == 2
     dialog.close()
+
+
+def test_script_dialog_opens_empty_with_tutorial():
+    from PySide6.QtWidgets import QApplication, QPushButton
+
+    QApplication.instance() or QApplication([])
+    from slipsurface.ui.dialogs import script
+
+    dialog = script.ScriptDialog(type("Doc", (), {"project": default_project()})())
+    try:
+        assert dialog.editor.toPlainText() == ""
+        assert "Tutorial" in dialog.editor.placeholderText()
+        labels = [b.text() for b in dialog.findChildren(QPushButton)]
+        assert "Tutorial (PDF)" in labels
+        assert script.TUTORIAL.is_file()
+    finally:
+        dialog.close()
+
+
+def test_scripting_tutorial_is_current_and_its_examples_run(tmp_path):
+    import importlib.util
+
+    from pypdf import PdfReader
+
+    from slipsurface import __version__
+
+    root = Path(__file__).parents[1]
+    spec = importlib.util.spec_from_file_location(
+        "build_scripting_tutorial", root / "scripts" / "build_scripting_tutorial.py"
+    )
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    out = builder.build(tmp_path / "tutorial.pdf")  # runs every example first
+    assert len(builder.SNIPPETS) >= 15 and out.stat().st_size > 50_000
+    shipped = PdfReader(root / "docs" / "Python_Scripting_Tutorial.pdf")
+    first_pages = "\n".join(page.extract_text() for page in shipped.pages[:3])
+    # rebuild with: python scripts/build_scripting_tutorial.py
+    assert f"Version {__version__}" in first_pages
+    text = "\n".join(page.extract_text() for page in shipped.pages)
+    for key in ("SupportType", "support_patterns", "water_table", "annotations"):
+        assert key in text
+
+
+def test_dxf_guide_is_current_and_template_imports(tmp_path):
+    import importlib.util
+
+    from pypdf import PdfReader
+
+    from slipsurface import __version__
+    from slipsurface.exchange import import_dxf
+
+    root = Path(__file__).parents[1]
+    spec = importlib.util.spec_from_file_location(
+        "build_dxf_guide", root / "scripts" / "build_dxf_guide.py"
+    )
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    # checks quoted messages against the code, the template round trip and the examples
+    out = builder.build(tmp_path / "guide.pdf", tmp_path / "template.dxf")
+    assert out.stat().st_size > 30_000 and len(builder.SNIPPETS) >= 2
+    shipped = PdfReader(root / "docs" / "DXF_Import_Guide.pdf")
+    # rebuild with: python scripts/build_dxf_guide.py
+    assert f"Version {__version__}" in shipped.pages[0].extract_text()
+    project, warnings = import_dxf(root / "docs" / "DXF_Layer_Template.dxf")
+    assert project.water_table and project.tension_crack and project.surfaces.user_surface
+    assert len(project.build_geometry().regions) == 2
+
+
+def test_help_menu_opens_both_guides(monkeypatch):
+    from PySide6.QtWidgets import QApplication
+
+    from slipsurface.ui import guides
+    from slipsurface.ui.modeler import ModelerWindow
+
+    QApplication.instance() or QApplication([])
+    opened = []
+    monkeypatch.setattr(guides, "open_guide", lambda path, parent=None: opened.append(path))
+    w = ModelerWindow(None)
+    try:
+        help_menu = next(a.menu() for a in w.menuBar().actions() if a.text() == "&Help")
+        items = {a.text(): a for a in help_menu.actions()}
+        items["Python Scripting Tutorial (PDF)"].trigger()
+        items["DXF Import Guide (PDF)"].trigger()
+    finally:
+        w.close()
+    assert opened == [guides.SCRIPTING_TUTORIAL, guides.DXF_GUIDE]
+    assert all(path.is_file() for path in opened)

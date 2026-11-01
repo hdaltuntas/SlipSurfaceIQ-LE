@@ -1,4 +1,3 @@
-from slipsurface.ui.preferences import fit_to_screen
 from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -9,7 +8,17 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QMessageBox,
 )
-from slipsurface.scripting import TEMPLATE, run_script
+
+from slipsurface.ui import guides
+from slipsurface.ui.preferences import fit_to_screen
+from slipsurface.scripting import run_script
+
+TUTORIAL = guides.SCRIPTING_TUTORIAL
+
+
+def open_tutorial(parent=None) -> bool:
+    """Open the scripting tutorial PDF in the system viewer."""
+    return guides.open_guide(TUTORIAL, parent)
 
 
 class ScriptDialog(QDialog):
@@ -26,7 +35,11 @@ class ScriptDialog(QDialog):
             )
         )
         self.editor = QPlainTextEdit()
-        self.editor.setPlainText(TEMPLATE)
+        self.editor.setPlaceholderText(
+            "# Write a Python script here, or Open .py.\n"
+            "# Example:  project.seismic.kh = 0.1\n"
+            "# Every command is explained in the Tutorial (PDF)."
+        )
         # Text of a script opened from a file that the user has not yet
         # confirmed as trusted; cleared after the first confirmation.
         self.untrusted_source: str | None = None
@@ -41,6 +54,7 @@ class ScriptDialog(QDialog):
             ("Open .py", self.load),
             ("Save .py", self.save),
             ("Run / Apply", self.run),
+            ("Tutorial (PDF)", lambda: open_tutorial(self)),
             ("Close", self.accept),
         ):
             button = QPushButton(title)

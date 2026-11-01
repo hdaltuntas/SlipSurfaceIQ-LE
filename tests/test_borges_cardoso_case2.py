@@ -5,6 +5,8 @@ strength law, real support-force mobilization and fixed-circle solvers.
 The published search FoS (1.170/1.209/1.171) remains reference-only.
 """
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 from shapely.geometry import Point
@@ -14,18 +16,17 @@ from slipsurface.geometry import CircularSurface
 from slipsurface.lem import analyze, make_slices
 from slipsurface.lem.bishop import slice_strength
 from slipsurface.materials import UndrainedDepth
-from slipsurface.project import Project, borges_cardoso_case2_project, example_project
+from slipsurface.project import Project
+from tests.models import borges_cardoso_case2_project
 
 CIRCLE = CircularSurface(2.0, 7.0, 15.0)
-FILE = "examples/borges_cardoso_case2.slp.json"
-NAME = "Borges & Cardoso — geosynthetic embankment #2"
+FILE = str(Path(__file__).parent / "data" / "borges_cardoso_case2.slp.json")
 
 
 def test_case2_preset_roundtrip_and_materials(tmp_path):
     preset = borges_cardoso_case2_project()
     fixture = Project.load(FILE)
-    from_menu = example_project(NAME)
-    for p in (preset, fixture, from_menu):
+    for p in (preset, fixture):
         p.validate()
         assert p.groundwater.method == "none"
         assert p.water_table is None

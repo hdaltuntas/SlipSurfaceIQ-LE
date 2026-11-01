@@ -90,8 +90,7 @@ compare a corrected Janbu factor against a simplified vendor value.
 ## Run
 
 ```bash
-python main.py --example "Borges & Cardoso — geosynthetic embankment #2"
-python main.py examples/borges_cardoso_case2.slp.json
+python main.py tests/data/borges_cardoso_case2.slp.json
 python -m pytest tests/test_borges_cardoso_case2.py -q
 
 # Full automatic critical-circle search and actual calculated results:

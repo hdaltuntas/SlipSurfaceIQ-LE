@@ -27,12 +27,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from slipsurface.analysis import run_analysis  # noqa: E402
-from slipsurface.project import (  # noqa: E402
-    acads_2a_project,
-    acads_2b_project,
-    acads_3a_project,
-    borges_cardoso_case2_project,
-)
+from slipsurface.project import acads_2a_project, acads_2b_project, acads_3a_project  # noqa: E402
+from tests.models import borges_cardoso_case2_project  # noqa: E402
 
 CASES = {
     "acads-3a": acads_3a_project,

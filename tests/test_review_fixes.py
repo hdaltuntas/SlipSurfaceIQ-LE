@@ -15,7 +15,7 @@ from slipsurface.lem import SliceOptions, analyze, make_slices
 from slipsurface.lem.gle import janbu_correction_factor
 from slipsurface.materials import MohrCoulomb, Shansep, Undrained
 from slipsurface.optimizer import SearchResult
-from slipsurface.project import default_project
+from tests.models import default_project
 
 
 @pytest.mark.parametrize(

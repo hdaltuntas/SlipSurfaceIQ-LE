@@ -8,14 +8,8 @@ from slipsurface.analysis import report_text, run_analysis
 from slipsurface.geometry import CircularSurface
 from slipsurface.geometry.builder import boundary_geometry, upper_profile
 from slipsurface.lem import analyze
-from slipsurface.project import (
-    EXAMPLES,
-    MaterialSpec,
-    Project,
-    acads_1a_project,
-    default_project,
-    layered_example_project,
-)
+from slipsurface.project import EXAMPLES, MaterialSpec, Project, acads_1a_project
+from tests.models import default_project, layered_example_project
 
 DATA = Path(__file__).parent / "data"
 

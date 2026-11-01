@@ -3,7 +3,7 @@
 Run from an IDE (open this file and press Run) or from a terminal:
 
     python main.py                                  # modeler sized to the screen, empty project
-    python main.py examples/anchored_cut.slp.json   # open a project file
+    python main.py examples/acads_1a.slp.json      # open a project file
     python main.py --example "ACADS EX1(a)"         # open a bundled example
     python main.py --list-examples
     python main.py --check                          # dependency check, no window
