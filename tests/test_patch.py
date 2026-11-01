@@ -161,7 +161,7 @@ def test_apply_update_copies_only_changed_files(tmp_path, monkeypatch):
     assert (root / "slipsurface" / "added.py").read_text() == "added"
     assert not (root / "slipsurface" / "drop.py").exists()
     # backups of the replaced files were kept
-    backup = root / ".update-backup"
+    backup = root / ".update-backup" / "2026.2.0-to-2026.3.0"
     assert (backup / "main.py").read_text() == "old"
     assert (backup / "slipsurface" / "drop.py").read_text() == "drop"
     assert "1 değişti" in summary or "değişti" in summary
@@ -267,3 +267,88 @@ def test_bare_version_tag_fallback_without_v_prefix(tmp_path):
     assert [d.relpath for d in plan.changed] == ["main.py"]
     apply_update(plan, "2026.3.3", root=root, opener=bare_tag_opener)
     assert (root / "main.py").read_bytes() == b"updated\n"
+
+
+# ------------------------------------------------------------- safety
+@pytest.mark.parametrize(
+    "rel",
+    [
+        "../evil.py",
+        "slipsurface/../../evil.py",
+        "/etc/passwd",
+        "C:/x.py",
+        "slipsurface\\x.py",
+        "slipsurface//x.py",
+        "./main.py",
+        "",
+    ],
+)
+def test_unsafe_paths_are_never_managed(rel):
+    assert not is_managed(rel)
+
+
+def test_manifest_with_unsafe_path_is_ignored(tmp_path):
+    root = tmp_path / "app"
+    root.mkdir()
+    (root / "main.py").write_text("v3")
+    net = FakeNet({"main.py": b"v3", "../outside.py": b"x", "slipsurface/../../o.py": b"x"})
+    plan = plan_against_local("2026.3.0", root=root, opener=net)
+    assert plan.total == 0
+    assert not (tmp_path / "outside.py").exists()
+
+
+def test_apply_refuses_unsafe_plan(tmp_path):
+    root = tmp_path / "app"
+    root.mkdir()
+    plan = UpdatePlan("1", "2", new=[FileDelta("../evil.py", "new", new_hash="x")])
+    with pytest.raises(UpdateCheckError):
+        apply_update(plan, "2026.3.0", root=root, opener=FakeNet({}))
+    assert not (tmp_path / "evil.py").exists()
+
+
+def test_user_files_in_examples_are_kept(tmp_path):
+    """A project the user saved next to the examples is not deleted by an update."""
+    root = tmp_path / "app"
+    (root / "examples").mkdir(parents=True)
+    (root / "main.py").write_text("v3")
+    (root / "examples" / "my_project.slp.json").write_text("{}")
+    net = FakeNet({"main.py": b"v3"})
+    plan = plan_against_local("2026.3.0", root=root, opener=net)
+    assert plan.total == 0
+
+
+def test_failed_download_leaves_installation_unchanged(tmp_path):
+    """Nothing is replaced or removed unless every download verified."""
+    root = tmp_path / "app"
+    (root / "slipsurface").mkdir(parents=True)
+    (root / "main.py").write_text("old")
+    (root / "slipsurface" / "drop.py").write_text("drop")
+    net = FakeNet({"main.py": b"new", "slipsurface/added.py": b"tampered"})
+    plan = UpdatePlan(
+        "2026.2.0",
+        "2026.3.0",
+        changed=[FileDelta("main.py", "changed", new_hash=sha256_bytes(b"new"))],
+        new=[FileDelta("slipsurface/added.py", "new", new_hash=sha256_bytes(b"added"))],
+        removed=[FileDelta("slipsurface/drop.py", "removed")],
+    )
+    with pytest.raises(UpdateCheckError, match="hash mismatch"):
+        apply_update(plan, "2026.3.0", root=root, opener=net)
+    assert (root / "main.py").read_text() == "old"
+    assert (root / "slipsurface" / "drop.py").read_text() == "drop"
+    assert not (root / "slipsurface" / "added.py").exists()
+    assert not (root / ".update-backup").exists()
+
+
+def test_each_update_gets_its_own_backup(tmp_path):
+    root = tmp_path / "app"
+    root.mkdir()
+    for old, new in (("v1", b"v2"), ("v2", b"v3")):
+        (root / "main.py").write_text(old)
+        plan = UpdatePlan(
+            "2026.2.0",
+            "2026.3.0",
+            changed=[FileDelta("main.py", "changed", new_hash=sha256_bytes(new))],
+        )
+        apply_update(plan, "2026.3.0", root=root, opener=FakeNet({"main.py": new}))
+    backups = sorted(p.read_text() for p in (root / ".update-backup").rglob("main.py"))
+    assert backups == ["v1", "v2"]
