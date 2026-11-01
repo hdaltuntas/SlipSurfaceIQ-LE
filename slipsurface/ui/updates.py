@@ -54,6 +54,7 @@ class UpdateChecker(QObject):
     found = Signal(object, bool)  # ReleaseInfo, manual
     failed = Signal(str, bool)  # reason, manual
     applied = Signal(str, str)  # version, summary (delta update finished)
+    progressed = Signal(int, int, str)  # done, total, relpath
 
     def __init__(self, parent: QWidget, fetch=fetch_latest) -> None:
         super().__init__(parent)
@@ -64,6 +65,7 @@ class UpdateChecker(QObject):
         self.found.connect(self._on_found)
         self.failed.connect(self._on_failed)
         self.applied.connect(self._on_applied)
+        self.progressed.connect(self._on_progressed)
 
     @property
     def busy(self) -> bool:
@@ -128,7 +130,7 @@ class UpdateChecker(QObject):
             tr("Güncelleme tamam"),
             trf("SlipSurfaceIQ LE {} dosyaları güncellendi.", version)
             + "\n"
-            + summary
+            + tr(summary)
             + "\n\n"
             + tr(
                 "Değişikliklerin tamamı için uygulamayı yeniden başlatın. "
@@ -198,9 +200,12 @@ class UpdateChecker(QObject):
         threading.Thread(target=run, daemon=True).start()
 
     def _progress(self, done: int, total: int, relpath: str) -> bool:
-        """Progress to the status bar; return True to cancel (never, for now)."""
-        self._status(trf("Güncelleniyor: {}/{} ({})", done, total, relpath))
+        """Emit progress to the GUI thread; return True to cancel (never, for now)."""
+        self.progressed.emit(done, total, relpath)
         return False
+
+    def _on_progressed(self, done: int, total: int, relpath: str) -> None:
+        self._status(trf("Güncelleniyor: {}/{} ({})", done, total, relpath))
 
     # ---------------------------------------------------------- helpers
     def _box(self, kind, title: str, text: str) -> QMessageBox:

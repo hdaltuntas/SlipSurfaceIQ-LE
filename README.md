@@ -1,8 +1,8 @@
 # SlipSurfaceIQ LE
 
-**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.3.2**
+**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.3.3**
 
-[2026.3.2 release notes](RELEASE_NOTES.md) — Validate groundwater polylines before analysis, including point count, coordinate dimensions, finite values and increasing x coordinates. Run the application with `python main.py`; native packages and standalone launchers have been removed. Engineering modules, the CAD interface and verification tests remain available.
+[2026.3.3 release notes](RELEASE_NOTES.md) — Fix the HTTP 404 error when downloading changed files during an update (check release-asset `manifest.json` and fall back to GitHub's Git Trees API, supporting both `v`-prefixed and bare version tags), enforce `main.py` as the sole application entry point without Windows/Linux package builds, and complete English UI translations for update and geometry validation messages.
 
 SlipSurfaceIQ LE is an open-source program for checking the stability of soil and rock
 slopes, cuts and embankments with the limit equilibrium method (LEM). You draw the slope
@@ -133,12 +133,13 @@ python main.py --check                            # check Python and the require
 
 ### Update notifications
 
-The optional update checker shows source-release information from GitHub.
-It never downloads or installs software. When an update is published, open the
-release page to review its changes; update your local source checkout with
-`git pull` (or download the newer source archive), reinstall requirements
-if necessary, and start it with `python main.py`. Automatic checks can be
-disabled under **Help → Check for Updates at Start-up**.
+The update checker (**Help → Check for Updates…**, or once a day at start-up)
+queries the latest published GitHub release. When a newer release is found, you
+can click **Update Changed Files** (*Değişen Dosyaları Güncelle*) to download
+and replace only the modified source files in place (with automatic backups in
+`.update-backup`), or open the release page on GitHub. Always start the
+application with `python main.py`. Automatic checks can be disabled under
+**Help → Check for Updates at Start-up**.
 
 ---
 
@@ -554,8 +555,7 @@ python -m mypy                                         # computation core
 ```
 
 The full suite takes a few minutes because of the non-circular searches and the PDF and GUI
-tests. GitHub Actions runs the lint and type checks and the tests on Windows and Ubuntu
-(Python 3.10, 3.13, 3.14) and in Arch Linux, Fedora and openSUSE Tumbleweed containers.
+tests. GitHub Actions runs the lint and type checks, `python main.py` checks, and the test suite.
 
 ---
 
@@ -588,7 +588,7 @@ tests/               test suite
 
 SlipSurfaceIQ LE remains an **independent application**, not a SlipSurfaceIQ
 Suite module. Its native CAD modeler, Interpret results, numerical engine,
-project files, packaging, licenses, releases and version numbers stay under
+project files, licenses, source releases and version numbers stay under
 this repository. See the [standalone development plan](docs/STANDALONE_DEVELOPMENT_PLAN.md)
 for the staged reliability, CAD, solver-verification and release-quality work.
 

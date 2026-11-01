@@ -10,6 +10,7 @@ from slipsurface.patch import (
     UpdatePlan,
     apply_update,
     diff_manifests,
+    git_blob_sha_bytes,
     is_managed,
     plan_against_local,
     sha256_of,
@@ -195,3 +196,74 @@ def test_local_hash_ignores_extra_files(tmp_path):
     net = FakeNet({"main.py": b"v3"})
     plan = plan_against_local("2026.3.0", root=root, opener=net)
     assert plan.total == 0  # notes.txt is not in MANAGED and not in manifest
+
+
+def test_git_tree_fallback_when_manifest_asset_returns_404(tmp_path):
+    """When a release has no manifest.json asset (HTTP 404), fall back to Git Trees API."""
+    import urllib.error
+
+    root = tmp_path / "app"
+    (root / "slipsurface").mkdir(parents=True)
+    (root / "main.py").write_bytes(b"old\r\nline\r\n")
+    (root / "slipsurface" / "keep.py").write_bytes(b"same\r\n")
+    (root / "slipsurface" / "drop.py").write_bytes(b"drop\n")
+
+    remote_files = {
+        "main.py": b"new\nline\n",
+        "slipsurface/keep.py": b"same\n",
+        "slipsurface/added.py": b"added\n",
+    }
+
+    def tree_opener(request, timeout):
+        url = request.full_url
+        if url.endswith("manifest.json"):
+            raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+        if "/git/trees/v2026.3.3?recursive=1" in url:
+            tree = [
+                {"path": k, "mode": "100644", "type": "blob", "sha": git_blob_sha_bytes(v)}
+                for k, v in remote_files.items()
+            ] + [{"path": ".git/config", "mode": "100644", "type": "blob", "sha": "0" * 40}]
+            return FakeResponse(json.dumps({"sha": "abc", "tree": tree}).encode("utf-8"))
+        if "/v2026.3.3/" in url:
+            rel = url.split("/v2026.3.3/", 1)[1]
+            if rel in remote_files:
+                return FakeResponse(remote_files[rel])
+        raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+
+    plan = plan_against_local("2026.3.3", root=root, opener=tree_opener)
+    # keep.py with CRLF matches LF git blob SHA-1 and is not re-downloaded
+    assert [d.relpath for d in plan.changed] == ["main.py"]
+    assert [d.relpath for d in plan.new] == ["slipsurface/added.py"]
+    assert [d.relpath for d in plan.removed] == ["slipsurface/drop.py"]
+
+    summary = apply_update(plan, "2026.3.3", root=root, opener=tree_opener)
+    assert (root / "main.py").read_bytes() == b"new\nline\n"
+    assert (root / "slipsurface" / "keep.py").read_bytes() == b"same\r\n"
+    assert (root / "slipsurface" / "added.py").read_bytes() == b"added\n"
+    assert not (root / "slipsurface" / "drop.py").exists()
+    assert "2026.3.3" in summary
+
+
+def test_bare_version_tag_fallback_without_v_prefix(tmp_path):
+    """Releases tagged without a leading 'v' (e.g. 2026.3.3) also resolve."""
+    import urllib.error
+
+    root = tmp_path / "app"
+    (root / "slipsurface").mkdir(parents=True)
+    (root / "main.py").write_bytes(b"old\n")
+
+    def bare_tag_opener(request, timeout):
+        url = request.full_url
+        if "/v2026.3.3" in url or url.endswith("manifest.json"):
+            raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+        if "/git/trees/2026.3.3?recursive=1" in url:
+            tree = [{"path": "main.py", "type": "blob", "sha": git_blob_sha_bytes(b"updated\n")}]
+            return FakeResponse(json.dumps({"tree": tree}).encode("utf-8"))
+        if url.endswith("/2026.3.3/main.py"):
+            return FakeResponse(b"updated\n")
+        raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+
+    plan = plan_against_local("2026.3.3", root=root, opener=bare_tag_opener)
+    assert [d.relpath for d in plan.changed] == ["main.py"]
+    apply_update(plan, "2026.3.3", root=root, opener=bare_tag_opener)
+    assert (root / "main.py").read_bytes() == b"updated\n"

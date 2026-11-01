@@ -10,7 +10,7 @@ SlipSurfaceIQ Suite. The repositories remain separate:
 
 - LE repository: `hdaltuntas/SlipSurfaceIQ-LE`
 - Suite repository: `hdaltuntas/SlipSurfaceIQ-Suite`
-- LE continues with its own release numbers, CI, packaging and road map.
+- LE continues with its own release numbers, CI, source releases and road map.
 - There are **no cross-repository imports, shared runtime packages, module
   manifests or automatic Suite installation of LE**.
 - The existing modeler and Interpret UI remain LE-owned. Their separation is
@@ -30,7 +30,7 @@ product must inherit the other's theme or CAD implementation.
   Janbu, Spencer and GLE)
 - Search/optimization under `slipsurface/optimizer/`
 - Independent analysis and project serialization
-- Windows MSI and Linux DEB/RPM/Arch packaging workflows
+- Source-only execution via `python main.py` (no Windows or Linux installer packages)
 - Turkish/English UI, PDF reports, loads/supports and DXF workflows
 
 Read the release notes and the CI results before modifying a numerical method.
@@ -82,9 +82,9 @@ force/moment checks. No silent fallback to unconverged FS values.
    evidence of method-specific convergence.
 2. Preserve printer-readable PDF outputs and report method traceability.
 3. Validate project migrations and DXF import/export.
-4. Run source tests, native UI smoke tests, package install-launch-uninstall
+4. Run source tests, native UI smoke tests, `python main.py --check`
    checks and accessibility checks for English and Turkish.
-5. Publish independent LE release notes and packages after all gates pass.
+5. Publish independent LE release notes and source releases after all gates pass.
 
 ## Existing PR boundaries
 

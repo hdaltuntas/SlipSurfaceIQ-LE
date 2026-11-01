@@ -4,13 +4,13 @@ When a new published release exists, the updater downloads ONLY the files
 whose content changed between the running version and the release, and
 copies them over the local installation in place. An inventory of every
 tracked file and its SHA-256 is published alongside each release as
-``manifest.json``; the updater fetches the two manifests (current and
-target), diffs them, and transfers just the changed/new entries. Deleted
-files are removed locally. Nothing outside the application folder is
-touched, and the previous state is restorable from the automatic backup.
+``manifest.json`` (or derived from the GitHub Git Trees API when a release
+has no manifest asset); the updater diffs the local installation against the
+target inventory and transfers just the changed/new entries. Deleted files
+are removed locally. Nothing outside the application folder is touched, and
+the previous state is restorable from the automatic backup.
 
-No Qt here: the same module backs the GUI updater and the CLI
-(``python -m slipsurface.patch``).
+No Qt here: this module backs the GUI updater in ``slipsurface.ui.updates``.
 """
 
 from __future__ import annotations
@@ -31,6 +31,7 @@ from slipsurface.updates import REPOSITORY, UpdateCheckError, ssl_context
 
 RAW_BASE = f"https://raw.githubusercontent.com/{REPOSITORY}"
 API_BASE = f"https://api.github.com/repos/{REPOSITORY}"
+RELEASE_BASE = f"https://github.com/{REPOSITORY}/releases/download"
 CHUNK = 1 << 16
 
 
@@ -39,7 +40,10 @@ def _default_open(request: urllib.request.Request, timeout: float):
 
 
 def _fetch_bytes(url: str, timeout: float = 30.0, opener=None) -> bytes:
-    request = urllib.request.Request(url, headers={"User-Agent": f"SlipSurfaceIQ-LE/{__version__}"})
+    headers = {"User-Agent": f"SlipSurfaceIQ-LE/{__version__}"}
+    if url.startswith(API_BASE):
+        headers["Accept"] = "application/vnd.github+json"
+    request = urllib.request.Request(url, headers=headers)
     try:
         with (opener or _default_open)(request, timeout) as response:  # type: ignore[attr-defined]
             return response.read()
@@ -51,9 +55,12 @@ def _fetch_bytes(url: str, timeout: float = 30.0, opener=None) -> bytes:
 
 def _fetch_json(url: str, timeout: float = 30.0, opener=None) -> dict:
     try:
-        return json.loads(_fetch_bytes(url, timeout, opener).decode("utf-8"))
+        data = json.loads(_fetch_bytes(url, timeout, opener).decode("utf-8"))
     except (ValueError, UnicodeDecodeError):
         raise UpdateCheckError(f"invalid JSON from {url}") from None
+    if not isinstance(data, dict):
+        raise UpdateCheckError(f"invalid JSON from {url}")
+    return data
 
 
 def sha256_of(path: Path) -> str:
@@ -62,6 +69,21 @@ def sha256_of(path: Path) -> str:
         while chunk := f.read(CHUNK):
             h.update(chunk)
     return h.hexdigest()
+
+
+def git_blob_sha_bytes(data: bytes) -> str:
+    h = hashlib.sha1(f"blob {len(data)}\0".encode("ascii"))
+    h.update(data)
+    return h.hexdigest()
+
+
+def git_blob_sha_of(path: Path) -> str:
+    return git_blob_sha_bytes(path.read_bytes())
+
+
+def _candidate_refs(version: str) -> tuple[str, ...]:
+    v = version.strip().lstrip("v")
+    return (f"v{v}", v) if v else (version.strip(),)
 
 
 @dataclass
@@ -100,16 +122,67 @@ class UpdatePlan:
 
 
 def manifest_url(version: str) -> str:
-    return f"{RAW_BASE}/v{version}/manifest.json"
+    v = version.strip().lstrip("v")
+    return f"{RELEASE_BASE}/v{v}/manifest.json"
+
+
+def _manifest_from_git_tree(data: dict, version: str, ref: str) -> dict:
+    tree = data.get("tree")
+    if not isinstance(tree, list):
+        raise UpdateCheckError(f"git tree of {ref} has no file table")
+    files: dict[str, str] = {}
+    for item in tree:
+        if not isinstance(item, dict) or item.get("type") != "blob":
+            continue
+        rel = item.get("path")
+        sha = item.get("sha")
+        if isinstance(rel, str) and isinstance(sha, str) and is_managed(rel):
+            files[rel] = sha
+    if not files:
+        raise UpdateCheckError(f"git tree of {ref} has no managed files")
+    return {"version": version.strip().lstrip("v"), "ref": ref, "hash": "git-sha1", "files": files}
+
+
+def _fetch_tree_manifest(version: str, timeout: float = 30.0, opener=None) -> dict:
+    last_err: UpdateCheckError | None = None
+    for ref in _candidate_refs(version):
+        url = f"{API_BASE}/git/trees/{ref}?recursive=1"
+        try:
+            data = _fetch_json(url, timeout, opener)
+            return _manifest_from_git_tree(data, version, ref)
+        except UpdateCheckError as exc:
+            last_err = exc
+            if "404" not in str(exc):
+                raise
+    raise last_err or UpdateCheckError(f"manifest not found for {version}")
 
 
 def fetch_manifest(version: str, timeout: float = 30.0, opener=None) -> dict:
-    """The published file inventory for a release: {"files": {relpath: sha256}}."""
-    data = _fetch_json(manifest_url(version), timeout, opener)
-    files = data.get("files")
-    if not isinstance(files, dict):
-        raise UpdateCheckError(f"manifest of v{version} has no file table")
-    return data
+    """The published file inventory for a release: {"files": {relpath: hash}}.
+
+    Checks the release-asset ``manifest.json`` first (SHA-256), and falls back
+    to GitHub's Git Trees API (Git blob SHA-1) when a release has no manifest
+    asset attached.
+    """
+    last_err: UpdateCheckError | None = None
+    for ref in _candidate_refs(version):
+        url = f"{RELEASE_BASE}/{ref}/manifest.json"
+        try:
+            data = _fetch_json(url, timeout, opener)
+            files = data.get("files")
+            if not isinstance(files, dict):
+                raise UpdateCheckError(f"manifest of {ref} has no file table")
+            return data
+        except UpdateCheckError as exc:
+            last_err = exc
+            if "404" not in str(exc):
+                raise
+    try:
+        return _fetch_tree_manifest(version, timeout, opener)
+    except UpdateCheckError:
+        if last_err is not None:
+            raise
+        raise
 
 
 def diff_manifests(
@@ -138,6 +211,9 @@ def plan_update(
     """Diff the two releases' manifests. Raises UpdateCheckError."""
     old = fetch_manifest(from_version, timeout, opener)
     new = fetch_manifest(to_version, timeout, opener)
+    if old.get("hash", "sha256") != new.get("hash", "sha256"):
+        old = _fetch_tree_manifest(from_version, timeout, opener)
+        new = _fetch_tree_manifest(to_version, timeout, opener)
     changed, added, removed = diff_manifests(old, new)
     return UpdatePlan(from_version, to_version, changed, added, removed)
 
@@ -147,12 +223,23 @@ def application_root() -> Path:
     return Path(__file__).resolve().parents[1]
 
 
-def local_hash(relpath: str, root: Path | None = None) -> str | None:
+def local_hash(relpath: str, root: Path | None = None, expected_hash: str = "") -> str | None:
     root = root or application_root()
     p = root / relpath
     if not p.is_file():
         return None
-    return sha256_of(p)
+    use_git_sha1 = len(expected_hash) == 40
+    digest = git_blob_sha_of(p) if use_git_sha1 else sha256_of(p)
+    if expected_hash and digest != expected_hash:
+        data = p.read_bytes()
+        if b"\r\n" in data:
+            lf_data = data.replace(b"\r\n", b"\n")
+            lf_digest = (
+                git_blob_sha_bytes(lf_data) if use_git_sha1 else hashlib.sha256(lf_data).hexdigest()
+            )
+            if lf_digest == expected_hash:
+                return expected_hash
+    return digest
 
 
 def plan_against_local(
@@ -172,7 +259,7 @@ def plan_against_local(
     target_files = target.get("files", {})
     changed, added, removed = [], [], []
     for rel, digest in target_files.items():
-        local = local_hash(rel, root)
+        local = local_hash(rel, root, digest)
         if local is None:
             added.append(FileDelta(rel, "new", new_hash=digest))
         elif local != digest:
@@ -183,7 +270,7 @@ def plan_against_local(
         rel = p.relative_to(root).as_posix()
         if is_managed(rel) and rel not in target_files:
             removed.append(FileDelta(rel, "removed", old_hash=sha256_of(p)))
-    return UpdatePlan(__version__, to_version, changed, added, removed)
+    return UpdatePlan(__version__, to_version.strip().lstrip("v"), changed, added, removed)
 
 
 MANAGED_PREFIXES = (
@@ -223,11 +310,20 @@ def is_managed(relpath: str) -> bool:
 def download_file(
     relpath: str, version: str, dest: Path, timeout: float = 60.0, opener=None
 ) -> None:
-    """Fetch one file of a release into dest, verifying its SHA-256 lazily."""
-    url = f"{RAW_BASE}/v{version}/{relpath}"
-    data = _fetch_bytes(url, timeout, opener)
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_bytes(data)
+    """Fetch one file of a release into dest."""
+    last_err: UpdateCheckError | None = None
+    for ref in _candidate_refs(version):
+        url = f"{RAW_BASE}/{ref}/{relpath}"
+        try:
+            data = _fetch_bytes(url, timeout, opener)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(data)
+            return
+        except UpdateCheckError as exc:
+            last_err = exc
+            if "404" not in str(exc):
+                raise
+    raise last_err or UpdateCheckError(f"HTTP 404 for {relpath}")
 
 
 def backup_root(root: Path) -> Path:
@@ -282,10 +378,11 @@ def apply_update(
             tmp = tmp_dir / delta.relpath
             dest = root / delta.relpath
             if tmp.is_file():
-                digest = sha256_of(tmp)
-                if plan_against_local_verifies(delta, digest):
-                    dest.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.move(str(tmp), dest)
+                digest = local_hash(delta.relpath, tmp_dir, delta.new_hash) or ""
+                if not plan_against_local_verifies(delta, digest):
+                    raise UpdateCheckError(f"hash mismatch for {delta.relpath}")
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(tmp), dest)
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
     return plan.summary()

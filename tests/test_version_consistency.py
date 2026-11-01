@@ -20,6 +20,7 @@ OBSOLETE = (
     "run_windows.bat",
     "run_linux_mac.sh",
     "slipsurface/__main__.py",
+    "slipsurface/patch/__main__.py",
 )
 
 
@@ -36,9 +37,13 @@ def test_calendar_version_matches_readme_and_release_notes():
 def test_main_py_is_the_only_supported_application_entrypoint():
     assert (ROOT / "main.py").is_file()
     assert (ROOT / "requirements.txt").is_file()
-    assert (ROOT / ".github/workflows/ci.yml").is_file()
+    ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "windows-latest" not in ci
+    assert "test-distro" not in ci
+    assert "python main.py" in ci
     for path in OBSOLETE:
         assert not (ROOT / path).exists(), f"Obsolete package/launcher: {path}"
+    assert not list((ROOT / "slipsurface").rglob("__main__.py"))
     config = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     assert "[build-system]" not in config
     assert "[project.gui-scripts]" not in config
