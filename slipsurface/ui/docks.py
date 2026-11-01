@@ -1,4 +1,4 @@
-"""Left dock panels: Document Viewer and Display Options (property grid)."""
+"""Document Viewer and Display Options (Interpret left dock; Modeler View dialog)."""
 
 from __future__ import annotations
 

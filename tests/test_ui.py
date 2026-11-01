@@ -681,6 +681,15 @@ def test_interpret_fs_legend_and_notes(app, win, monkeypatch):
     c.selection = ("external", 0)
     c.tool.key(QKeyEvent(QEvent.KeyPress, Qt.Key_Delete, Qt.NoModifier))
     assert iw.project.external
+    # Interpret must not offer to edit material properties (Modeler-only),
+    # even when the click is inside a soil region.
+    from PySide6.QtWidgets import QMenu
+
+    menu = QMenu()
+    assert c.material_at(20.0, -1.0) is not None
+    c._fill_context_menu(menu, screen(c, 20.0, -1.0))
+    texts = [a.text() for a in menu.actions() if a.text()]
+    assert not any("Malzemeyi" in t for t in texts)
 
 
 def test_interpret_window_close_and_recompute(app, win):
@@ -734,6 +743,10 @@ def test_pdf_report_from_interpret(app, win, monkeypatch, tmp_path):
 def test_material_tooltip_and_context_activation(app, win):
     """Hovering a material region shows its name/parameters; the context menu
     offers to edit that material, which opens the materials dialog."""
+    from PySide6.QtWidgets import QMenu
+    from slipsurface.materials.catalog import parameter_text
+    from slipsurface.ui.cad.tools import SelectTool
+
     p = layered_example_project()
     win.load_project(p)
     c = win.canvas
@@ -742,13 +755,31 @@ def test_material_tooltip_and_context_activation(app, win):
     assert c.material_at(20.0, -1.0) in names
     assert c.material_at(45.0, 10.0) in names
     assert c.material_at(300.0, 300.0) is None  # outside the model
-    # hovering (SelectTool) builds the tooltip text with name + parameters
-    from slipsurface.materials.catalog import parameter_text
-
     hit = c.material_at(20.0, -1.0)
     spec = p.material(hit)
     assert spec is not None
     assert parameter_text(spec)  # the tooltip's second line is non-empty
+    assert isinstance(c.tool, SelectTool)
+
+    class _Ev:
+        def globalPosition(self):
+            from PySide6.QtCore import QPointF
+
+            return QPointF(0, 0)
+
+    c._hover_material(20.0, -1.0, _Ev())
+    assert c._hover_mat == hit
+    c._hover_material(20.0, -1.0, _Ev())  # same region: cache holds
+    assert c._hover_mat == hit
+    c._hover_material(300.0, 300.0, _Ev())
+    assert c._hover_mat is None
+    c._hover_material(20.0, -1.0, _Ev())
+    c.leaveEvent(None)
+    assert c._hover_mat is None
+    menu = QMenu()
+    c._fill_context_menu(menu, screen(c, 20.0, -1.0))
+    texts = [a.text() for a in menu.actions() if a.text()]
+    assert any("Malzemeyi" in t for t in texts)
     # the signal lets the Modeler open the dialog for that material
     opened = {}
     win.define_materials = lambda n: opened.setdefault("name", n)  # type: ignore
@@ -759,10 +790,20 @@ def test_material_tooltip_and_context_activation(app, win):
 
 
 def test_modeler_has_no_left_dock(app, win):
-    """The left Project dock is Interpret-only; the Modeler is all canvas."""
+    """The left Project dock is Interpret-only; the Modeler is all canvas.
+    Display options remain on View → Görüntü Seçenekleri."""
+    from slipsurface.ui.docks import DisplayOptions
+
     assert win.dock is None
     assert win.viewer is None
     assert win.display_opts is None
-    assert win.findChild(type(win), "") is win or True  # window intact
-    # Interpret windows still own the dock panels
     assert not hasattr(win, "a_show_dock")
+    assert win.a_display_opts is not None
+    dlg = win._make_display_dialog()
+    opts = dlg.findChild(DisplayOptions)
+    assert opts is not None
+    it, typ, _ = opts.grids[0]._items["show_ruler"]
+    assert typ == "bool"
+    it.setCheckState(1, Qt.Unchecked)
+    assert win.doc.project.display["show_ruler"] is False
+    dlg.close()
