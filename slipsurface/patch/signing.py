@@ -29,7 +29,9 @@ from pathlib import Path
 
 # Hex-encoded Ed25519 public keys whose signatures the updater accepts.
 # Empty: signature checking is off. Add the key printed by ``genkey``.
-TRUSTED_PUBLIC_KEYS: tuple[str, ...] = (f1d1ef21730d3d5f099f4054e4738b611c9f722ef138dd8e67ec54793e9016d4)
+TRUSTED_PUBLIC_KEYS: tuple[str, ...] = (
+    "f1d1ef21730d3d5f099f4054e4738b611c9f722ef138dd8e67ec54793e9016d4",
+)
 
 SIGNATURE_SUFFIX = ".sig"
 SECRET_ENV = "MANIFEST_SIGNING_KEY"
