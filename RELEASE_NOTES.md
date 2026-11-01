@@ -2,8 +2,7 @@
 
 Delta-update HTTP 404 fix and strict `main.py` source-only execution
 
-- Fix the HTTP 404 error when clicking *Değişen Dosyaları Güncelle*
-  (*Update Changed Files*): `fetch_manifest` now checks the release-asset
+- Fix the HTTP 404 error when clicking *Update Changed Files*: `fetch_manifest` now checks the release-asset
   `manifest.json` URL (`releases/download/.../manifest.json`) instead of
   `raw.githubusercontent.com`, and automatically falls back to GitHub's
   Git Trees API (`/git/trees/{tag}?recursive=1` with Git blob SHA-1
@@ -63,7 +62,7 @@ Delta updates and the SlipSurfaceIQ-FEA interface style
   **only the changed files**, copying them over the application folder.
   Previous files are backed up to `.update-backup` before anything is
   replaced; deleted files are removed locally.
-- The update dialog offers "Değişen Dosyaları Güncelle" alongside the
+- The update dialog offers "Update Changed Files" alongside the
   release-page link, and reports a per-file progress line on the status
   bar while the worker thread transfers the delta.
 - Version 2026.3.0.

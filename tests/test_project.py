@@ -73,14 +73,14 @@ def test_upper_profile():
 
 def test_validation_messages():
     p = default_project()
-    p.assignments.append({"point": [1, 1], "material": "Yok"})
-    with pytest.raises(ValueError, match="tanımlı değil"):
+    p.assignments.append({"point": [1, 1], "material": "None"})
+    with pytest.raises(ValueError, match="is not defined"):
         p.build_geometry()
     p = default_project()
     p.materials[0].phi = 95
     with pytest.raises(ValueError):
         p.build_materials()
-    with pytest.raises(ValueError, match="Dış sınır"):
+    with pytest.raises(ValueError, match="external boundary"):
         Project(materials=[MaterialSpec()]).build_geometry()
 
 
@@ -93,21 +93,17 @@ def test_project_matches_direct_api():
 
 
 def test_v1_file_is_converted():
-    p = Project.load(DATA / "v1_katmanli.slp.json")
+    p = Project.load(DATA / "v1_layered.slp.json")
     q = layered_example_project()
     g1, g2 = p.build_geometry(), q.build_geometry()
     assert g1.domain.area == pytest.approx(g2.domain.area)
-    # the legacy v1 file keeps its original (Turkish) material names
-    for m1, m2 in (
-        ("Dolgu", "Fill"),
-        ("Yumuşak kil", "Soft clay"),
-        ("Ayrışmış kaya", "Weathered rock"),
-    ):
-        a1 = sum(r.polygon.area for r in g1.regions if r.material == m1)
-        a2 = sum(r.polygon.area for r in g2.regions if r.material == m2)
-        assert a1 == pytest.approx(a2, rel=1e-6), m2
+    for m in ("Fill", "Soft clay", "Weathered rock"):
+        a1 = sum(r.polygon.area for r in g1.regions if r.material == m)
+        a2 = sum(r.polygon.area for r in g2.regions if r.material == m)
+        assert a1 == pytest.approx(a2, rel=1e-6), m
 
 
+@pytest.mark.slow
 def test_run_analysis_multiple_methods():
     p = acads_1a_project()
     p.methods.methods = ["bishop", "spencer", "janbu_simplified"]
@@ -128,15 +124,13 @@ def test_solver_tolerance_is_the_dialog_value():
 
 
 def test_seismic_clause_states_the_slide2_sign():
-    from slipsurface.ui.i18n import _CATALOG
-
     p = acads_1a_project()
     p.seismic.kv = 0.2
     p.seismic.both_vertical = False
-    upward = _CATALOG.translate(p.seismic.clause())
+    upward = p.seismic.clause()
     assert "Slide2" in upward and "upward" in upward
     p.seismic.both_vertical = True
-    both = _CATALOG.translate(p.seismic.clause())
+    both = p.seismic.clause()
     assert "Slide2" in both and "downward" in both
     assert "\u00b1" in p.seismic.clause()
 
@@ -170,7 +164,7 @@ def test_both_vertical_directions_keep_the_lower_fos():
     assert r.results["spencer"].fos == pytest.approx(best.fos, rel=1e-6)
     assert r.results["spencer"].kv == pytest.approx(0.25 if up.fos <= down.fos else -0.25)
     text = report_text(r)
-    assert "Slide2" in text and "Kritik düşey" in text
+    assert "Slide2" in text and "Critical vertical" in text
 
 
 def test_user_defined_surface():

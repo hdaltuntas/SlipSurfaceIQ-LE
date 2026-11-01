@@ -91,10 +91,8 @@ def main(argv: list[str] | None = None) -> int:
     if not check_environment(verbose=False):
         return 1
 
-    from slipsurface.project import EXAMPLE_ALIASES, EXAMPLES
+    from slipsurface.project import EXAMPLES
 
-    if args.example:
-        args.example = EXAMPLE_ALIASES.get(args.example, args.example)
     if args.list_examples:
         for name in EXAMPLES:
             print(name)

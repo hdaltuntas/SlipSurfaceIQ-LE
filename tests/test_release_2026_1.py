@@ -214,8 +214,7 @@ def test_geotextile_per_width_capacity_independent_of_bolt_spacing(spacing):
 
 
 @pytest.mark.parametrize("application", ["active", "passive"])
-@pytest.mark.parametrize("language", ["tr", "en"])
-def test_report_distinguishes_capacity_and_mobilized_force(tmp_path, application, language):
+def test_report_distinguishes_capacity_and_mobilized_force(tmp_path, application):
     p = acads_1a_project()
     support = anchor(300, application)
     p.support_types = [support.stype]
@@ -235,10 +234,8 @@ def test_report_distinguishes_capacity_and_mobilized_force(tmp_path, application
     assert f"T_cap = {300:8.2f}" in text
     assert f"T_mob = {expected:8.2f}" in text
     path = tmp_path / "support.pdf"
-    build_pdf(results, path, ReportOptions(language=language))
+    build_pdf(results, path, ReportOptions())
     pdf = "\n".join(page.extract_text() for page in PdfReader(path).pages)
     assert "Tcap" in pdf and "Tmob" in pdf
     assert f"{expected:.1f}" in pdf
-    assert (
-        "mobilised force at equilibrium" if language == "en" else "dengede mobilize kuvvet"
-    ) in pdf
+    assert "mobilised force at equilibrium" in pdf

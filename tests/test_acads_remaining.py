@@ -109,6 +109,7 @@ def test_saved_file_roundtrip_preserves_inputs(key):
     assert saved.water_table == fresh.water_table
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("key", ["1c", "1d", "4", "5"])
 def test_real_analysis_finite_and_admissible(key):
     p = acads_project(key)

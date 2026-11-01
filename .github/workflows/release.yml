@@ -24,8 +24,19 @@ jobs:
           manifest = write_manifest(Path("."), Path("manifest.json"), version)
           print(f"manifest: {len(manifest['files'])} files for v{version}")
           EOF
+      - name: Sign manifest (when the MANIFEST_SIGNING_KEY secret is set)
+        env:
+          MANIFEST_SIGNING_KEY: ${{ secrets.MANIFEST_SIGNING_KEY }}
+        run: |
+          python -m slipsurface.patch.signing sign manifest.json
+          if [ -f manifest.json.sig ]; then
+            python -m slipsurface.patch.signing verify manifest.json manifest.json.sig
+          fi
       - name: Create release with manifest
         uses: softprops/action-gh-release@v2
         with:
-          files: manifest.json
+          files: |
+            manifest.json
+            manifest.json.sig
+          fail_on_unmatched_files: false
           generate_release_notes: true

@@ -31,7 +31,7 @@ product must inherit the other's theme or CAD implementation.
 - Search/optimization under `slipsurface/optimizer/`
 - Independent analysis and project serialization
 - Source-only execution via `python main.py` (no Windows or Linux installer packages)
-- Turkish/English UI, PDF reports, loads/supports and DXF workflows
+- English UI, PDF reports, loads/supports and DXF workflows
 
 Read the release notes and the CI results before modifying a numerical method.
 
@@ -83,7 +83,7 @@ force/moment checks. No silent fallback to unconverged FS values.
 2. Preserve printer-readable PDF outputs and report method traceability.
 3. Validate project migrations and DXF import/export.
 4. Run source tests, native UI smoke tests, `python main.py --check`
-   checks and accessibility checks for English and Turkish.
+   checks and accessibility checks.
 5. Publish independent LE release notes and source releases after all gates pass.
 
 ## Existing PR boundaries

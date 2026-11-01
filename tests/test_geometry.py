@@ -45,7 +45,7 @@ def test_boundary_geometry_rejects_invalid_water_table(water_table):
     from slipsurface.geometry.builder import boundary_geometry
 
     external = [[0, -5], [20, -5], [20, 5], [0, 5]]
-    with pytest.raises(ValueError, match="YASS"):
+    with pytest.raises(ValueError, match="Water table"):
         boundary_geometry(external, water_table=water_table)
 
 
@@ -82,6 +82,7 @@ def test_layer_end_near_a_concave_vertex_snaps_onto_it():
     assert len(regions) == 2
 
 
+@pytest.mark.slow
 def test_acads_1b_matches_published_factors_of_safety():
     from slipsurface.analysis import run_analysis
     from slipsurface.project import acads_1b_project

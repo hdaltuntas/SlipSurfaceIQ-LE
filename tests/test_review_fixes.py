@@ -27,7 +27,7 @@ from slipsurface.project import default_project
     ],
 )
 def test_unsupported_faces_are_rejected_instead_of_interpolated(external):
-    with pytest.raises(ValueError, match="Dik şev yüzü veya çıkmalı"):
+    with pytest.raises(ValueError, match="Vertical slope faces and overhangs"):
         boundary_geometry(external)
 
 

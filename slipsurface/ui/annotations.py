@@ -8,11 +8,11 @@ import copy
 from slipsurface.ui.dialogs.facing_pattern_annot import AnnotationDialog
 
 ANNOT_TOOLS = [  # (draw kind, label, icon)
-    ("annot_text", "Yazı Ekle", "annot_text"),
-    ("annot_line", "Çizgi Ekle", "annot_line"),
-    ("annot_arrow", "Ok Ekle", "annot_arrow"),
-    ("annot_rect", "Dikdörtgen Ekle", "annot_rect"),
-    ("annot_ellipse", "Elips Ekle", "annot_ellipse"),
+    ("annot_text", "Add Text", "annot_text"),
+    ("annot_line", "Add Line", "annot_line"),
+    ("annot_arrow", "Add Arrow", "annot_arrow"),
+    ("annot_rect", "Add Rectangle", "annot_rect"),
+    ("annot_ellipse", "Add Ellipse", "annot_ellipse"),
 ]
 
 
@@ -47,4 +47,4 @@ def edit_annotation(doc, i: int, parent=None) -> None:
     dlg = AnnotationDialog(ann, parent)
     if dlg.exec():
         dlg.apply_to(ann)
-        doc.edit("Not düzenle", lambda p: p.annotations.__setitem__(i, ann))
+        doc.edit("Edit note", lambda p: p.annotations.__setitem__(i, ann))

@@ -1,21 +1,20 @@
 """SlipSurfaceIQ LE Modeler — main window (Slide2-style layout).
 
 menu bar
-workflow bar   Geometri › Destek › Yükleme › Özellikler › Yüzeyler
+workflow bar   Geometry › Support › Loading › Properties › Surfaces
 toolbars       main (file, edit, settings, compute, interpret, view, tools)
                + step toolbar (changes with the workflow step)
 centre         CAD area (rulers, grid, snapping, tools)
 status bar     hints, coordinates, command box, SNAP GRID ORTHO OSNAP
 
 Document Viewer + Display Options live in the Interpret window. The Modeler
-reaches display options from View → Görüntü Seçenekleri.
+reaches display options from View → Display Options.
 """
 
 from __future__ import annotations
 
 from slipsurface.ui.preferences import fit_to_screen
 
-from slipsurface.ui.i18n import tr
 
 import copy
 from pathlib import Path
@@ -64,8 +63,8 @@ from slipsurface.ui.updates import UpdateChecker, auto_enabled, set_auto_enabled
 from slipsurface.ui.worker import AnalysisWorker, start_worker
 from slipsurface.ui.workflow import WorkflowBar
 
-FILE_FILTER = "SlipSurfaceIQ LE projesi (*.slp.json *.json)"
-STEPS = [tr("Geometri"), tr("Destek"), tr("Yükleme"), tr("Özellikler"), tr("Yüzeyler")]
+FILE_FILTER = "SlipSurfaceIQ LE project (*.slp.json *.json)"
+STEPS = ["Geometry", "Support", "Loading", "Properties", "Surfaces"]
 
 
 class ModelerWindow(QMainWindow):
@@ -141,58 +140,60 @@ class ModelerWindow(QMainWindow):
 
     def _build_actions(self) -> None:
         A = self._act
-        self.a_new = A(tr("&Yeni"), self.new_project, "new", QKeySequence.New)
-        self.a_open = A(tr("&Aç…"), self.open_project, "open", QKeySequence.Open)
-        self.a_save = A(tr("&Kaydet"), self.save_project, "save", QKeySequence.Save)
-        self.a_save_as = A(tr("&Farklı Kaydet…"), self.save_project_as, None, QKeySequence.SaveAs)
-        self.a_export = A(tr("Çizimi Dışa Aktar…"), self.export_image, "export")
-        self.a_quit = A(tr("Çı&kış"), self.close, None, QKeySequence.Quit)
+        self.a_new = A("&New", self.new_project, "new", QKeySequence.New)
+        self.a_open = A("&Open…", self.open_project, "open", QKeySequence.Open)
+        self.a_save = A("&Save", self.save_project, "save", QKeySequence.Save)
+        self.a_save_as = A("Save &As…", self.save_project_as, None, QKeySequence.SaveAs)
+        self.a_export = A("Export Drawing…", self.export_image, "export")
+        self.a_quit = A("E&xit", self.close, None, QKeySequence.Quit)
 
-        self.a_undo = self.doc.undo_stack.createUndoAction(self, tr("Geri al"))
+        self.a_undo = self.doc.undo_stack.createUndoAction(self, "Undo")
         self.a_undo.setIcon(icon("undo"))
         self.a_undo.setShortcut(QKeySequence.Undo)
-        self.a_redo = self.doc.undo_stack.createRedoAction(self, tr("Yinele"))
+        self.a_redo = self.doc.undo_stack.createRedoAction(self, "Redo")
         self.a_redo.setIcon(icon("redo"))
         self.a_redo.setShortcut(QKeySequence.Redo)
-        self.a_delete = A(tr("Seçileni Sil"), self.delete_selection, "delete", "Del")
+        self.a_delete = A("Delete Selected", self.delete_selection, "delete", "Del")
 
-        self.a_zoom_all = A(tr("Tümünü Göster"), self.canvas.zoom_extents, "zoom_all", "F2")
-        self.a_zoom_in = A(tr("Yakınlaştır"), lambda: self.canvas.zoom(1.25), "zoom_in", "Ctrl++")
-        self.a_zoom_out = A(tr("Uzaklaştır"), lambda: self.canvas.zoom(0.8), "zoom_out", "Ctrl+-")
-        self.a_grid_settings = A(tr("Izgara ve Yakalama Ayarları…"), self.grid_settings, "grid")
-        self.a_display_opts = A(tr("Görüntü Seçenekleri…"), self.display_options)
+        self.a_zoom_all = A("Zoom Extents", self.canvas.zoom_extents, "zoom_all", "F2")
+        self.a_zoom_in = A("Zoom In", lambda: self.canvas.zoom(1.25), "zoom_in", "Ctrl++")
+        self.a_zoom_out = A("Zoom Out", lambda: self.canvas.zoom(0.8), "zoom_out", "Ctrl+-")
+        self.a_grid_settings = A("Grid and Snap Settings…", self.grid_settings, "grid")
+        self.a_display_opts = A("Display Options…", self.display_options)
 
-        self.a_settings = A(
-            tr("Proje Ayarları…"), self.project_settings, "settings", "Ctrl+Shift+J"
-        )
-        self.a_summary = A(tr("Proje Özeti…"), self.project_summary, "summary")
+        self.a_settings = A("Project Settings…", self.project_settings, "settings", "Ctrl+Shift+J")
+        self.a_summary = A("Project Summary…", self.project_summary, "summary")
         self.a_compute = A(
-            tr("Hesapla"),
+            "Compute",
             self.compute,
             "compute",
             "F5",
-            "Seçili yöntemlerle kritik yüzeyleri hesapla",
+            "Compute the critical surfaces with the selected methods",
         )
         self.a_interpret = A(
-            tr("Yorumla"), self.interpret, "interpret", "F6", "Sonuçları Yorumla penceresinde aç"
+            "Interpret",
+            self.interpret,
+            "interpret",
+            "F6",
+            "Open the results in the Interpret window",
         )
         self.a_report = A(
-            tr("PDF Rapor…"),
+            "PDF Report…",
             self.pdf_report,
             "report",
             "Ctrl+P",
-            "Son analizin profesyonel PDF raporunu oluştur",
+            "Create a professional PDF report of the last analysis",
         )
 
-        self.a_define_mat = A(tr("Malzeme Tanımla…"), self.define_materials, "materials")
-        self.a_surface_opts = A(tr("Yüzey Seçenekleri…"), self.surface_options, "surface_options")
-        self.a_clear_limits = A(tr("Kayma Sınırlarını Sıfırla"), self.clear_slope_limits)
+        self.a_define_mat = A("Define Materials…", self.define_materials, "materials")
+        self.a_surface_opts = A("Surface Options…", self.surface_options, "surface_options")
+        self.a_clear_limits = A("Reset Slip Limits", self.clear_slope_limits)
         self.a_coords = A(
-            tr("Koordinatları Düzenle…"),
+            "Edit Coordinates…",
             lambda: self.edit_coordinates(self.canvas.selection),
             "coords",
             None,
-            "Seçili sınırın köşe koordinatlarını tablo olarak düzenle",
+            "Edit the vertex coordinates of the selected boundary in a table",
         )
 
         # tool actions (exclusive)
@@ -206,87 +207,89 @@ class ModelerWindow(QMainWindow):
             return a
 
         c = self.canvas
-        self.t_select = tool(tr("Seç"), "select", lambda: T.SelectTool(c), "Esc")
-        self.t_zoom_win = tool(tr("Pencereyle Zoom"), "zoom_window", lambda: T.ZoomWindowTool(c))
-        self.t_pan = tool(tr("Kaydır"), "pan", lambda: T.PanTool(c))
-        self.t_measure = tool(tr("Ölç"), "measure", lambda: T.MeasureTool(c))
-        self.t_external = tool(tr("Dış Sınır Ekle"), "external", lambda: self._draw("external"))
+        self.t_select = tool("Select", "select", lambda: T.SelectTool(c), "Esc")
+        self.t_zoom_win = tool("Zoom Window", "zoom_window", lambda: T.ZoomWindowTool(c))
+        self.t_pan = tool("Pan", "pan", lambda: T.PanTool(c))
+        self.t_measure = tool("Measure", "measure", lambda: T.MeasureTool(c))
+        self.t_external = tool("Add External Boundary", "external", lambda: self._draw("external"))
         self.t_material = tool(
-            tr("Malzeme Sınırı Ekle"), "material_boundary", lambda: self._draw("material")
+            "Add Material Boundary", "material_boundary", lambda: self._draw("material")
         )
-        self.t_water = tool(tr("Su Tablosu Ekle"), "water", lambda: self._draw("water"))
+        self.t_water = tool("Add Water Table", "water", lambda: self._draw("water"))
         self.t_crack = tool(
-            tr("Gerilme Çatlağı Ekle"),
+            "Add Tension Crack",
             "tension_crack",
             lambda: self._draw("crack"),
             None,
-            "Gerilme çatlağı çizgisini çizin (kret bölgesinde, zemin altında)",
+            "Draw the tension crack line (in the crest zone, below the ground)",
         )
-        self.a_crack_depth = A(
-            tr("Derinlikten Gerilme Çatlağı…"), self.crack_from_depth, "tension_crack"
-        )
-        self.t_add_v = tool(tr("Köşe Ekle"), "add_vertex", lambda: T.AddVertexTool(c))
-        self.t_del_v = tool(tr("Köşe Sil"), "delete_vertex", lambda: T.DeleteVertexTool(c))
+        self.a_crack_depth = A("Tension Crack from Depth…", self.crack_from_depth, "tension_crack")
+        self.t_add_v = tool("Add Vertex", "add_vertex", lambda: T.AddVertexTool(c))
+        self.t_del_v = tool("Delete Vertex", "delete_vertex", lambda: T.DeleteVertexTool(c))
         self.t_assign = tool(
-            tr("Özellik Ata"),
+            "Assign Material",
             "assign",
             lambda: T.AssignTool(c),
             None,
-            "Seçili malzemeyi tıklanan bölgeye ata",
+            "Assign the selected material to the clicked region",
         )
         self.t_limits = tool(
-            tr("Kayma Sınırları"),
+            "Slip Limits",
             "slope_limits",
             lambda: T.SlopeLimitsTool(c),
             None,
-            "Sol ve sağ uç aralıklarını zemin üzerinde işaretleyin",
+            "Mark the left and right end ranges on the ground",
         )
-        self.t_user = tool(tr("Kullanıcı Yüzeyi Çiz"), "user_surface", lambda: self._draw("user"))
+        self.t_user = tool("Draw User Surface", "user_surface", lambda: self._draw("user"))
         self.t_dist = tool(
-            tr("Yayılı Yük Ekle"), "load_distributed", lambda: T.DrawTool(c, "load_distributed")
+            "Add Distributed Load", "load_distributed", lambda: T.DrawTool(c, "load_distributed")
         )
-        self.t_line = tool(tr("Tekil Yük Ekle"), "load_line", lambda: T.DrawTool(c, "load_line"))
-        self.t_support = tool(tr("Destek Ekle"), "support", self._support_tool)
-        self.a_seismic = A(tr("Sismik Yük…"), lambda: self.project_settings(3), "seismic")
+        self.t_line = tool("Add Line Load", "load_line", lambda: T.DrawTool(c, "load_line"))
+        self.t_support = tool("Add Support", "support", self._support_tool)
+        self.a_seismic = A("Seismic Load…", lambda: self.project_settings(3), "seismic")
         self.a_define_support = A(
-            tr("Destek Özelliklerini Tanımla…"), self.define_supports, "support_props"
+            "Define Support Properties…", self.define_supports, "support_props"
         )
         self.t_bolt = tool(
-            tr("Tekil Bulon/Ankraj"),
+            "Single Bolt/Anchor",
             "bolt",
             self._bolt_tool,
             None,
-            "Şev yüzüne tıklayın: seçili destek tipiyle, araç çubuğundaki eğimle "
-            "(varsayılan 15°) bulon/ankraj otomatik eklenir",
+            (
+                "Click on the slope face: a bolt/anchor of the selected support type is "
+                "added with the toolbar inclination (default 15°)"
+            ),
         )
         self.t_pattern = tool(
-            tr("Bulon Paterni"),
+            "Bolt Pattern",
             "bolt_pattern",
             self._pattern_tool,
             None,
-            "Şev yüzünde başlangıç ve bitiş noktalarını tıklayın; aralığı "
-            "seçin, bulonlar otomatik yerleşir (grup)",
+            (
+                "Click the start and end points on the slope face; choose the spacing and "
+                "the bolts are placed automatically (group)"
+            ),
         )
         self.a_define_facing = A(
-            tr("Kaplama Tiplerini Tanımla…"),
+            "Define Facing Types…",
             self.define_facings,
             "facing_props",
             None,
-            "Püskürtme beton + hasır çelik kaplama tiplerini tanımla",
+            "Define shotcrete + wire mesh facing types",
         )
         self.t_facing = tool(
-            tr("Kaplama Ata"),
+            "Assign Facing",
             "facing",
             self._facing_tool,
             None,
-            "Şev yüzünde kaplamanın başlangıç ve bitiş noktalarını tıklayın",
+            "Click the start and end points of the facing on the slope face",
         )
         self.a_facing_face = A(
-            tr("Kaplamayı Şev Yüzüne Ata"),
+            "Assign Facing to Slope",
             self.facing_whole_face,
             "facing",
             None,
-            "Seçili kaplamayı topuk–kret arasındaki tüm şev yüzüne ata",
+            "Assign the selected facing to the whole slope face between toe and crest",
         )
         self.t_annots = {}
         for kind, label, ic in ANNOT_TOOLS:
@@ -294,9 +297,9 @@ class ModelerWindow(QMainWindow):
         self.label_group = QActionGroup(self)
         self.a_labels = {}
         for val, txt in (
-            ("none", tr("Yok")),
-            ("name", tr("Malzeme adı")),
-            ("full", tr("Ad + parametreler")),
+            ("none", "None"),
+            ("name", "Material Name"),
+            ("full", "Name + Parameters"),
         ):
             a = QAction(txt, self, checkable=True)
             a.triggered.connect(lambda _=False, v=val: self._display_option("material_labels", v))
@@ -306,10 +309,12 @@ class ModelerWindow(QMainWindow):
 
     def _ensure_support_type(self) -> None:
         if not self.doc.project.support_types:
-            self.doc.edit("Destek tipi ekle", lambda p: p.support_types.append(SupportType()))
+            self.doc.edit("Add support type", lambda p: p.support_types.append(SupportType()))
             self.status.showMessage(
-                "Varsayılan destek tipi oluşturuldu (Destek → Destek "
-                "Özelliklerini Tanımla ile değiştirin).",
+                (
+                    "A default support type was created (change it with Support → Define "
+                    "Support Properties)."
+                ),
                 8000,
             )
 
@@ -327,10 +332,12 @@ class ModelerWindow(QMainWindow):
 
     def _ensure_facing_type(self) -> None:
         if not self.doc.project.facing_types:
-            self.doc.edit("Kaplama tipi ekle", lambda p: p.facing_types.append(FacingType()))
+            self.doc.edit("Add facing type", lambda p: p.facing_types.append(FacingType()))
             self.status.showMessage(
-                "Varsayılan kaplama tipi oluşturuldu: 10 cm püskürtme beton "
-                "+ Q188 (Özellikler → Kaplama Tiplerini Tanımla).",
+                (
+                    "A default facing type was created: 10 cm shotcrete + Q188 (Properties → "
+                    "Define Facing Types)."
+                ),
                 8000,
             )
 
@@ -342,9 +349,11 @@ class ModelerWindow(QMainWindow):
         if kind == "external" and self.doc.project.external:
             ans = QMessageBox.question(
                 self,
-                tr("Dış sınır"),
-                "Modelde zaten bir dış sınır var. Silinip yenisi çizilsin mi?\n"
-                "(Malzeme sınırları ve atamalar da silinir.)",
+                "External boundary",
+                (
+                    "The model already has an external boundary. Delete it and draw a new "
+                    "one?\n(Material boundaries and assignments are deleted too.)"
+                ),
             )
             if ans != QMessageBox.Yes:
                 return T.SelectTool(self.canvas)
@@ -352,53 +361,49 @@ class ModelerWindow(QMainWindow):
 
     def _build_menus(self) -> None:
         mb = self.menuBar()
-        m = mb.addMenu(tr("&Dosya"))
+        m = mb.addMenu("&File")
         for a in (self.a_new, self.a_open, self.a_save, self.a_save_as):
             m.addAction(a)
-        ex = m.addMenu(tr("Örnekler"))
+        ex = m.addMenu("Examples")
         for name, factory in EXAMPLES.items():
-            ex.addAction(tr(name), lambda f=factory: self._open_example(f))
+            ex.addAction(name, lambda f=factory: self._open_example(f))
         m.addSeparator()
-        m.addAction(tr("DXF İçe Aktar…"), self.import_dxf)
-        m.addAction(tr("DXF Dışa Aktar…"), self.export_dxf)
+        m.addAction("Import DXF…", self.import_dxf)
+        m.addAction("Export DXF…", self.export_dxf)
         m.addAction(self.a_export)
         m.addAction(self.a_report)
         m.addSeparator()
         m.addAction(self.a_quit)
 
-        m = mb.addMenu(tr("Dü&zen"))
+        m = mb.addMenu("&Edit")
         m.addAction(self.a_undo)
         m.addAction(self.a_redo)
         m.addSeparator()
         m.addAction(self.a_delete)
         m.addAction(self.a_coords)
 
-        m = mb.addMenu(tr("&Görünüm"))
+        m = mb.addMenu("&View")
         from slipsurface.ui.preferences import apply_theme, settings
 
-        dark = m.addAction("Koyu tema / Dark mode")
+        dark = m.addAction("Dark mode")
         dark.setCheckable(True)
         dark.setChecked(settings().value("dark", False, type=bool))
         dark.toggled.connect(apply_theme)
-        full = m.addAction("Tam ekran / Full screen")
+        full = m.addAction("Full screen")
         full.setShortcut("F11")
         full.triggered.connect(
             lambda: self.showMaximized() if self.isFullScreen() else self.showFullScreen()
         )
-        language = m.addMenu("Dil / Language")
-        for code, label in (("tr", "Türkçe"), ("en", "English")):
-            action = language.addAction(label)
-            action.triggered.connect(lambda checked=False, c=code: self.change_language(c))
         for a in (self.a_zoom_all, self.a_zoom_in, self.a_zoom_out, self.t_zoom_win, self.t_pan):
             m.addAction(a)
         m.addSeparator()
         m.addAction(self.a_grid_settings)
-        lm = m.addMenu(tr("Malzeme Etiketleri"))
+        lm = m.addMenu("Material Labels")
         for a in self.a_labels.values():
             lm.addAction(a)
         m.addAction(self.a_display_opts)
 
-        m = mb.addMenu(tr("&Analiz"))
+        m = mb.addMenu("&Analysis")
         m.addAction(self.a_settings)
         m.addAction(self.a_summary)
         m.addSeparator()
@@ -406,7 +411,7 @@ class ModelerWindow(QMainWindow):
         m.addAction(self.a_interpret)
         m.addAction(self.a_report)
 
-        m = mb.addMenu(tr("&Sınırlar"))
+        m = mb.addMenu("&Boundaries")
         for a in (self.t_external, self.t_material, self.t_water):
             m.addAction(a)
         m.addSeparator()
@@ -417,27 +422,27 @@ class ModelerWindow(QMainWindow):
             m.addAction(a)
         m.addAction(self.a_coords)
 
-        m = mb.addMenu(tr("Yü&kleme"))
+        m = mb.addMenu("&Loading")
         m.addAction(self.t_dist)
         m.addAction(self.t_line)
         m.addSeparator()
         m.addAction(self.a_seismic)
 
-        m = mb.addMenu(tr("Des&tek"))
+        m = mb.addMenu("&Support")
         m.addAction(self.a_define_support)
         m.addAction(self.t_support)
         m.addSeparator()
         m.addAction(self.t_bolt)
         m.addAction(self.t_pattern)
 
-        m = mb.addMenu(tr("&Yüzeyler"))
+        m = mb.addMenu("&Surfaces")
         m.addAction(self.a_surface_opts)
         m.addAction(self.t_limits)
         m.addAction(self.a_clear_limits)
         m.addSeparator()
         m.addAction(self.t_user)
 
-        m = mb.addMenu(tr("Ö&zellikler"))
+        m = mb.addMenu("&Properties")
         m.addAction(self.a_define_mat)
         m.addAction(self.t_assign)
         m.addSeparator()
@@ -445,32 +450,32 @@ class ModelerWindow(QMainWindow):
         m.addAction(self.t_facing)
         m.addAction(self.a_facing_face)
 
-        m = mb.addMenu(tr("&Araçlar"))
+        m = mb.addMenu("&Tools")
         m.addAction("Python scripting…", self.script_editor)
         m.addAction(self.t_measure)
-        am = m.addMenu(icon("annot_text"), tr("Not Ekle (Yazı / Şekil)"))
+        am = m.addMenu(icon("annot_text"), "Add Annotation (Text / Shape)")
         for a in self.t_annots.values():
             am.addAction(a)
 
-        m = mb.addMenu(tr("&Yardım"))
-        m.addAction(tr("Kısayollar"), self._shortcuts_help, "F1")
+        m = mb.addMenu("&Help")
+        m.addAction("Keyboard Shortcuts", self._shortcuts_help, "F1")
         m.addSeparator()
-        m.addAction(tr("Güncellemeleri Kontrol Et…"), self.check_updates)
-        self.a_auto_updates = m.addAction(tr("Başlangıçta Güncellemeleri Denetle"))
+        m.addAction("Check for Updates…", self.check_updates)
+        self.a_auto_updates = m.addAction("Check for Updates at Start-up")
         self.a_auto_updates.setCheckable(True)
         self.a_auto_updates.setChecked(auto_enabled())
         self.a_auto_updates.toggled.connect(set_auto_enabled)
         m.addSeparator()
-        m.addAction(tr("Hakkında"), self._about)
+        m.addAction("About", self._about)
 
     def _build_toolbars(self) -> None:
-        wf = QToolBar(tr("İş akışı"))
+        wf = QToolBar("Workflow")
         wf.setObjectName("workflow_toolbar")
         wf.setMovable(False)
         wf.addWidget(self.workflow)
         self.addToolBar(Qt.TopToolBarArea, wf)
         self.addToolBarBreak()
-        tb = QToolBar(tr("Ana araç çubuğu"))
+        tb = QToolBar("Main Toolbar")
         tb.setObjectName("main_toolbar")
         tb.setIconSize(QSize(24, 24))
         for a in (
@@ -502,7 +507,7 @@ class ModelerWindow(QMainWindow):
         ):
             tb.addSeparator() if a is None else tb.addAction(a)
         self.addToolBar(Qt.TopToolBarArea, tb)
-        notes = QToolBar(tr("Notlar"))
+        notes = QToolBar("Notes")
         notes.setObjectName("notes_toolbar")
         notes.setIconSize(QSize(24, 24))
         for a in self.t_annots.values():
@@ -512,7 +517,7 @@ class ModelerWindow(QMainWindow):
         self.addToolBarBreak()
 
         self.step_bars = []
-        geo = QToolBar(tr("Geometri"))
+        geo = QToolBar("Geometry")
         geo.setObjectName("geometry_toolbar")
         for a in (
             self.t_external,
@@ -526,25 +531,25 @@ class ModelerWindow(QMainWindow):
             self.a_delete,
         ):
             geo.addSeparator() if a is None else geo.addAction(a)
-        sup = QToolBar(tr("Destek"))
+        sup = QToolBar("Support")
         sup.setObjectName("support_toolbar")
         sup.addAction(self.a_define_support)
         sup.addSeparator()
-        sup.addWidget(QLabel(" Destek tipi: "))
+        sup.addWidget(QLabel(" Support type: "))
         self.support_combo = QComboBox()
         self.support_combo.setMinimumWidth(170)
         sup.addWidget(self.support_combo)
         sup.addAction(self.t_support)
         sup.addSeparator()
-        sup.addWidget(QLabel(" Eğim: "))
+        sup.addWidget(QLabel(" Inclination: "))
         self.bolt_angle = QDoubleSpinBox()
         self.bolt_angle.setRange(-89, 89)
         self.bolt_angle.setDecimals(1)
         self.bolt_angle.setValue(15.0)
         self.bolt_angle.setSuffix(" °")
-        self.bolt_angle.setToolTip("Yataydan aşağı doğru eğim (şevin içine)")
+        self.bolt_angle.setToolTip("Inclination below horizontal (into the slope)")
         sup.addWidget(self.bolt_angle)
-        sup.addWidget(QLabel(" Boy: "))
+        sup.addWidget(QLabel(" Length: "))
         self.bolt_length = QDoubleSpinBox()
         self.bolt_length.setRange(0.5, 200)
         self.bolt_length.setDecimals(2)
@@ -554,15 +559,15 @@ class ModelerWindow(QMainWindow):
         sup.addAction(self.t_bolt)
         sup.addAction(self.t_pattern)
         self.support_combo.currentTextChanged.connect(self._support_type_changed)
-        load = QToolBar(tr("Yükleme"))
+        load = QToolBar("Loading")
         load.setObjectName("loading_toolbar")
         for a in (self.t_dist, self.t_line, None, self.a_seismic):
             load.addSeparator() if a is None else load.addAction(a)
-        props = QToolBar(tr("Özellikler"))
+        props = QToolBar("Properties")
         props.setObjectName("properties_toolbar")
         props.addAction(self.a_define_mat)
         props.addSeparator()
-        props.addWidget(QLabel(" Atanacak malzeme: "))
+        props.addWidget(QLabel(" Material to assign: "))
         self.mat_combo = QComboBox()
         self.mat_combo.setMinimumWidth(170)
         self.mat_combo.currentTextChanged.connect(self._assign_material_changed)
@@ -570,13 +575,13 @@ class ModelerWindow(QMainWindow):
         props.addAction(self.t_assign)
         props.addSeparator()
         props.addAction(self.a_define_facing)
-        props.addWidget(QLabel(" Kaplama: "))
+        props.addWidget(QLabel(" Facing: "))
         self.facing_combo = QComboBox()
         self.facing_combo.setMinimumWidth(150)
         props.addWidget(self.facing_combo)
         props.addAction(self.t_facing)
         props.addAction(self.a_facing_face)
-        surf = QToolBar(tr("Yüzeyler"))
+        surf = QToolBar("Surfaces")
         surf.setObjectName("surfaces_toolbar")
         for a in (
             self.a_surface_opts,
@@ -598,7 +603,7 @@ class ModelerWindow(QMainWindow):
     def _step_changed(self, i: int) -> None:
         for k, bar in enumerate(self.step_bars):
             bar.setVisible(k == i)
-        if STEPS[i] == tr("Özellikler"):
+        if STEPS[i] == "Properties":
             self.canvas.set_tool(T.AssignTool(self.canvas))
             self.t_assign.setChecked(True)
 
@@ -658,13 +663,10 @@ class ModelerWindow(QMainWindow):
 
         if getattr(self, "_closing", False) or not shiboken6.isValid(self.doc.undo_stack):
             return  # application is shutting down
-        name = self.doc.path.name if self.doc.path else tr("Kaydedilmemiş")
+        name = self.doc.path.name if self.doc.path else "Unsaved"
         star = " *" if self.doc.dirty else ""
         self.setWindowTitle(
-            tr(
-                f"SlipSurfaceIQ LE {__version__} — [{name}{star}] — "
-                f"{self.doc.project.summary.title}"
-            )
+            f"SlipSurfaceIQ LE {__version__} — [{name}{star}] — {self.doc.project.summary.title}"
         )
 
     def _update_actions(self) -> None:
@@ -698,11 +700,11 @@ class ModelerWindow(QMainWindow):
         self.canvas.assign_material = name or None
 
     def _display_option(self, key, value) -> None:
-        self.doc.edit("Görüntü seçeneği", lambda p: p.display.__setitem__(key, value))
+        self.doc.edit("Display option", lambda p: p.display.__setitem__(key, value))
 
     def _display_reset(self) -> None:
         self.doc.edit(
-            "Görüntü seçenekleri: varsayılan",
+            "Display options: defaults",
             lambda p: (p.display.clear(), p.display.update(DEFAULT_DISPLAY)),
         )
 
@@ -713,7 +715,7 @@ class ModelerWindow(QMainWindow):
         from slipsurface.ui.docks import DisplayOptions
 
         dlg = QDialog(self)
-        dlg.setWindowTitle(tr("Görüntü Seçenekleri"))
+        dlg.setWindowTitle("Display Options")
         fit_to_screen(dlg, 340, 520)
         opts = DisplayOptions(dlg)
         opts.setObjectName("modeler_display_options")
@@ -728,7 +730,7 @@ class ModelerWindow(QMainWindow):
         lay = QVBoxLayout(dlg)
         lay.addWidget(opts, 1)
         box = QDialogButtonBox(QDialogButtonBox.Close)
-        box.button(QDialogButtonBox.Close).setText(tr("Kapat"))
+        box.button(QDialogButtonBox.Close).setText("Close")
         box.rejected.connect(dlg.close)
         lay.addWidget(box)
         return dlg
@@ -744,11 +746,13 @@ class ModelerWindow(QMainWindow):
         if kind == "bolt":
             name = self.support_combo.currentText()
             sp = {"a": pts[0], "b": pts[1], "type": name}
-            if self.canvas.request_edit("Bulon/ankraj ekle", lambda p: p.supports.append(sp)):
+            if self.canvas.request_edit("Add bolt/anchor", lambda p: p.supports.append(sp)):
                 self.status.showMessage(
-                    f"{name} eklendi: baş ({pts[0][0]:.2f}, {pts[0][1]:.2f}), eğim "
-                    f"{self.bolt_angle.value():g}°, boy {self.bolt_length.value():g} m. "
-                    "Devam etmek için tıklayın, Esc = bitir.",
+                    (
+                        f"{name} added: head ({pts[0][0]:.2f}, {pts[0][1]:.2f}), inclination "
+                        f"{self.bolt_angle.value():g}°, length {self.bolt_length.value():g} m. "
+                        "Click to continue, Esc = finish."
+                    ),
                     8000,
                 )
             return  # tool stays active
@@ -763,7 +767,7 @@ class ModelerWindow(QMainWindow):
         if kind.startswith("annot_"):
             ann = new_annotation(kind, pts, self)
             if ann is not None:
-                self.canvas.request_edit("Not ekle", lambda p: p.annotations.append(ann))
+                self.canvas.request_edit("Add note", lambda p: p.annotations.append(ann))
             self.canvas.select_tool()
             self.t_select.setChecked(True)
             return
@@ -775,9 +779,9 @@ class ModelerWindow(QMainWindow):
                 p.assignments = []
             add_entity(p, kind, pts)
 
-        ok = self.canvas.request_edit(f"{LABELS[kind]} ekle", fn)
+        ok = self.canvas.request_edit(f"Add {LABELS[kind]}", fn)
         if ok:
-            self.status.showMessage(f"{LABELS[kind]} eklendi ({len(pts)} nokta).", 5000)
+            self.status.showMessage(f"{LABELS[kind]} added ({len(pts)} points).", 5000)
             if kind == "external":
                 self.canvas.zoom_extents()
         self.canvas.select_tool()
@@ -792,8 +796,8 @@ class ModelerWindow(QMainWindow):
         if kind == "support":
             name = self.support_combo.currentText()
             sp = {"a": pts[0], "b": pts[1], "type": name}
-            self.canvas.request_edit("Destek ekle", lambda p: p.supports.append(sp))
-            self.status.showMessage(f"Destek eklendi ({name}).", 5000)
+            self.canvas.request_edit("Add support", lambda p: p.supports.append(sp))
+            self.status.showMessage(f"Support added ({name}).", 5000)
             self.canvas.set_tool(T.DrawTool(self.canvas, "support"))  # keep adding
             return
         if kind == "load_distributed":
@@ -809,7 +813,7 @@ class ModelerWindow(QMainWindow):
             dlg = LineLoadDialog(ld, self)
         if dlg.exec():
             dlg.apply_to(ld, gy)
-            self.canvas.request_edit("Yük ekle", lambda p: p.loads.append(ld))
+            self.canvas.request_edit("Add load", lambda p: p.loads.append(ld))
         self.canvas.select_tool()
         self.t_select.setChecked(True)
 
@@ -841,10 +845,10 @@ class ModelerWindow(QMainWindow):
         if dlg.exec():
             dlg.apply_to(pt, gy)
             if self.canvas.request_edit(
-                "Bulon paterni ekle", lambda p: p.support_patterns.append(pt)
+                "Add bolt pattern", lambda p: p.support_patterns.append(pt)
             ):
                 n = self._pattern_count_fn()(pt["p1"][0], pt["p2"][0], pt["spacing"], pt["offset"])
-                self.status.showMessage(f"Bulon paterni eklendi: {n} adet {pt['type']}.", 8000)
+                self.status.showMessage(f"Bolt pattern added: {n} × {pt['type']}.", 8000)
 
     def _add_facing(self, x1: float, x2: float) -> bool:
         gy = self._ground()
@@ -859,9 +863,11 @@ class ModelerWindow(QMainWindow):
             "type": self.facing_combo.currentText(),
             "points": [[x1, float(gy(x1))], [x2, float(gy(x2))]],
         }
-        ok = self.canvas.request_edit("Kaplama ata", lambda p: p.facings.append(f))
+        ok = self.canvas.request_edit("Assign facing", lambda p: p.facings.append(f))
         if ok:
-            self.status.showMessage(f"Kaplama '{f['type']}' atandı: x = {x1:.2f} … {x2:.2f}.", 8000)
+            self.status.showMessage(
+                f"Facing '{f['type']}' assigned: x = {x1:.2f} … {x2:.2f}.", 8000
+            )
         return ok
 
     def slope_face_range(self, min_angle: float = 20.0):
@@ -883,10 +889,11 @@ class ModelerWindow(QMainWindow):
         if rng is None:
             QMessageBox.information(
                 self,
-                "Kaplama",
-                "Şev yüzü bulunamadı (20°'den dik zemin "
-                "segmenti yok). Kaplama Ata aracını "
-                "kullanın.",
+                "Facing",
+                (
+                    "No slope face found (no ground segment steeper than 20°). Use the Assign "
+                    "Facing tool."
+                ),
             )
             return
         self._ensure_facing_type()
@@ -906,16 +913,14 @@ class ModelerWindow(QMainWindow):
                     if f["type"] not in names:
                         f["type"] = types[0].name
 
-            self.doc.edit("Kaplama tipleri", fn)
+            self.doc.edit("Facing types", fn)
 
     def crack_from_depth(self) -> None:
         import math
 
         p, g = self.doc.project, self.doc.geometry
         if g is None:
-            QMessageBox.warning(
-                self, tr("Gerilme çatlağı"), tr("Önce geçerli bir dış sınır çizin.")
-            )
+            QMessageBox.warning(self, "Tension crack", "Draw a valid external boundary first.")
             return
         surf = g.surface
         # default range: crest (highest ground) towards the uphill model edge
@@ -932,7 +937,7 @@ class ModelerWindow(QMainWindow):
         if m.model == "MC" and m.c > 0:
             ka = math.tan(math.radians(45 - m.phi / 2)) ** 2
             zc = 2 * m.c / (m.gamma * math.sqrt(ka))
-            note = f"Öneri (Rankine, {m.name}): z_c = 2c / (γ·√Ka) = {zc:.2f} m"
+            note = f"Suggestion (Rankine, {m.name}): z_c = 2c / (γ·√Ka) = {zc:.2f} m"
         dlg = CrackFromDepthDialog(x1, x2, round(zc, 2), p.groundwater.crack_water, note, self)
         if dlg.exec():
             pts = dlg.points(surf)
@@ -942,7 +947,7 @@ class ModelerWindow(QMainWindow):
                 q.tension_crack = pts
                 q.groundwater.crack_water = w
 
-            self.doc.edit(tr("Gerilme çatlağı"), fn)
+            self.doc.edit("Tension crack", fn)
 
     def define_supports(self, select: str | None = None) -> None:
         dlg = SupportTypesDialog(self.doc.project.support_types, self, select)
@@ -957,7 +962,7 @@ class ModelerWindow(QMainWindow):
                     if sp["type"] not in names:
                         sp["type"] = types[0].name
 
-            self.doc.edit("Destek özellikleri", fn)
+            self.doc.edit("Support properties", fn)
 
     def edit_coordinates(self, key) -> None:
         if key is None:
@@ -970,14 +975,14 @@ class ModelerWindow(QMainWindow):
             )
             if dlg.exec():
                 dlg.apply_to(ld, self._ground())
-                self.doc.edit("Yük düzenle", lambda p: p.loads.__setitem__(key[1], ld))
+                self.doc.edit("Edit load", lambda p: p.loads.__setitem__(key[1], ld))
             return
         if key[0] == "support":
             sp = __import__("copy").deepcopy(self.doc.project.supports[key[1]])
             dlg = SupportEditDialog(sp, [t.name for t in self.doc.project.support_types], self)
             if dlg.exec():
                 dlg.apply_to(sp)
-                self.doc.edit("Destek düzenle", lambda p: p.supports.__setitem__(key[1], sp))
+                self.doc.edit("Edit support", lambda p: p.supports.__setitem__(key[1], sp))
             return
         if key[0] == "pattern":
             pt = copy.deepcopy(self.doc.project.support_patterns[key[1]])
@@ -987,7 +992,7 @@ class ModelerWindow(QMainWindow):
             if dlg.exec():
                 dlg.apply_to(pt, self._ground())
                 self.doc.edit(
-                    "Bulon paterni düzenle", lambda p: p.support_patterns.__setitem__(key[1], pt)
+                    "Edit bolt pattern", lambda p: p.support_patterns.__setitem__(key[1], pt)
                 )
             return
         if key[0] == "facing":
@@ -995,7 +1000,7 @@ class ModelerWindow(QMainWindow):
             dlg = FacingEditDialog(f, [t.name for t in self.doc.project.facing_types], self)
             if dlg.exec():
                 dlg.apply_to(f, self._ground())
-                self.doc.edit("Kaplama düzenle", lambda p: p.facings.__setitem__(key[1], f))
+                self.doc.edit("Edit facing", lambda p: p.facings.__setitem__(key[1], f))
             return
         if key[0] == "annot":
             edit_annotation(self.doc, key[1], self)
@@ -1006,9 +1011,9 @@ class ModelerWindow(QMainWindow):
         if dlg.exec():
             new = dlg.points()
             try:
-                self.doc.edit(f"{title}: koordinatlar", lambda p: set_points(p, key, new))
+                self.doc.edit(f"{title}: coordinates", lambda p: set_points(p, key, new))
             except ValueError as exc:
-                QMessageBox.warning(self, tr("Koordinatlar"), str(exc))
+                QMessageBox.warning(self, "Coordinates", str(exc))
 
     def delete_selection(self) -> None:
         from PySide6.QtCore import QEvent
@@ -1022,7 +1027,7 @@ class ModelerWindow(QMainWindow):
             p.surfaces.left_range = None
             p.surfaces.right_range = None
 
-        self.doc.edit("Kayma sınırlarını sıfırla", fn)
+        self.doc.edit("Reset slope limits", fn)
 
     # ============================================================ dialogs
     def project_settings(self, page: int = 0) -> None:
@@ -1034,13 +1039,13 @@ class ModelerWindow(QMainWindow):
                 p.general, p.methods, p.groundwater = new.general, new.methods, new.groundwater
                 p.seismic, p.advanced = new.seismic, new.advanced
 
-            self.doc.edit("Proje ayarları", fn)
+            self.doc.edit("Project settings", fn)
 
     def project_summary(self) -> None:
         dlg = ProjectSummaryDialog(self.doc.project.summary, self)
         if dlg.exec():
             s = dlg.summary()
-            self.doc.edit("Proje özeti", lambda p: setattr(p, "summary", s))
+            self.doc.edit("Project summary", lambda p: setattr(p, "summary", s))
 
     def define_materials(self, select: str | None = None) -> None:
         dlg = MaterialsDialog(self.doc.project.materials, self, select)
@@ -1055,12 +1060,12 @@ class ModelerWindow(QMainWindow):
                     a["material"] = renames.get(a["material"], a["material"])
                 p.assignments = [a for a in p.assignments if a["material"] in names]
 
-            self.doc.edit("Malzeme özellikleri", fn)
+            self.doc.edit("Material properties", fn)
 
     def surface_options(self) -> None:
         dlg = SurfaceOptionsDialog(self.doc.project, self)
         if dlg.exec():
-            self.doc.edit("Yüzey seçenekleri", dlg.apply_to)
+            self.doc.edit("Surface options", dlg.apply_to)
 
     def grid_settings(self) -> None:
         dlg = GridSettingsDialog(self.canvas.grid_spacing, self)
@@ -1074,8 +1079,8 @@ class ModelerWindow(QMainWindow):
             return True
         ans = QMessageBox.question(
             self,
-            tr("Kaydedilmemiş değişiklikler"),
-            tr("Model değişti. Kaydetmeden devam edilsin mi?"),
+            "Unsaved Changes",
+            "The model has changed. Continue without saving?",
             QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
         )
         if ans == QMessageBox.Save:
@@ -1093,7 +1098,9 @@ class ModelerWindow(QMainWindow):
     def new_project(self) -> None:
         if self._confirm_discard():
             self.load_project(empty_project())
-            self.status.showMessage(tr("Yeni proje: Sınırlar → Dış Sınır Ekle ile başlayın."), 8000)
+            self.status.showMessage(
+                "New project: start with Boundaries → Add External Boundary.", 8000
+            )
 
     def _open_example(self, factory) -> None:
         if self._confirm_discard():
@@ -1103,16 +1110,16 @@ class ModelerWindow(QMainWindow):
         if not self._confirm_discard():
             return
         if not path:
-            path, _ = QFileDialog.getOpenFileName(self, tr("Proje aç"), "", FILE_FILTER)
+            path, _ = QFileDialog.getOpenFileName(self, "Open Project", "", FILE_FILTER)
             if not path:
                 return
         try:
             p = Project.load(path)
         except Exception as exc:
-            QMessageBox.critical(self, tr("Açılamadı"), f"{path}\n\n{exc}")
+            QMessageBox.critical(self, "Could Not Open", f"{path}\n\n{exc}")
             return
         self.load_project(p, Path(path))
-        self.status.showMessage(f"Açıldı: {path}", 5000)
+        self.status.showMessage(f"Opened: {path}", 5000)
 
     def save_project(self) -> bool:
         if self.doc.path is None:
@@ -1120,9 +1127,7 @@ class ModelerWindow(QMainWindow):
         return self._write(self.doc.path)
 
     def save_project_as(self) -> bool:
-        path, _ = QFileDialog.getSaveFileName(
-            self, tr("Farklı kaydet"), "model.slp.json", FILE_FILTER
-        )
+        path, _ = QFileDialog.getSaveFileName(self, "Save As", "model.slp.json", FILE_FILTER)
         if not path:
             return False
         if not path.lower().endswith(".json"):
@@ -1133,12 +1138,12 @@ class ModelerWindow(QMainWindow):
         try:
             self.doc.project.save(path)
         except OSError as exc:
-            QMessageBox.critical(self, "Kaydedilemedi", str(exc))
+            QMessageBox.critical(self, "Could not save", str(exc))
             return False
         self.doc.path = Path(path)
         self.doc.mark_clean()
         self._update_title()
-        self.status.showMessage(f"Kaydedildi: {path}", 5000)
+        self.status.showMessage(f"Saved: {path}", 5000)
         return True
 
     def export_image(self) -> None:
@@ -1156,13 +1161,11 @@ class ModelerWindow(QMainWindow):
             return
         p = self.doc.project
         if self.doc.geometry is None:
-            QMessageBox.warning(
-                self, tr("Hesapla"), self.doc.geometry_error or tr("Model geçersiz.")
-            )
+            QMessageBox.warning(self, "Compute", self.doc.geometry_error or "Invalid Model.")
             return
         if not p.methods.methods:
             QMessageBox.warning(
-                self, tr("Hesapla"), "Proje Ayarları → Yöntemler: en az bir yöntem seçin."
+                self, "Compute", "Project Settings → Methods: select at least one method."
             )
             return
         n = len(p.methods.methods)
@@ -1201,7 +1204,7 @@ class ModelerWindow(QMainWindow):
         self._cancel_requested = True
         if self._worker is not None:
             self._worker.request_stop()
-            self.status.showMessage(tr("Hesaplama iptal ediliyor…"), 0)
+            self.status.showMessage("Cancelling computation…", 0)
 
     def _end_compute(self) -> None:
         if getattr(self, "progress", None) is not None:
@@ -1222,7 +1225,7 @@ class ModelerWindow(QMainWindow):
         if self._close_pending or self._cancel_requested:
             return
         if results.project.analysis_inputs() != self.doc.project.analysis_inputs():
-            self.status.showMessage(tr("Model değişti; yeniden hesaplayın (F5)."), 8000)
+            self.status.showMessage("The model changed; compute again (F5).", 8000)
             return
         self._invalidate_results()
         # Summary edits may have been made while the worker was solving.
@@ -1232,14 +1235,16 @@ class ModelerWindow(QMainWindow):
         gm = results.global_minimum()
         if gm:
             self.status.showMessage(
-                f"Hesaplama tamamlandı ({results.elapsed:.1f} s). Global "
-                f"minimum: {method_name(gm[0])} FS = {gm[1].fos:.3f}",
+                (
+                    f"Computation finished ({results.elapsed:.1f} s). Global minimum: "
+                    f"{method_name(gm[0])} FS = {gm[1].fos:.3f}"
+                ),
                 15000,
             )
         if results.errors and not results.results:
             QMessageBox.warning(
                 self,
-                tr("Hesapla"),
+                "Compute",
                 "\n".join(f"{method_name(k)}: {v}" for k, v in results.errors.items()),
             )
             return
@@ -1249,11 +1254,11 @@ class ModelerWindow(QMainWindow):
         self._end_compute()
         if self._close_pending:
             return
-        QMessageBox.critical(self, tr("Hesaplama hatası"), msg)
+        QMessageBox.critical(self, "Computation Error", msg)
 
     def _on_cancelled(self) -> None:
         self._end_compute()
-        self.status.showMessage("Hesaplama iptal edildi.", 6000)
+        self.status.showMessage("Computation cancelled.", 6000)
 
     def _invalidate_results(self) -> None:
         self.last_results = None
@@ -1261,11 +1266,11 @@ class ModelerWindow(QMainWindow):
         for window in list(self.interpret_windows):
             window.close()
         self._prune_interpret_windows()
-        self.status.showMessage(tr("Model değişti; yeniden hesaplayın (F5)."), 8000)
+        self.status.showMessage("The model changed; compute again (F5).", 8000)
 
     def interpret(self) -> None:
         if self.last_results is None or not self.last_results.results:
-            self.status.showMessage(tr("Önce Hesapla (F5)."), 5000)
+            self.status.showMessage("Run Compute (F5) first.", 5000)
             return
         self._prune_interpret_windows()
         for window in self.interpret_windows:
@@ -1306,7 +1311,7 @@ class ModelerWindow(QMainWindow):
         if getattr(self, "_closing", False) or not shiboken6.isValid(self):
             return
         notes = copy.deepcopy(notes)
-        self.doc.edit(tr("Sonuç notları"), lambda p: setattr(p, "result_annotations", notes))
+        self.doc.edit("Result notes", lambda p: setattr(p, "result_annotations", notes))
 
     def _prune_interpret_windows(self) -> None:
         """Keep only Interpret windows whose C++ object still exists."""
@@ -1320,25 +1325,20 @@ class ModelerWindow(QMainWindow):
     def _shortcuts_help(self) -> None:
         QMessageBox.information(
             self,
-            tr("Kısayollar"),
+            "Keyboard Shortcuts",
             (
-                "Fare: tekerlek = zoom, orta tuş sürükle = kaydır, orta çift tık = tümünü göster\n"
-                "F2 tümünü göster   F5 hesapla   F6 yorumla\n"
-                "F3 OSNAP   F7 GRID   F8 ORTHO   F9 SNAP\n"
-                "Çizim: tıkla / koordinat yaz (x,y  @dx,dy  @L<açı), Enter bitir, C kapat,\n"
-                "Backspace son noktayı geri al, Esc iptal\n"
-                "Seç: köşeyi sürükle, çift tık = koordinat tablosu, Delete = sil, sağ tık = menü\n"
-                "Ctrl+Z / Ctrl+Y geri al / yinele\n"
-                "Yük ve destekler: çift tık = özellikler, sürükle = taşı, Delete = sil\n"
-                "Tekil bulon: Destek adımında eğim/boy girip şev yüzüne tıklayın\n"
-                "Notlar (yazı/şekil): sürükle = taşı, çift tık = özellikler, Delete = sil"
+                "Mouse: wheel = zoom, middle drag = pan, middle double-click = zoom "
+                "all\nF2 zoom all   F5 compute   F6 interpret\nF3 OSNAP   F7 GRID   F8 "
+                "ORTHO   F9 SNAP\nDrawing: click / type coordinates (x,y  @dx,dy  "
+                "@L<angle), Enter finish, C close,\nBackspace undo last point, Esc "
+                "cancel\nSelect: drag a vertex, double-click = coordinate table, Delete = "
+                "delete, right-click = menu\nCtrl+Z / Ctrl+Y undo / redo\nLoads and "
+                "supports: double-click = properties, drag = move, Delete = delete\nSingle "
+                "bolt: enter inclination/length in the Support step and click the slope "
+                "face\nNotes (text/shapes): drag = move, double-click = properties, Delete "
+                "= delete"
             ),
         )
-
-    def change_language(self, language):
-        from slipsurface.ui.i18n import set_language
-
-        set_language(language)
 
     def script_editor(self):
         from slipsurface.ui.dialogs.script import ScriptDialog
@@ -1373,13 +1373,11 @@ class ModelerWindow(QMainWindow):
     def _about(self) -> None:
         from slipsurface.ui.preferences import TECHNOLOGIES
 
-        box = QMessageBox(
-            QMessageBox.NoIcon, "Hakkında / About", TECHNOLOGIES, QMessageBox.NoButton, self
-        )
+        box = QMessageBox(QMessageBox.NoIcon, "About", TECHNOLOGIES, QMessageBox.NoButton, self)
         box.setTextFormat(Qt.RichText)
         box.setTextInteractionFlags(Qt.TextBrowserInteraction)
         box.setIconPixmap(self.windowIcon().pixmap(64, 64))
-        check = box.addButton(tr("Güncellemeleri Kontrol Et…"), QMessageBox.ActionRole)
+        check = box.addButton("Check for Updates…", QMessageBox.ActionRole)
         box.addButton(QMessageBox.Close)
         box.exec()
         if box.clickedButton() is check:
@@ -1400,7 +1398,7 @@ class ModelerWindow(QMainWindow):
         if self.busy:
             self._close_pending = True
             self._cancel_compute()
-            self.status.showMessage(tr("Hesaplama durduruluyor; ardından pencere kapanacak…"), 0)
+            self.status.showMessage("Stopping computation; the window will close afterwards…", 0)
             self.setEnabled(False)
             ev.ignore()
             return

@@ -17,7 +17,7 @@ FORCE_EQ = ["spencer", "gle", "janbu_simplified", "corps1", "corps2", "lowe_kara
 
 def acads():
     g = simple_slope(10, 2, toe_x=20, left_bench=20, right_bench=20, depth_below_toe=5)
-    return g, {"Zemin 1": MohrCoulomb("Zemin 1", gamma=20, c=3, phi=19.6)}
+    return g, {"Soil 1": MohrCoulomb("Soil 1", gamma=20, c=3, phi=19.6)}
 
 
 def crack(z=4.0, water=0.0):
@@ -118,6 +118,7 @@ def test_bishop_gle_moment_consistency_with_crack_water():
     assert abs(r2) < 1e-8
 
 
+@pytest.mark.slow
 def test_project_crack_roundtrip_and_analysis():
     from slipsurface.analysis import report_text, run_analysis
     from slipsurface.project import Project, acads_1a_project
@@ -134,4 +135,4 @@ def test_project_crack_roundtrip_and_analysis():
     base.methods.methods = ["bishop"]
     base.surfaces.effort = "fast"
     assert r.results["bishop"].fos <= run_analysis(base).results["bishop"].fos + 0.02
-    assert "Gerilme çatlağı" in report_text(r)
+    assert "Tension crack" in report_text(r)

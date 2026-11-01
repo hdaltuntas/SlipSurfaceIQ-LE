@@ -74,7 +74,7 @@ def test_tensile_roots_are_inadmissible_but_reference_paths_pass():
     s = make_slices(g, surf_bad, m, opts=acads_3a_project().slice_options())
     r = spencer(s, tol=1e-10)
     assert r.ok and not r.admissible, (r.fos, r.admissible, r.issue)
-    assert "çekme" in r.issue
+    assert "tension" in r.issue
 
     # the prescribed 3(b) path remains admissible for both solvers
     p3b = acads_3b_project()

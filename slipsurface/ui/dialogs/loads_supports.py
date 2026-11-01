@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from slipsurface.ui.preferences import fit_to_screen
 
-from slipsurface.ui.i18n import tr
 
 import copy
 
@@ -47,8 +46,8 @@ def _spin(lo, hi, dec, val, suffix=""):
 
 def _buttons(dlg, ok=None):
     b = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-    b.button(QDialogButtonBox.Ok).setText(tr("Tamam"))
-    b.button(QDialogButtonBox.Cancel).setText(tr("İptal"))
+    b.button(QDialogButtonBox.Ok).setText("OK")
+    b.button(QDialogButtonBox.Cancel).setText("Cancel")
     b.accepted.connect(ok or dlg.accept)
     b.rejected.connect(dlg.reject)
     return b
@@ -58,15 +57,15 @@ def _buttons(dlg, ok=None):
 class DistributedLoadDialog(QDialog):
     def __init__(self, load: dict, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle(tr("Yayılı Yük"))
+        self.setWindowTitle("Distributed Load")
         (x1, _), (x2, _) = load["points"]
         q1, q2 = load["q"]
         self.x1 = _spin(-1e6, 1e6, 3, x1, " m")
         self.x2 = _spin(-1e6, 1e6, 3, x2, " m")
         self.q1 = _spin(-1e6, 1e6, 3, q1, " kPa")
         self.q2 = _spin(-1e6, 1e6, 3, q2, " kPa")
-        self.r_uniform = QRadioButton(tr("Üniform (q1 = q2)"))
-        self.r_tri = QRadioButton(tr("Doğrusal değişen (üçgen / trapez)"))
+        self.r_uniform = QRadioButton("Uniform (q1 = q2)")
+        self.r_tri = QRadioButton("Linearly Varying (Triangle / Trapezoid)")
         grp = QButtonGroup(self)
         grp.addButton(self.r_uniform)
         grp.addButton(self.r_tri)
@@ -74,19 +73,20 @@ class DistributedLoadDialog(QDialog):
         self.r_uniform.toggled.connect(self._shape)
         self.q1.valueChanged.connect(self._shape)
         self.orient = QComboBox()
-        self.orient.addItem(tr("Düşey (q, yatay metre başına)"), "vertical")
-        self.orient.addItem(tr("Yüzeye dik (q, sınır uzunluğu başına)"), "normal")
+        self.orient.addItem("Vertical (q per Horizontal Metre)", "vertical")
+        self.orient.addItem("Normal to Surface (q per Boundary Length)", "normal")
         self.orient.setCurrentIndex(0 if load.get("orientation", "vertical") == "vertical" else 1)
         f = QFormLayout()
-        f.addRow(tr("Başlangıç x₁:"), self.x1)
-        f.addRow(tr("Bitiş x₂:"), self.x2)
+        f.addRow("Start x₁:", self.x1)
+        f.addRow("End x₂:", self.x2)
         f.addRow(self.r_uniform)
         f.addRow(self.r_tri)
-        f.addRow("Büyüklük q₁:", self.q1)
-        f.addRow("Büyüklük q₂:", self.q2)
-        f.addRow(tr("Yön:"), self.orient)
+        f.addRow("Magnitude q₁:", self.q1)
+        f.addRow("Magnitude q₂:", self.q2)
+        f.addRow("Direction:", self.orient)
         note = QLabel(
-            "Pozitif q zemine doğru (basınç) etkir. Yük, x₁–x₂ arasında zemin yüzeyine uygulanır."
+            "Positive q acts towards the ground (pressure). The load is applied to "
+            "the ground surface between x₁ and x₂."
         )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
@@ -114,18 +114,19 @@ class DistributedLoadDialog(QDialog):
 class LineLoadDialog(QDialog):
     def __init__(self, load: dict, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle(tr("Tekil (Çizgisel) Yük"))
+        self.setWindowTitle("Point (Line) Load")
         x, y = load["point"]
         self.x = _spin(-1e6, 1e6, 3, x, " m")
         self.mag = _spin(-1e6, 1e6, 3, load.get("magnitude", 50.0), " kN/m")
         self.angle = _spin(-360, 360, 2, load.get("angle", 270.0), " °")
         f = QFormLayout()
-        f.addRow("Konum x:", self.x)
-        f.addRow(tr("Büyüklük P:"), self.mag)
-        f.addRow(tr("Kuvvet açısı:"), self.angle)
+        f.addRow("Position x:", self.x)
+        f.addRow("Magnitude P:", self.mag)
+        f.addRow("Force Angle:", self.angle)
         note = QLabel(
-            "Açı +x ekseninden saat yönünün tersine ölçülür: 270° = düşey aşağı, "
-            "180° = sola (sağdan sola göçmede itici). Nokta zemin yüzeyine oturtulur."
+            "The angle is measured counter-clockwise from +x: 270° = vertically down, "
+            "180° = to the left (driving for right-to-left failure). The point is "
+            "placed on the ground surface."
         )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
@@ -144,13 +145,15 @@ class LineLoadDialog(QDialog):
 
 # ============================================================== supports
 FORMULAS = {
-    "end_anchored": "T = çekme kapasitesi  (kayma yüzeyini kestiği sürece sabit)",
-    "grouted_tieback": "T = min(çekme, kök dayanımı × min(kök boyu, L_dış))",
-    "soil_nail": "T = min(çekme, kök dayanımı × L_dış, plaka + kök dayanımı × L_iç)",
-    "geotextile": "T = min(çekme dayanımı, sıyrılma dayanımı × min(L_iç, L_dış))",
-    "geosynthetic": "T = min(C·çekme, P_iç, P_dış);  P = 2·C·∫(adezyon + σv·tan δ) ds,  "
-    "σv = γ·derinlik (ankrajlı uçta sıyrılma yok)",
-    "micro_pile": "T = kazık kesme dayanımı / aralık  (kayma yüzeyini kestiği noktada)",
+    "end_anchored": "T = tensile capacity  (constant while it crosses the slip surface)",
+    "grouted_tieback": "T = min(tensile, bond strength × min(bond length, L_out))",
+    "soil_nail": "T = min(tensile, bond strength × L_out, plate + bond strength × L_in)",
+    "geotextile": "T = min(tensile strength, pullout strength × min(L_in, L_out))",
+    "geosynthetic": (
+        "T = min(C·tensile, P_in, P_out);  P = 2·C·∫(adhesion + σv·tan δ) ds,  σv "
+        "= γ·depth (no pullout at an anchored end)"
+    ),
+    "micro_pile": "T = pile shear strength / spacing  (where it crosses the slip surface)",
 }
 FIELDS = {  # which inputs apply to which kind
     "spacing": {"end_anchored", "grouted_tieback", "soil_nail", "micro_pile"},
@@ -173,7 +176,7 @@ class SupportTypesDialog(QDialog):
 
     def __init__(self, types: list[SupportType], parent=None, select: str | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle(tr("Destek Özelliklerini Tanımla"))
+        self.setWindowTitle("Define Support Properties")
         fit_to_screen(self, 820, 560)
         self.types = [copy.deepcopy(t) for t in types]
         if not self.types:
@@ -187,9 +190,9 @@ class SupportTypesDialog(QDialog):
         self.list.currentRowChanged.connect(self._select)
         bar = QHBoxLayout()
         for txt, tip, slot in (
-            ("+", "Destek tipi ekle", self._add),
-            ("✕", tr("Sil"), self._delete),
-            ("⧉", tr("Kopyala"), self._copy),
+            ("+", "Add support type", self._add),
+            ("✕", "Delete", self._delete),
+            ("⧉", "Copy", self._copy),
         ):
             b = QToolButton()
             b.setText(txt)
@@ -210,7 +213,7 @@ class SupportTypesDialog(QDialog):
         self.color.clicked.connect(self._pick_color)
         self.kind = QComboBox()
         for k, v in SUPPORT_KINDS.items():
-            self.kind.addItem(tr(v), k)
+            self.kind.addItem(v, k)
         self.kind.currentIndexChanged.connect(self._kind_changed)
         self.formula = QLabel()
         self.formula.setStyleSheet("font-style:italic;color:#333;")
@@ -231,42 +234,42 @@ class SupportTypesDialog(QDialog):
             "length": _spin(0.1, 200, 2, 12, " m"),
         }
         self.labels = {
-            "spacing": tr("Düzlem dışı aralık:"),
-            "tensile": tr("Çekme kapasitesi:"),
-            "plate": "Plaka kapasitesi:",
-            "bond_strength": tr("Kök (yapışma) dayanımı:"),
-            "bond_length": tr("Kök boyu:"),
-            "pullout": tr("Sıyrılma dayanımı:"),
-            "coverage": tr("Şerit kaplama oranı:"),
-            "adhesion": tr("Arayüz adezyonu:"),
-            "interface_friction": tr("Arayüz sürtünme açısı δ:"),
-            "overburden_gamma": tr("Örtü birim hacim ağırlığı:"),
-            "pile_shear": tr("Kazık kesme dayanımı:"),
-            "length": tr("Varsayılan boy (otomatik yerleşim):"),
+            "spacing": "Out-of-plane Spacing:",
+            "tensile": "Tensile Capacity:",
+            "plate": "Plate capacity:",
+            "bond_strength": "Bond Strength:",
+            "bond_length": "Bond Length:",
+            "pullout": "Pullout Strength:",
+            "coverage": "Strip coverage:",
+            "adhesion": "Interface adhesion:",
+            "interface_friction": "Interface friction angle δ:",
+            "overburden_gamma": "Overburden unit weight:",
+            "pile_shear": "Pile shear strength:",
+            "length": "Default Length (Automatic Placement):",
         }
         self.anchorage = QComboBox()
         for k, v in ANCHORAGES.items():
-            self.anchorage.addItem(tr(v), k)
+            self.anchorage.addItem(v, k)
         self.anchorage.currentIndexChanged.connect(self._store)
         form = QFormLayout()
-        form.addRow(tr("Ad:"), self.name)
-        form.addRow(tr("Renk:"), self.color)
-        form.addRow("Destek tipi:", self.kind)
+        form.addRow("Name:", self.name)
+        form.addRow("Color:", self.color)
+        form.addRow("Support type:", self.kind)
         self._rows = {}
         for k, sp in self.w.items():
             lab = QLabel(self.labels[k])
             form.addRow(lab, sp)
             self._rows[k] = lab
             sp.valueChanged.connect(self._store)
-        lab = QLabel(tr("Ankraj:"))
+        lab = QLabel("Anchorage:")
         form.addRow(lab, self.anchorage)
         self._rows["anchorage"] = lab
         self.w_extra = {"anchorage": self.anchorage}
 
-        appl = QGroupBox(tr("Kuvvet uygulama yöntemi"))
+        appl = QGroupBox("Force Application")
         al = QVBoxLayout(appl)
-        self.r_active = QRadioButton(tr("Aktif — kuvvet itici kuvveti azaltır (F'ye bölünmez)"))
-        self.r_passive = QRadioButton(tr("Pasif — kuvvet direnç gibi mobilize olur (T / F)"))
+        self.r_active = QRadioButton("Active — Reduces Driving Force (Not Divided by F)")
+        self.r_passive = QRadioButton("Passive — Mobilized Resistance (T / F)")
         g = QButtonGroup(self)
         g.addButton(self.r_active)
         g.addButton(self.r_passive)
@@ -274,12 +277,12 @@ class SupportTypesDialog(QDialog):
         al.addWidget(self.r_passive)
         self.r_active.toggled.connect(self._store)
         self.orient = QComboBox()
-        self.orient.addItem(tr("Desteğe paralel"), "parallel")
-        self.orient.addItem(tr("Kayma yüzeyine teğet"), "tangent")
-        self.orient.addItem(tr("Desteğe dik"), "perpendicular")
+        self.orient.addItem("Parallel to Support", "parallel")
+        self.orient.addItem("Tangent to Slip Surface", "tangent")
+        self.orient.addItem("Perpendicular to support", "perpendicular")
         self.orient.currentIndexChanged.connect(self._store)
         form2 = QFormLayout()
-        form2.addRow(tr("Kuvvet doğrultusu:"), self.orient)
+        form2.addRow("Force Direction:", self.orient)
 
         right = QVBoxLayout()
         right.addWidget(self.title)
@@ -345,9 +348,9 @@ class SupportTypesDialog(QDialog):
             w.setVisible(on)
             self._rows[k].setVisible(on)
         self._rows["tensile"].setText(
-            tr("Çekme dayanımı (kN/m):")
+            "Tensile Strength (kN/m):"
             if kind in ("geotextile", "geosynthetic")
-            else tr("Çekme kapasitesi:")
+            else "Tensile Capacity:"
         )
 
     def _kind_changed(self, *_):
@@ -391,7 +394,7 @@ class SupportTypesDialog(QDialog):
 
     def _pick_color(self):
         t = self.types[self.cur]
-        c = QColorDialog.getColor(QColor(t.color), self, "Destek rengi")
+        c = QColorDialog.getColor(QColor(t.color), self, "Support colour")
         if c.isValid():
             t.color = c.name()
             self.color.setIcon(color_icon(t.color, 18))
@@ -405,13 +408,13 @@ class SupportTypesDialog(QDialog):
         return f"{base} {i}"
 
     def _add(self):
-        self.types.append(SupportType(self._unique(tr("Destek"))))
+        self.types.append(SupportType(self._unique("Support")))
         self._refresh()
         self.list.setCurrentRow(len(self.types) - 1)
 
     def _copy(self):
         t = copy.deepcopy(self.types[self.cur])
-        t.name = self._unique(t.name + " kopya")
+        t.name = self._unique(t.name + " copy")
         self.types.insert(self.cur + 1, t)
         self._refresh()
         self.list.setCurrentRow(self.cur + 1)
@@ -419,7 +422,7 @@ class SupportTypesDialog(QDialog):
     def _delete(self):
         if len(self.types) <= 1:
             self.error.setText(
-                tr("⚠ En az bir destek tipi kalmalı (destekleri silmek için çizimden silin).")
+                "⚠ At least one support type must remain (delete supports from the drawing)."
             )
             return
         del self.types[self.cur]
@@ -429,7 +432,7 @@ class SupportTypesDialog(QDialog):
     def _accept(self):
         names = [t.name.strip() for t in self.types]
         if any(not n for n in names) or len(set(names)) != len(names):
-            self.error.setText(tr("⚠ Destek tipi adları boş olamaz ve benzersiz olmalı."))
+            self.error.setText("⚠ Support type names must not be empty and must be unique.")
             return
         self.accept()
 
@@ -437,7 +440,7 @@ class SupportTypesDialog(QDialog):
 class SupportEditDialog(QDialog):
     def __init__(self, sp: dict, type_names: list[str], parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle(tr("Destek"))
+        self.setWindowTitle("Support")
         self.type = QComboBox()
         self.type.addItems(type_names)
         self.type.setCurrentText(sp["type"])
@@ -446,11 +449,11 @@ class SupportEditDialog(QDialog):
         self.bx = _spin(-1e6, 1e6, 3, sp["b"][0], " m")
         self.by = _spin(-1e6, 1e6, 3, sp["b"][1], " m")
         f = QFormLayout()
-        f.addRow("Destek tipi:", self.type)
-        f.addRow(tr("Baş A — x:"), self.ax)
-        f.addRow(tr("Baş A — y:"), self.ay)
-        f.addRow(tr("Uç B — x:"), self.bx)
-        f.addRow(tr("Uç B — y:"), self.by)
+        f.addRow("Support type:", self.type)
+        f.addRow("Head A — x:", self.ax)
+        f.addRow("Head A — y:", self.ay)
+        f.addRow("End B — x:", self.bx)
+        f.addRow("End B — y:", self.by)
         lay = QVBoxLayout(self)
         lay.addLayout(f)
         lay.addWidget(_buttons(self))
@@ -469,20 +472,23 @@ class CrackFromDepthDialog(QDialog):
         self, x1: float, x2: float, z: float, water: float, zc_note: str = "", parent=None
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle(tr("Derinlikten Gerilme Çatlağı"))
+        self.setWindowTitle("Tension Crack from Depth")
         self.x1 = _spin(-1e6, 1e6, 3, x1, " m")
         self.x2 = _spin(-1e6, 1e6, 3, x2, " m")
         self.z = _spin(0.01, 1000, 3, z, " m")
         self.water = _spin(0, 100, 1, 100 * water, " %")
         f = QFormLayout()
-        f.addRow(tr("Başlangıç x₁:"), self.x1)
-        f.addRow(tr("Bitiş x₂:"), self.x2)
-        f.addRow(tr("Çatlak derinliği z:"), self.z)
-        f.addRow(tr("Çatlaktaki su (doluluk):"), self.water)
+        f.addRow("Start x₁:", self.x1)
+        f.addRow("End x₂:", self.x2)
+        f.addRow("Crack Depth z:", self.z)
+        f.addRow("Crack Water (Fill):", self.water)
         note = QLabel(
-            "Çatlak çizgisi x₁–x₂ arasında zemin yüzeyinin z kadar altına yerleştirilir. "
-            "Kayma yüzeyi bu çizgiyi kret tarafında kestiği yerde kesilir ve çatlak "
-            "yüzü düşey olarak zemine uzanır." + (f"\n{zc_note}" if zc_note else "")
+            (
+                "The crack line is placed z below the ground surface between x₁ and x₂. A "
+                "slip surface is cut where it crosses this line on the crest side and the "
+                "crack face runs vertically up to the ground."
+            )
+            + (f"\n{zc_note}" if zc_note else "")
         )
         note.setWordWrap(True)
         note.setStyleSheet("color:#555;")
@@ -496,7 +502,7 @@ class CrackFromDepthDialog(QDialog):
 
     def _accept(self):
         if self.x2.value() <= self.x1.value():
-            self.error.setText(tr("⚠ x₂ > x₁ olmalı."))
+            self.error.setText("⚠ x₂ must be greater than x₁.")
             return
         self.accept()
 

@@ -72,9 +72,8 @@ class Document(QObject):
             return False
         self.project = p
         self._rebuild()
-        from slipsurface.ui.i18n import tr
 
-        self.undo_stack.push(_Snapshot(self, tr(text), before, after))
+        self.undo_stack.push(_Snapshot(self, text, before, after))
         self.changed.emit()
         return True
 
@@ -87,7 +86,7 @@ class Document(QObject):
         self.geometry = None
         self.geometry_error = ""
         if not self.project.has_geometry:
-            self.geometry_error = "Dış sınır tanımlı değil."
+            self.geometry_error = "No external boundary defined."
             return
         try:
             self.geometry = self.project.build_geometry()

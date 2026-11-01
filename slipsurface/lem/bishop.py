@@ -81,7 +81,7 @@ def check_admissibility(
         issues.append(f"mα,min = {np.min(ma):.2f} < {m_alpha_min:g}")
     tol = -1e-3 * float(np.mean(W))
     if np.min(base_strength) < tol:
-        issues.append("negatif taban kayma direnci (tabanda çekme)")
+        issues.append("negative base shear resistance (tension at the base)")
     if base_normal_eff is not None:
         # A base in genuine tension is physically invalid, but the last slice
         # or two at the ends of a legitimate mechanism often shows a small
@@ -95,11 +95,11 @@ def check_admissibility(
         else:
             beyond = base_normal_eff < -0.1 * W
         if np.sum(beyond) >= 2 or (beyond.size >= 4 and bool(beyond[1:-1].any())):
-            issues.append("negatif efektif taban normali (tabanda çekme)")
+            issues.append("negative effective base normal force (tension at the base)")
     if interslice_E is not None and interslice_E.size > 2:
         n_tension = int(np.sum(interslice_E < -1e-9))
         if n_tension >= max(2, interslice_E.size // 2):
-            issues.append(f"yaygın interslice çekmesi ({n_tension}/{interslice_E.size})")
+            issues.append(f"widespread interslice tension ({n_tension}/{interslice_E.size})")
     res.admissible = not issues
     res.issue = "; ".join(issues)
     return res

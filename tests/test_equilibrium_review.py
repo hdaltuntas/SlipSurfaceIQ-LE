@@ -27,7 +27,7 @@ def test_spencer_cohesionless_plane_satisfies_all_force_balances(tol, mirror, kh
         for region in geom.regions:
             region.polygon = scale(region.polygon, xfact=-1, yfact=1, origin=(0, 0))
         pts = pts[::-1] * [-1, 1]
-    mat = MohrCoulomb("Zemin 1", gamma=18, c=0, phi=38)
+    mat = MohrCoulomb("Soil 1", gamma=18, c=0, phi=38)
     result, slices = analyze(
         geom,
         PolylineSurface(pts),

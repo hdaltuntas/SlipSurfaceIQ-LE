@@ -19,6 +19,8 @@ import hashlib
 import json
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 import urllib.error
 import urllib.request
@@ -27,6 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from slipsurface import __version__
+from slipsurface.patch import signing
 from slipsurface.updates import REPOSITORY, UpdateCheckError, ssl_context
 
 RAW_BASE = f"https://raw.githubusercontent.com/{REPOSITORY}"
@@ -116,8 +119,8 @@ class UpdatePlan:
 
     def summary(self) -> str:
         return (
-            f"{self.from_version} → {self.to_version}: "
-            f"{len(self.changed)} değişti, {len(self.new)} yeni, {len(self.removed)} silindi"
+            f"{self.from_version} → {self.to_version}: {len(self.changed)} changed, "
+            f"{len(self.new)} new, {len(self.removed)} removed"
         )
 
 
@@ -157,19 +160,38 @@ def _fetch_tree_manifest(version: str, timeout: float = 30.0, opener=None) -> di
     raise last_err or UpdateCheckError(f"manifest not found for {version}")
 
 
-def fetch_manifest(version: str, timeout: float = 30.0, opener=None) -> dict:
+def fetch_manifest(
+    version: str,
+    timeout: float = 30.0,
+    opener=None,
+    require_signature: bool | None = None,
+) -> dict:
     """The published file inventory for a release: {"files": {relpath: hash}}.
 
     Checks the release-asset ``manifest.json`` first (SHA-256), and falls back
     to GitHub's Git Trees API (Git blob SHA-1) when a release has no manifest
     asset attached.
+
+    When signature checking is on (a key in ``signing.TRUSTED_PUBLIC_KEYS``,
+    or ``require_signature=True``) only a release-asset manifest whose
+    ``manifest.json.sig`` verifies is accepted; there is no unsigned fallback.
     """
+    if require_signature is None:
+        require_signature = signing.signature_required()
     last_err: UpdateCheckError | None = None
     for ref in _candidate_refs(version):
         url = f"{RELEASE_BASE}/{ref}/manifest.json"
         try:
-            data = _fetch_json(url, timeout, opener)
-            files = data.get("files")
+            raw = _fetch_bytes(url, timeout, opener)
+            if require_signature:
+                sig = _fetch_bytes(url + signing.SIGNATURE_SUFFIX, timeout, opener)
+                if not signing.verify_manifest(raw, sig.decode("ascii", "replace")):
+                    raise UpdateCheckError(f"manifest signature of {ref} is not valid")
+            try:
+                data = json.loads(raw.decode("utf-8"))
+            except (UnicodeDecodeError, ValueError) as exc:
+                raise UpdateCheckError(f"manifest of {ref} is not valid JSON") from exc
+            files = data.get("files") if isinstance(data, dict) else None
             if not isinstance(files, dict):
                 raise UpdateCheckError(f"manifest of {ref} has no file table")
             return data
@@ -177,6 +199,10 @@ def fetch_manifest(version: str, timeout: float = 30.0, opener=None) -> dict:
             last_err = exc
             if "404" not in str(exc):
                 raise
+    if require_signature:
+        raise UpdateCheckError(
+            f"release {version} has no signed manifest; update from the release page instead"
+        )
     try:
         return _fetch_tree_manifest(version, timeout, opener)
     except UpdateCheckError:
@@ -209,11 +235,18 @@ def plan_update(
     opener=None,
 ) -> UpdatePlan:
     """Diff the two releases' manifests. Raises UpdateCheckError."""
-    old = fetch_manifest(from_version, timeout, opener)
     new = fetch_manifest(to_version, timeout, opener)
+    # The old inventory only decides what to skip; it need not be signed.
+    try:
+        old = fetch_manifest(from_version, timeout, opener, require_signature=False)
+    except UpdateCheckError:
+        old = {"files": {}}
     if old.get("hash", "sha256") != new.get("hash", "sha256"):
-        old = _fetch_tree_manifest(from_version, timeout, opener)
-        new = _fetch_tree_manifest(to_version, timeout, opener)
+        if signing.signature_required():
+            old = {"files": {}}  # never trade the signed target for a tree listing
+        else:
+            old = _fetch_tree_manifest(from_version, timeout, opener)
+            new = _fetch_tree_manifest(to_version, timeout, opener)
     changed, added, removed = diff_manifests(old, new)
     return UpdatePlan(from_version, to_version, changed, added, removed)
 
@@ -256,7 +289,11 @@ def plan_against_local(
     """
     root = root or application_root()
     target = fetch_manifest(to_version, timeout, opener)
-    target_files = target.get("files", {})
+    target_files = {
+        rel: digest
+        for rel, digest in target.get("files", {}).items()
+        if is_managed(rel) and isinstance(digest, str)
+    }
     changed, added, removed = [], [], []
     for rel, digest in target_files.items():
         local = local_hash(rel, root, digest)
@@ -268,7 +305,11 @@ def plan_against_local(
         if not p.is_file():
             continue
         rel = p.relative_to(root).as_posix()
-        if is_managed(rel) and rel not in target_files:
+        if (
+            is_managed(rel)
+            and rel not in target_files
+            and not rel.startswith(KEEP_UNLISTED_PREFIXES)
+        ):
             removed.append(FileDelta(rel, "removed", old_hash=sha256_of(p)))
     return UpdatePlan(__version__, to_version.strip().lstrip("v"), changed, added, removed)
 
@@ -277,7 +318,6 @@ MANAGED_PREFIXES = (
     "slipsurface/",
     "examples/",
     "docs/",
-    "tests/",
 )
 MANAGED_FILES = (
     "main.py",
@@ -299,8 +339,25 @@ EXCLUDED_DIRS = {
 }
 
 
+# Folders where users may keep their own files (e.g. saved projects next to the
+# examples): a file there that the target release does not list is left alone.
+KEEP_UNLISTED_PREFIXES = ("examples/", "docs/")
+
+
+def is_safe_relpath(relpath: str) -> bool:
+    """A plain relative POSIX path inside the application folder: no absolute
+    paths, drive letters, backslashes, empty, '.' or '..' components."""
+    if not isinstance(relpath, str) or not relpath or "\\" in relpath or ":" in relpath:
+        return False
+    if relpath.startswith("/"):
+        return False
+    return all(part not in ("", ".", "..") for part in relpath.split("/"))
+
+
 def is_managed(relpath: str) -> bool:
     """Whether a repository file is part of the updatable application."""
+    if not is_safe_relpath(relpath):
+        return False
     parts = relpath.split("/")
     if any(part in EXCLUDED_DIRS for part in parts):
         return False
@@ -330,6 +387,16 @@ def backup_root(root: Path) -> Path:
     return root / ".update-backup"
 
 
+def _backup_dir(root: Path, plan: UpdatePlan) -> Path:
+    """A fresh backup folder for this update, e.g. .update-backup/2026.3.2-to-2026.3.3."""
+    base = backup_root(root) / f"{plan.from_version}-to-{plan.to_version}"
+    path, n = base, 1
+    while path.exists():
+        n += 1
+        path = base.with_name(f"{base.name}-{n}")
+    return path
+
+
 def apply_update(
     plan: UpdatePlan,
     version: str,
@@ -340,52 +407,85 @@ def apply_update(
 ) -> str:
     """Apply a plan in place. Returns a human-readable summary.
 
+    Every changed or new file is downloaded to a temporary folder and its hash
+    verified first; the installation is touched only when all downloads are
+    complete and valid. Replaced and removed files are copied to a backup
+    folder for this update (``.update-backup/<from>-to-<to>``).
+
     ``progress(done, total, relpath)`` returning True cancels the update;
-    files copied so far are kept in the backup folder for a manual restore.
+    a cancelled or failed download leaves the installation unchanged.
     """
     root = root or application_root()
-    backup = backup_root(root)
-    backup.mkdir(exist_ok=True)
-    downloads = [(d, "changed") for d in plan.changed] + [(d, "new") for d in plan.new]
+    deltas = [*plan.changed, *plan.new, *plan.removed]
+    unsafe = [d.relpath for d in deltas if not is_managed(d.relpath)]
+    if unsafe:
+        raise UpdateCheckError(f"refusing to update unexpected path(s): {', '.join(unsafe)}")
+    downloads = [*plan.changed, *plan.new]
     total = len(downloads) + len(plan.removed)
     done = 0
     tmp_dir = Path(tempfile.mkdtemp(prefix="slipsurface-update-"))
     try:
-        for delta, _kind in downloads:
+        # 1) download and verify everything; the installation is not touched yet
+        for delta in downloads:
             if progress is not None and progress(done, total, delta.relpath):
-                raise UpdateCheckError("güncelleme iptal edildi")
-            # stash the current copy (if any) for restore
-            local = root / delta.relpath
-            if local.is_file():
-                backup_copy = backup / delta.relpath
-                backup_copy.parent.mkdir(parents=True, exist_ok=True)
-                if not backup_copy.exists():
-                    shutil.copy2(local, backup_copy)
+                raise UpdateCheckError("update cancelled")
             download_file(delta.relpath, version, tmp_dir / delta.relpath, timeout, opener)
+            digest = local_hash(delta.relpath, tmp_dir, delta.new_hash) or ""
+            if not plan_against_local_verifies(delta, digest):
+                raise UpdateCheckError(f"hash mismatch for {delta.relpath}")
             done += 1
-        for delta in plan.removed:
-            if progress is not None and progress(done, total, delta.relpath):
-                raise UpdateCheckError("güncelleme iptal edildi")
+        # 2) back up what will be replaced or removed
+        backup = _backup_dir(root, plan)
+        for delta in [*downloads, *plan.removed]:
             local = root / delta.relpath
             if local.is_file():
-                backup_copy = backup / delta.relpath
-                backup_copy.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(local, backup_copy)
+                copy = backup / delta.relpath
+                copy.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(local, copy)
+        # 3) install (local moves and deletes only)
+        for delta in downloads:
+            dest = root / delta.relpath
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(tmp_dir / delta.relpath), dest)
+        for delta in plan.removed:
+            local = root / delta.relpath
+            if local.is_file():
                 os.remove(local)
             done += 1
-        # second pass: move verified downloads into place (fast, local)
-        for delta, _kind in downloads:
-            tmp = tmp_dir / delta.relpath
-            dest = root / delta.relpath
-            if tmp.is_file():
-                digest = local_hash(delta.relpath, tmp_dir, delta.new_hash) or ""
-                if not plan_against_local_verifies(delta, digest):
-                    raise UpdateCheckError(f"hash mismatch for {delta.relpath}")
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                shutil.move(str(tmp), dest)
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
     return plan.summary()
+
+
+REQUIREMENTS = "requirements.txt"
+
+
+def requirements_changed(plan: UpdatePlan) -> bool:
+    """Whether the update brings a different runtime requirements file."""
+    return any(d.relpath == REQUIREMENTS for d in [*plan.changed, *plan.new])
+
+
+def pip_command(root: Path | None = None) -> list[str]:
+    """The command that installs the runtime requirements into this Python."""
+    root = root or application_root()
+    return [sys.executable, "-m", "pip", "install", "-r", str(root / REQUIREMENTS)]
+
+
+def install_requirements(
+    root: Path | None = None, timeout: float = 1800.0, run=subprocess.run
+) -> tuple[bool, str]:
+    """Run pip for requirements.txt with the running interpreter.
+
+    Returns (success, last lines of pip's output) and never raises.
+    """
+    cmd = pip_command(root)
+    try:
+        done = run(cmd, capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return False, str(exc)
+    output = (done.stdout or "") + (done.stderr or "")
+    tail = "\n".join(output.strip().splitlines()[-6:])
+    return done.returncode == 0, tail
 
 
 def plan_against_local_verifies(delta: FileDelta, digest: str) -> bool:

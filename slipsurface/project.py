@@ -102,30 +102,30 @@ def _finite_inputs(value, path="project") -> None:
         for i, item in enumerate(value):
             _finite_inputs(item, f"{path}[{i}]")
     elif isinstance(value, (float, np.floating)) and not np.isfinite(value):
-        raise ValueError(f"{path}: sonlu bir sayı gerekli.")
+        raise ValueError(f"{path}: a finite number is required.")
 
 
 def _choice(value, allowed, label) -> None:
     if value not in allowed:
-        raise ValueError(f"{label}: bilinmeyen seçenek '{value}'.")
+        raise ValueError(f"{label}: unknown option '{value}'.")
 
 
 def _validate_loads(loads) -> None:
     def numbers(value, shape):
         a = np.asarray(value)
         if a.shape != shape or a.dtype.kind not in "iuf":
-            raise ValueError(f"{shape} biçiminde sayısal veri gerekli")
+            raise ValueError(f"numeric data in the form {shape} is required")
         return a.astype(float)
 
     for i, ld in enumerate(loads, 1):
-        label = f"Yük {i}"
+        label = f"Load {i}"
         kind = ld.get("kind")
         _choice(kind, ("distributed", "line"), label)
         try:
             if kind == "distributed":
                 pts, q = numbers(ld["points"], (2, 2)), numbers(ld["q"], (2,))
                 if pts[0, 0] == pts[1, 0]:
-                    raise ValueError("yayılı yükün yatay uzunluğu pozitif olmalı")
+                    raise ValueError("distributed load horizontal length must be positive")
                 _choice(ld.get("orientation", "vertical"), ("vertical", "normal"), label)
                 values = np.concatenate([pts.ravel(), q])
             else:
@@ -134,15 +134,15 @@ def _validate_loads(loads) -> None:
                 angle = float(numbers(ld.get("angle", 270), ()))
                 values = np.array([*pt, magnitude, angle])
             if not np.all(np.isfinite(values)):
-                raise ValueError("yük değerleri sonlu olmalı")
+                raise ValueError("load values must be finite")
         except (KeyError, TypeError, ValueError) as exc:
-            raise ValueError(f"{label}: geçersiz yük verisi ({exc}).") from None
+            raise ValueError(f"{label}: invalid load data ({exc}).") from None
 
 
 # ------------------------------------------------------------------ parts
 @dataclass
 class ProjectSummary:
-    title: str = "Yeni proje"
+    title: str = "New Project"
     analysis: str = ""
     author: str = ""
     company: str = ""
@@ -152,7 +152,7 @@ class ProjectSummary:
 
 @dataclass
 class MaterialSpec:
-    name: str = "Zemin 1"
+    name: str = "Soil 1"
     model: str = "MC"  # key of slipsurface.materials.catalog.MODELS
     gamma: float = 19.0
     gamma_sat: float = 20.0
@@ -314,7 +314,7 @@ class MaterialSpec:
                 tensile=self.cni_t,
                 **common,
             )
-        raise ValueError(f"Bilinmeyen malzeme modeli: {self.model}")
+        raise ValueError(f"Unknown material model: {self.model}")
 
 
 @dataclass
@@ -345,14 +345,14 @@ class GroundwaterSettings:
 
 # Positive kv is upward (vertical load (1-kv)W). Slide2's positive kv is downward.
 SEISMIC_BOTH = (
-    "kh = {}, kv = \u00b1{} (pozitif yukarı, düşey yük (1 \u2212 kv)\u00b7W; "
-    "Slide2'de pozitif kv aşağıdır)"
+    "kh = {}, kv = ±{} (positive upward, vertical load (1 − kv)·W; in Slide2 "
+    "a positive kv acts downward)"
 )
-SEISMIC_ONE = "kh = {}, kv = {} ({}; Slide2 kv = {}; düşey yük (1 \u2212 kv)\u00b7W)"
+SEISMIC_ONE = "kh = {}, kv = {} ({}; Slide2 kv = {}; vertical load (1 − kv)·W)"
 SEISMIC_NOTE = (
-    "Yatay kuvvet kh\u00b7W göçme yönünde, dilim ağırlık merkezinde etkir. "
-    "kv pozitif yukarıdır: düşey yük (1 \u2212 kv)\u00b7W. "
-    "Slide2'de pozitif kv aşağıdır (işaret tersi)."
+    "The horizontal force kh·W acts in the failure direction at the slice "
+    "centroid. Positive kv is upward: vertical load (1 − kv)·W. In Slide2 a "
+    "positive kv acts downward (the sign is opposite)."
 )
 
 
@@ -368,7 +368,7 @@ class SeismicSettings:
         kh, kv = self.kh, self.kv
         if self.both_vertical and kv != 0.0:
             return SEISMIC_BOTH.format(f"{kh:g}", f"{abs(kv):g}")
-        sense = "yukarı" if kv > 0 else ("aşağı" if kv < 0 else "sıfır")
+        sense = "upward" if kv > 0 else ("downward" if kv < 0 else "zero")
         return SEISMIC_ONE.format(f"{kh:g}", f"{kv:g}", sense, f"{-kv:g}")
 
 
@@ -478,15 +478,17 @@ class Project:
     def validate(self) -> None:
         _finite_inputs(self.analysis_inputs())
         _choice(
-            self.general.failure_direction, ("auto", "right_to_left", "left_to_right"), "Göçme yönü"
+            self.general.failure_direction,
+            ("auto", "right_to_left", "left_to_right"),
+            "Failure Direction",
         )
-        _choice(self.groundwater.method, ("water_table", "ru", "none"), "Yeraltı suyu yöntemi")
+        _choice(self.groundwater.method, ("water_table", "ru", "none"), "Groundwater method")
         _choice(
             self.methods.interslice,
             ("constant", "half-sine", "clipped-sine", "trapezoidal"),
-            "Arayüz fonksiyonu",
+            "Interslice function",
         )
-        _choice(self.surfaces.surface_type, ("circular", "noncircular", "user"), "Yüzey tipi")
+        _choice(self.surfaces.surface_type, ("circular", "noncircular", "user"), "Surface type")
         circle = self.surfaces.user_circle
         if circle is not None and (
             not isinstance(circle, (list, tuple))
@@ -495,40 +497,40 @@ class Project:
             or not all(np.isfinite(v) for v in circle)
             or circle[2] <= 0
         ):
-            raise ValueError("Verilen daire için [Xc, Yc, R] sonlu olmalı ve R > 0.")
-        _choice(self.surfaces.noncircular_shape, ("polyline", "spline"), "Yüzey biçimi")
-        _choice(self.surfaces.effort, tuple(EFFORT), "Arama yoğunluğu")
+            raise ValueError("Fixed circle [Xc, Yc, R] must be finite with R > 0.")
+        _choice(self.surfaces.noncircular_shape, ("polyline", "spline"), "Surface shape")
+        _choice(self.surfaces.effort, tuple(EFFORT), "Search effort")
         if self.groundwater.gamma_w <= 0 or not 0 <= self.groundwater.ru <= 1:
-            raise ValueError("γw > 0 ve 0 ≤ Ru ≤ 1 olmalı.")
+            raise ValueError("γw > 0 and 0 ≤ Ru ≤ 1 required.")
         if self.seismic.kh < 0 or not -1 <= self.seismic.kv <= 1:
-            raise ValueError("kh ≥ 0 ve −1 ≤ kv ≤ 1 olmalı.")
+            raise ValueError("kh ≥ 0 and −1 ≤ kv ≤ 1 required.")
         if self.methods.tolerance <= 0:
-            raise ValueError("Çözüm toleransı pozitif olmalı.")
+            raise ValueError("Solver tolerance must be positive.")
         for label, value, minimum in (
-            ("Dilim sayısı", self.methods.n_slices, 3),
-            ("İterasyon sayısı", self.methods.max_iter, 1),
-            ("Kontrol noktası sayısı", self.surfaces.n_ctrl, 2),
+            ("Number of slices", self.methods.n_slices, 3),
+            ("Number of iterations", self.methods.max_iter, 1),
+            ("Number of control points", self.surfaces.n_ctrl, 2),
         ):
             if (
                 isinstance(value, bool)
                 or not isinstance(value, (int, np.integer))
                 or value < minimum
             ):
-                raise ValueError(f"{label}: en az {minimum} olan bir tam sayı gerekli.")
+                raise ValueError(f"{label}: an integer of at least {minimum} is required.")
         if not 0 <= self.methods.f_start <= 1 or not 0 <= self.methods.f_end <= 1:
-            raise ValueError("Arayüz fonksiyonu uç değerleri 0 ile 1 arasında olmalı.")
+            raise ValueError("Interslice function end values must be between 0 and 1.")
         if self.advanced.min_depth < 0:
-            raise ValueError("Minimum derinlik negatif olamaz.")
+            raise ValueError("Minimum depth cannot be negative.")
         _validate_loads(self.loads)
         names = self.material_names()
         if not names:
-            raise ValueError("En az bir malzeme tanımlayın.")
+            raise ValueError("Define at least one material.")
         if len(set(names)) != len(names):
-            raise ValueError("Malzeme adları benzersiz olmalı.")
+            raise ValueError("Material names must be unique.")
         for m in self.materials:
             if m.model not in MODELS:
                 raise ValueError(
-                    f"{m.name}: bilinmeyen malzeme modeli '{m.model}' ({', '.join(MODELS)} olmalı)."
+                    f"{m.name}: unknown material model '{m.model}' (must be {', '.join(MODELS)})."
                 )
             if m.model not in ("MC", "HB"):  # MC/HB give the messages below
                 try:
@@ -536,64 +538,64 @@ class Project:
                 except ValueError as exc:
                     raise ValueError(f"{m.name}: {exc}") from None
             if not m.name.strip():
-                raise ValueError("Malzeme adı boş olamaz.")
+                raise ValueError("Material name must not be empty.")
             if m.gamma <= 0 or m.gamma_sat <= 0:
-                raise ValueError(f"{m.name}: birim hacim ağırlıklar pozitif olmalı.")
+                raise ValueError(f"{m.name}: unit weights must be positive.")
             if m.model == "MC" and (m.c < 0 or not 0 <= m.phi < 90):
-                raise ValueError(f"{m.name}: c ≥ 0 ve 0 ≤ φ < 90 olmalı.")
+                raise ValueError(f"{m.name}: c ≥ 0 and 0 ≤ φ < 90 required.")
             if m.model == "HB" and (
                 m.sigma_ci <= 0 or not 0 < m.gsi <= 100 or m.mi <= 0 or not 0 <= m.d <= 1
             ):
-                raise ValueError(f"{m.name}: σci > 0, 0 < GSI ≤ 100, mi > 0, 0 ≤ D ≤ 1 olmalı.")
+                raise ValueError(f"{m.name}: σci > 0, 0 < GSI ≤ 100, mi > 0, 0 ≤ D ≤ 1 required.")
         for a in self.assignments:
             if a["material"] not in names:
-                raise ValueError(f"Atanmış malzeme '{a['material']}' tanımlı değil.")
+                raise ValueError(f"Assigned material '{a['material']}' is not defined.")
         tc = self.tension_crack
         if tc:
             xs = sorted(q[0] for q in tc)
             if len(tc) < 2 or any(b <= a for a, b in zip(xs, xs[1:], strict=False)):
                 raise ValueError(
-                    "Gerilme çatlağı çizgisi en az 2 nokta ve farklı x değerleri içermeli."
+                    "The tension crack line needs at least 2 points with different x values."
                 )
         if not 0 <= self.groundwater.crack_water <= 1:
-            raise ValueError("Çatlak suyu oranı 0 ile 1 arasında olmalı.")
+            raise ValueError("The crack water ratio must be between 0 and 1.")
         adv = self.advanced
         if not 0 < adv.m_alpha_min <= 1:
-            raise ValueError("mα eşiği 0 ile 1 arasında olmalı.")
+            raise ValueError("The mα threshold must be between 0 and 1.")
         if adv.e_max_ratio < 1:
-            raise ValueError("E maksimum oranı en az 1 olmalı.")
+            raise ValueError("The maximum E ratio must be at least 1.")
         snames = [t.name for t in self.support_types]
         if len(set(snames)) != len(snames):
-            raise ValueError("Destek tipi adları benzersiz olmalı.")
+            raise ValueError("Support type names must be unique.")
         for t in self.support_types:
             _choice(t.application, ("active", "passive"), t.name)
             _choice(t.orientation, ("parallel", "tangent", "perpendicular"), t.name)
             _choice(t.anchorage, ("none", "face", "embedded", "both"), t.name)
             if t.kind not in SUPPORT_KINDS:
-                raise ValueError(f"{t.name}: bilinmeyen destek tipi.")
+                raise ValueError(f"{t.name}: unknown support type.")
             if t.spacing <= 0 or t.tensile < 0:
-                raise ValueError(f"{t.name}: aralık > 0 ve kapasite ≥ 0 olmalı.")
+                raise ValueError(f"{t.name}: spacing > 0 and capacity ≥ 0 required.")
         for sp in self.supports + self.support_patterns:
             if sp["type"] not in snames:
-                raise ValueError(f"Destek tipi '{sp['type']}' tanımlı değil.")
+                raise ValueError(f"Support type '{sp['type']}' is not defined.")
         for pt in self.support_patterns:
             if pt["spacing"] <= 0 or pt["length"] <= 0:
-                raise ValueError("Bulon paterni: aralık ve boy pozitif olmalı.")
+                raise ValueError("Bolt pattern: spacing and length must be positive.")
         fnames = [t.name for t in self.facing_types]
         if len(set(fnames)) != len(fnames):
-            raise ValueError("Kaplama tipi adları benzersiz olmalı.")
+            raise ValueError("Facing type names must be unique.")
         for ft in self.facing_types:
             _choice(ft.application, ("active", "passive"), ft.name)
             if ft.thickness <= 0 or ft.gamma < 0 or ft.tau < 0 or ft.mesh_as < 0:
-                raise ValueError(f"{ft.name}: kalınlık > 0, diğer değerler ≥ 0 olmalı.")
+                raise ValueError(f"{ft.name}: thickness > 0, other values ≥ 0 required.")
         for f in self.facings:
             if f["type"] not in fnames:
-                raise ValueError(f"Kaplama tipi '{f['type']}' tanımlı değil.")
+                raise ValueError(f"Facing type '{f['type']}' is not defined.")
         for k in self.methods.methods:
             if k not in METHODS:
-                raise ValueError(f"Bilinmeyen yöntem: {k}")
+                raise ValueError(f"Unknown method: {k}")
         if self.methods.n_slices < 3:
-            raise ValueError("Dilim sayısı en az 3 olmalı.")
+            raise ValueError("The number of slices must be at least 3.")
 
     @property
     def has_geometry(self) -> bool:
@@ -603,7 +605,7 @@ class Project:
     def build_geometry(self) -> SlopeGeometry:
         self.validate()
         if not self.has_geometry:
-            raise ValueError("Dış sınır tanımlı değil (Sınırlar → Dış Sınır Ekle).")
+            raise ValueError("No external boundary defined (Boundaries → Add External Boundary).")
         assign = [(a["point"][0], a["point"][1], a["material"]) for a in self.assignments]
         return boundary_geometry(
             self.external,
@@ -639,7 +641,7 @@ class Project:
         for i, sp in enumerate(self.supports):
             st = self.support_type(sp["type"])
             if st is not None:
-                ls.supports.append(Support(tuple(sp["a"]), tuple(sp["b"]), st, f"Destek {i + 1}"))
+                ls.supports.append(Support(tuple(sp["a"]), tuple(sp["b"]), st, f"Support {i + 1}"))
         geom = None
         for j, pt in enumerate(self.support_patterns):
             st = self.support_type(pt["type"])
@@ -648,7 +650,7 @@ class Project:
             if geom is None:
                 geom = self.build_geometry()
             for k, (a, b) in enumerate(self.pattern_bolts(pt, geom)):
-                ls.supports.append(Support(tuple(a), tuple(b), st, f"Patern {j + 1}/{k + 1}"))
+                ls.supports.append(Support(tuple(a), tuple(b), st, f"Pattern {j + 1}/{k + 1}"))
         for f in self.facings:
             ft = self.facing_type(f["type"])
             if ft is not None:
@@ -666,7 +668,7 @@ class Project:
 
     def slice_options(self) -> SliceOptions:
         gw = self.groundwater
-        _choice(gw.method, ("water_table", "ru", "none"), "Yeraltı suyu yöntemi")
+        _choice(gw.method, ("water_table", "ru", "none"), "Groundwater method")
         pore = gw.method
         if pore == "water_table" and not self.water_table:
             pore = "none"
@@ -742,10 +744,10 @@ class Project:
     @classmethod
     def from_dict(cls, d: dict) -> Project:
         if d.get("format") != FORMAT:
-            raise ValueError("Bu dosya bir SlipSurfaceIQ LE projesi değil.")
+            raise ValueError("This file is not a SlipSurfaceIQ LE project.")
         ver = int(d.get("version", 0))
         if ver > VERSION:
-            raise ValueError("Dosya daha yeni bir sürümle kaydedilmiş.")
+            raise ValueError("The file was saved by a newer version.")
         if ver < 2:
             return _from_v1(d)
         g, st = d.get("geometry", {}), d.get("settings", {})
@@ -893,7 +895,7 @@ def default_project() -> Project:
 
 
 def empty_project() -> Project:
-    return _mk("Yeni proje", [MaterialSpec("Zemin 1", color=PALETTE[0])], [])
+    return _mk("New Project", [MaterialSpec("Soil 1", color=PALETTE[0])], [])
 
 
 def acads_1a_project() -> Project:
@@ -1494,18 +1496,7 @@ EXAMPLES.update(
     }
 )
 
-# names used before 2026.0.0 (accepted by --example)
-EXAMPLE_ALIASES = {
-    "Basit şev (10 m, 2H:1V)": "Simple slope (10 m, 2H:1V)",
-    "Katmanlı şev + YASS": "Layered slope + water table",
-    "Ankrajlı yarma + sürşarj": "Anchored cut + surcharge",
-    "Gerilme çatlaklı şev": "Slope with tension crack",
-    "Zemin çivisi + püskürtme beton": "Soil nail + shotcrete",
-    "Drenajsız kil / Undrained clay": "Undrained clay",
-    "Sismik / Seismic kh=0.15": "Seismic kh=0.15",
-}
-
 
 def example_project(name: str) -> Project:
-    """Bundled example by name (current English name or a former Turkish one)."""
-    return EXAMPLES[EXAMPLE_ALIASES.get(name, name)]()
+    """Bundled example by name (see EXAMPLES)."""
+    return EXAMPLES[name]()

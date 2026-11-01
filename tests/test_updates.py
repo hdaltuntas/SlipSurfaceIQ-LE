@@ -146,7 +146,7 @@ def test_manual_check_offers_a_newer_release_and_can_skip_it(app, prefs):
     assert box is not None and "2099.0.0" in box.text() and __version__ in box.text()
     assert box.informativeText() == "Notes" and not box.detailedText()
     labels = {b.text(): b for b in box.buttons()}
-    skip = next(b for t, b in labels.items() if "Atla" in t or "Skip" in t)
+    skip = next(b for t, b in labels.items() if "Skip" in t)
     skip.click()
     app.processEvents()
     assert prefs.value(ui.SKIP_KEY) == "2099.0.0"
@@ -192,10 +192,65 @@ def test_help_menu_has_update_actions(app, prefs):
     w = ModelerWindow(empty_project())
     try:
         texts = [a.text() for a in w.menuBar().actions()[-1].menu().actions()]
-        assert any("Güncellemeleri Kontrol Et" in t or "Check for Updates" in t for t in texts)
+        assert any("Check for Updates" in t for t in texts)
         assert w.a_auto_updates.isChecked()
         w.a_auto_updates.setChecked(False)
         assert not ui.auto_enabled()
     finally:
         w.doc.mark_clean()
         w.close()
+
+
+def test_update_with_new_requirements_offers_pip_install(app, prefs, monkeypatch):
+    from slipsurface import patch
+
+    calls = []
+
+    def fake_install(root=None):
+        calls.append(root)
+        return False, "network down"
+
+    monkeypatch.setattr(patch, "install_requirements", fake_install)
+    parent, checker = _checker(app, ReleaseInfo(__version__, updates.RELEASES_PAGE))
+    checker._on_applied("2099.0.0", "1 changed", True)
+    box = checker.dialog
+    assert "requirements.txt" in box.text()
+    install = next(b for b in box.buttons() if b.text() == "Install Requirements")
+    install.click()
+    t0 = time.time()
+    while (checker.busy or not calls) and time.time() - t0 < 10:
+        app.processEvents()
+        time.sleep(0.01)
+    app.processEvents()
+    assert calls == [None]
+    assert "pip install -r" in checker.dialog.text() and "network down" in checker.dialog.text()
+
+    checker._on_applied("2099.0.0", "1 changed", False)
+    assert [b.text() for b in checker.dialog.buttons()] == ["OK"]
+
+
+def test_install_requirements_uses_this_interpreter(tmp_path):
+    import subprocess
+    import sys
+
+    from slipsurface.patch import UpdatePlan, install_requirements, requirements_changed
+    from slipsurface.patch.core import FileDelta
+
+    seen = {}
+
+    def run(cmd, **kw):
+        seen["cmd"] = cmd
+        return subprocess.CompletedProcess(cmd, 0, "Successfully installed x\n", "")
+
+    ok, output = install_requirements(tmp_path, run=run)
+    assert ok and "Successfully installed" in output
+    assert seen["cmd"][:4] == [sys.executable, "-m", "pip", "install"]
+    assert seen["cmd"][-1] == str(tmp_path / "requirements.txt")
+
+    def broken(cmd, **kw):
+        raise OSError("no pip")
+
+    assert install_requirements(tmp_path, run=broken) == (False, "no pip")
+    plan = UpdatePlan("a", "b", changed=[FileDelta("requirements.txt", "changed")])
+    assert requirements_changed(plan)
+    assert not requirements_changed(UpdatePlan("a", "b", new=[FileDelta("main.py", "new")]))

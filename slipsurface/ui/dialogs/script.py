@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QFileDialog,
     QHBoxLayout,
+    QMessageBox,
 )
 from slipsurface.scripting import TEMPLATE, run_script
 
@@ -26,6 +27,10 @@ class ScriptDialog(QDialog):
         )
         self.editor = QPlainTextEdit()
         self.editor.setPlainText(TEMPLATE)
+        # Text of a script opened from a file that the user has not yet
+        # confirmed as trusted; cleared after the first confirmation.
+        self.untrusted_source: str | None = None
+        self.confirm = self._ask_trust
         self.editor.setStyleSheet("font-family: Consolas; font-size: 13px;")
         layout.addWidget(self.editor, 3)
         self.output = QPlainTextEdit()
@@ -50,6 +55,7 @@ class ScriptDialog(QDialog):
         if path:
             try:
                 self.editor.setPlainText(Path(path).read_text(encoding="utf-8"))
+                self.untrusted_source = path
             except OSError as exc:
                 self.output.setPlainText(str(exc))
 
@@ -63,7 +69,24 @@ class ScriptDialog(QDialog):
             except OSError as exc:
                 self.output.setPlainText(str(exc))
 
+    def _ask_trust(self, path: str) -> bool:
+        answer = QMessageBox.warning(
+            self,
+            "Run Script",
+            f"This script was opened from:\n{path}\n\n"
+            "Python scripts run with full access to your files and account. "
+            "Run it only if you trust its author and have read the code.",
+            QMessageBox.Yes | QMessageBox.Cancel,
+            QMessageBox.Cancel,
+        )
+        return answer == QMessageBox.Yes
+
     def run(self):
+        if self.untrusted_source is not None:
+            if not self.confirm(self.untrusted_source):
+                self.output.setPlainText("Not run. Project unchanged.")
+                return
+            self.untrusted_source = None
         try:
             project, output = run_script(self.editor.toPlainText(), self.document.project)
             self.document.edit("Python script", lambda p: p.__dict__.update(project.__dict__))

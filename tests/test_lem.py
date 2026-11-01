@@ -14,7 +14,7 @@ def acads_1a():
     """ACADS EX1(a), Donald & Giam (1989): H=10 m, 2H:1V, c=3 kPa, phi=19.6°, gamma=20.
     Reference FoS = 1.00; Slide2 verification #1 Bishop = 0.987."""
     g = simple_slope(10, 2, toe_x=20, left_bench=20, right_bench=20, depth_below_toe=5)
-    mats = {"Zemin 1": MohrCoulomb("Zemin 1", gamma=20, c=3, phi=19.6)}
+    mats = {"Soil 1": MohrCoulomb("Soil 1", gamma=20, c=3, phi=19.6)}
     return g, mats
 
 
@@ -49,7 +49,7 @@ def test_slice_weights_sum_to_mass_area():
 # --------------------------------------------------------------- Bishop
 def test_missing_water_table_matches_dry_slices():
     g, mats = acads_1a()
-    mats["Zemin 1"].gamma_sat = 25
+    mats["Soil 1"].gamma_sat = 25
     surf = CircularSurface(20, 28, 28)
     default = make_slices(g, surf, mats)
     dry = make_slices(g, surf, mats, opts=SliceOptions(pore="none"))
@@ -111,7 +111,7 @@ def test_acads_1a_minimum():
 def test_cohesionless_infinite_slope_limit():
     """c=0, dry: shallow circles approach tan(phi)/tan(beta) from above."""
     g = simple_slope(10, 2, toe_x=20, left_bench=20, right_bench=20, depth_below_toe=5)
-    mats = {"Zemin 1": MohrCoulomb("Zemin 1", gamma=18, c=0, phi=30)}
+    mats = {"Soil 1": MohrCoulomb("Soil 1", gamma=18, c=0, phi=30)}
     target = math.tan(math.radians(30)) / 0.5
     # very large, shallow circle tangent-ish to the face
     nx, ny = -1 / math.sqrt(5), 2 / math.sqrt(5)  # outward face normal
@@ -148,7 +148,7 @@ def test_hoek_brown_parameters_and_envelope():
 
 def test_bishop_runs_with_hoek_brown():
     g, _ = acads_1a()
-    mats = {"Zemin 1": HoekBrown("Zemin 1", gamma=22, sigma_ci=5_000, gsi=30, mi=8, d=0.7)}
+    mats = {"Soil 1": HoekBrown("Soil 1", gamma=22, sigma_ci=5_000, gsi=30, mi=8, d=0.7)}
     res, _ = analyze_circle(g, CircularSurface(20, 28, 28), mats)
     assert res.ok and 0.5 < res.fos < 20
 
@@ -249,7 +249,7 @@ def test_gle_mirror_invariance():
 
 def test_spencer_hoek_brown_converges():
     g, _ = acads_1a()
-    mats = {"Zemin 1": HoekBrown("Zemin 1", gamma=22, sigma_ci=5_000, gsi=30, mi=8, d=0.7)}
+    mats = {"Soil 1": HoekBrown("Soil 1", gamma=22, sigma_ci=5_000, gsi=30, mi=8, d=0.7)}
     surf = CircularSurface(20, 28, 28)
     b, _ = analyze(g, surf, mats, method="bishop")
     sp, _ = analyze(g, surf, mats, method="spencer")

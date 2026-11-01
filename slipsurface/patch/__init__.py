@@ -11,9 +11,11 @@ from slipsurface.patch.core import (
     fetch_manifest,
     git_blob_sha_bytes,
     git_blob_sha_of,
+    install_requirements,
     is_managed,
     plan_against_local,
     plan_update,
+    requirements_changed,
     sha256_of,
     write_manifest,
 )
@@ -26,9 +28,11 @@ __all__ = [
     "fetch_manifest",
     "git_blob_sha_bytes",
     "git_blob_sha_of",
+    "install_requirements",
     "is_managed",
     "plan_against_local",
     "plan_update",
+    "requirements_changed",
     "sha256_of",
     "write_manifest",
 ]

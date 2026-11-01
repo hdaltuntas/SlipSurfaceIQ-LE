@@ -1,10 +1,10 @@
 {
   "format": "slipsurface-le",
   "version": 1,
-  "name": "Katmanlı şev + YASS (örnek)",
+  "name": "Layered slope with water table",
   "materials": [
     {
-      "name": "Dolgu",
+      "name": "Fill",
       "model": "MC",
       "gamma": 19,
       "gamma_sat": 20,
@@ -17,7 +17,7 @@
       "color": "#d9c49a"
     },
     {
-      "name": "Yumuşak kil",
+      "name": "Soft clay",
       "model": "MC",
       "gamma": 17,
       "gamma_sat": 18,
@@ -30,7 +30,7 @@
       "color": "#9fb7d6"
     },
     {
-      "name": "Ayrışmış kaya",
+      "name": "Weathered rock",
       "model": "HB",
       "gamma": 23,
       "gamma_sat": 24,
@@ -69,11 +69,11 @@
     "bottom": -12,
     "layers": [
       {
-        "material": "Dolgu",
+        "material": "Fill",
         "top": null
       },
       {
-        "material": "Yumuşak kil",
+        "material": "Soft clay",
         "top": [
           [
             0,
@@ -86,7 +86,7 @@
         ]
       },
       {
-        "material": "Ayrışmış kaya",
+        "material": "Weathered rock",
         "top": [
           [
             0,

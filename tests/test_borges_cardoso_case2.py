@@ -131,7 +131,7 @@ def test_real_slices_use_depth_gradient_and_unanchored_geosynthetic():
     assert force.T <= 200
     assert force.passive
     assert force.fx >= 0
-    assert force.governing in ("çekme dayanımı", "sıyrılma (iç)", "sıyrılma (dış)")
+    assert force.governing in ("tensile strength", "pullout (inside)", "pullout (outside)")
 
 
 @pytest.mark.parametrize("method", ["bishop", "janbu_simplified", "gle"])
@@ -160,6 +160,7 @@ def test_case2_search_config_reproducible_and_water_free():
     assert len(st.slice_opts.loads.supports) == 1
 
 
+@pytest.mark.slow
 def test_case2_search_finds_reinforced_mechanism():
     """The critical search must not stop at a degenerate tangent circle.
 

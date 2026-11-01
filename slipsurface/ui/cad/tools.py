@@ -11,7 +11,6 @@ Coordinate entry (status-bar box) for drawing tools, AutoCAD style:
 
 from __future__ import annotations
 
-from slipsurface.ui.i18n import tr
 
 import math
 import re
@@ -94,7 +93,7 @@ class Tool:
 # ============================================================== select/edit
 class SelectTool(Tool):
     name = "select"
-    hint = "Seç: köşeyi sürükleyerek taşıyın, çift tıklayarak koordinatları düzenleyin, Delete ile silin."
+    hint = "Select: drag a vertex to move it, double-click to edit coordinates, Delete to remove."
     pickbox = True
 
     def __init__(self, canvas) -> None:
@@ -124,7 +123,7 @@ class SelectTool(Tool):
             pt, kind = c.snap(ev.position(), ref=ref, exclude=(key, k))
             c.snap_marker = (kind, pt) if kind else None
             self.drag_pts[k] = list(pt)
-            c.status.emit(f"Köşe taşınıyor: x = {pt[0]:.3f}, y = {pt[1]:.3f}")
+            c.status.emit(f"Moving vertex: x = {pt[0]:.3f}, y = {pt[1]:.3f}")
             return
         c.snap_marker = None
         c.hover = c.pick_vertex(ev.position()) if c.editable else None
@@ -161,7 +160,7 @@ class SelectTool(Tool):
             self.drag_pts = None
             c.project.annotations[key[1]]["pts"] = orig  # undo live preview
             if new is not None and new != orig:
-                c.request_edit("Notu taşı", lambda p: set_points(p, key, new))
+                c.request_edit("Move note", lambda p: set_points(p, key, new))
             c.update()
             return
         if self.drag is None:
@@ -172,7 +171,7 @@ class SelectTool(Tool):
         self.drag_pts = None
         c.snap_marker = None
         if new[k] != orig[k]:
-            c.request_edit(f"{_label(key)}: köşe taşı", lambda p: set_points(p, key, new))
+            c.request_edit(f"{_label(key)}: move vertex", lambda p: set_points(p, key, new))
 
     def paint(self, p) -> None:
         if self.drag is None:
@@ -203,7 +202,7 @@ class SelectTool(Tool):
             if k is not None and key[0] not in FIXED_POINTS:
                 _delete_vertex(c, key, k)
             else:
-                c.request_edit(f"{_label(key)} sil", lambda p: delete_entity(p, key))
+                c.request_edit(f"Delete {_label(key)}", lambda p: delete_entity(p, key))
                 c.selection = None
                 c.selection_changed.emit(None)
             return True
@@ -219,26 +218,26 @@ class SelectTool(Tool):
         if ann is not None and (hit is None or hit[0] == ann):
             c.selection, c.sel_vertex = ann, None
             c.selection_changed.emit(ann)
-            menu.addAction(tr("Özellikler…"), lambda: c.entity_double_clicked.emit(ann))
+            menu.addAction("Properties…", lambda: c.entity_double_clicked.emit(ann))
             menu.addAction(
-                tr("Notu sil"),
+                "Delete note",
                 lambda: (
-                    c.request_edit(tr("Not sil"), lambda p: delete_entity(p, ann)),
+                    c.request_edit("Delete note", lambda p: delete_entity(p, ann)),
                     setattr(c, "selection", None),
                     c.selection_changed.emit(None),
                 ),
             )
         elif hit is not None:
             key, k = hit
-            menu.addAction("Köşeyi sil", lambda: _delete_vertex(c, key, k))
-            menu.addAction("Koordinatları düzenle…", lambda: c.entity_double_clicked.emit(key))
+            menu.addAction("Delete vertex", lambda: _delete_vertex(c, key, k))
+            menu.addAction("Edit coordinates…", lambda: c.entity_double_clicked.emit(key))
         elif seg is not None:
             key, k, pt = seg
-            menu.addAction("Buraya köşe ekle", lambda: _insert_vertex(c, key, k, pt))
-            menu.addAction("Koordinatları düzenle…", lambda: c.entity_double_clicked.emit(key))
+            menu.addAction("Add vertex here", lambda: _insert_vertex(c, key, k, pt))
+            menu.addAction("Edit coordinates…", lambda: c.entity_double_clicked.emit(key))
             menu.addAction(
-                f"{_label(key)} sil",
-                lambda: c.request_edit(f"{_label(key)} sil", lambda p: delete_entity(p, key)),
+                f"Delete {_label(key)}",
+                lambda: c.request_edit(f"Delete {_label(key)}", lambda p: delete_entity(p, key)),
             )
 
 
@@ -253,24 +252,26 @@ def _label(key) -> str:
 
 def _delete_vertex(c, key, k) -> None:
     if key[0] in FIXED_POINTS:
-        c.status.emit(f"⚠ {_label(key)} köşesi silinemez; tümünü silmek için Delete.")
+        c.status.emit(
+            f"⚠ A vertex of {_label(key)} cannot be deleted; press Delete to remove it entirely."
+        )
         return
     pts = get_points(c.project, key)
     if len(pts) <= MIN_POINTS[key[0]]:
-        c.status.emit(f"⚠ {_label(key)} en az {MIN_POINTS[key[0]]} köşe içermeli.")
+        c.status.emit(f"⚠ {_label(key)} must contain at least {MIN_POINTS[key[0]]} vertices.")
         return
     del pts[k]
     c.sel_vertex = None
-    c.request_edit(f"{_label(key)}: köşe sil", lambda p: set_points(p, key, pts))
+    c.request_edit(f"{_label(key)}: delete vertex", lambda p: set_points(p, key, pts))
 
 
 def _insert_vertex(c, key, seg_index, pt) -> None:
     if key[0] in FIXED_POINTS:
-        c.status.emit(f"⚠ {_label(key)} üzerine köşe eklenemez.")
+        c.status.emit(f"⚠ A vertex cannot be added to {_label(key)}.")
         return
     pts = get_points(c.project, key)
     pts.insert(seg_index + 1, [float(pt[0]), float(pt[1])])
-    c.request_edit(f"{_label(key)}: köşe ekle", lambda p: set_points(p, key, pts))
+    c.request_edit(f"{_label(key)}: add vertex", lambda p: set_points(p, key, pts))
 
 
 # ================================================================ drawing
@@ -279,21 +280,21 @@ class DrawTool(Tool):
 
     uses_snap = True
     TITLES = {
-        "external": tr("Dış sınır"),
-        "material": tr("Malzeme sınırı"),
-        "water": "YASS",
-        "user": "Kullanıcı tanımlı kayma yüzeyi",
-        "load_distributed": "Yayılı yük",
-        "load_line": "Tekil yük",
-        "support": tr("Destek"),
-        "crack": tr("Gerilme çatlağı"),
-        "facing": "Kaplama",
-        "pattern": "Bulon paterni",
-        "annot_text": tr("Yazı"),
-        "annot_line": tr("Çizgi"),
-        "annot_arrow": tr("Ok"),
-        "annot_rect": tr("Dikdörtgen"),
-        "annot_ellipse": tr("Elips"),
+        "external": "External boundary",
+        "material": "Material boundary",
+        "water": "Water Table",
+        "user": "User-defined slip surface",
+        "load_distributed": "Distributed load",
+        "load_line": "Line load",
+        "support": "Support",
+        "crack": "Tension crack",
+        "facing": "Facing",
+        "pattern": "Bolt pattern",
+        "annot_text": "Text",
+        "annot_line": "Line",
+        "annot_arrow": "Arrow",
+        "annot_rect": "Rectangle",
+        "annot_ellipse": "Ellipse",
     }
     MIN = {
         "load_distributed": 2,
@@ -309,19 +310,24 @@ class DrawTool(Tool):
     }
     MAX = dict(MIN)
     HINTS = {
-        "load_distributed": "Yayılı yük: yükün başlangıç ve bitiş noktalarını zemin "
-        "yüzeyinde tıklayın.",
-        "load_line": "Tekil yük: yükün etkidiği noktayı zemin yüzeyinde tıklayın.",
-        "support": "Destek: önce şev yüzündeki başı (A), sonra zemin içindeki ucu (B) "
-        "tıklayın veya koordinat girin.",
-        "facing": "Kaplama: şev yüzünde kaplamanın başlangıç ve bitiş noktalarını tıklayın.",
-        "pattern": "Bulon paterni: şev yüzünde paternin başlangıç ve bitiş noktalarını "
-        "tıklayın; aralık ve açı sonra sorulur.",
-        "annot_text": "Yazı: yazının konumunu tıklayın.",
-        "annot_line": "Çizgi: iki nokta tıklayın.",
-        "annot_arrow": "Ok: başlangıç ve uç (ok başı) noktalarını tıklayın.",
-        "annot_rect": "Dikdörtgen: iki köşe tıklayın.",
-        "annot_ellipse": "Elips: çevreleyen dikdörtgenin iki köşesini tıklayın.",
+        "load_distributed": (
+            "Distributed load: click the start and end points of the load on the ground surface."
+        ),
+        "load_line": "Line load: click the point of application on the ground surface.",
+        "support": (
+            "Support: click the head on the slope face (A), then the end inside the "
+            "ground (B), or enter coordinates."
+        ),
+        "facing": "Facing: click the start and end points of the facing on the slope face.",
+        "pattern": (
+            "Bolt pattern: click the start and end points of the pattern on the slope "
+            "face; spacing and angle are asked next."
+        ),
+        "annot_text": "Text: click the position of the text.",
+        "annot_line": "Line: click two points.",
+        "annot_arrow": "Arrow: click the start and the tip (arrow head).",
+        "annot_rect": "Rectangle: click two corners.",
+        "annot_ellipse": "Ellipse: click two corners of the bounding rectangle.",
     }
 
     def __init__(self, canvas, kind: str) -> None:
@@ -332,10 +338,11 @@ class DrawTool(Tool):
         self.preview = None
         self.min_points = self.MIN.get(kind, MIN_POINTS.get(kind, 2))
         self.max_points = self.MAX.get(kind)
-        closing = " — ilk noktaya tıklayarak veya C ile kapatın" if kind == "external" else ""
+        closing = " — close by clicking the first point or with C" if kind == "external" else ""
         self.hint = self.HINTS.get(kind) or (
-            f"{self.TITLES[kind]}: noktaları tıklayın veya koordinat girin (x,y | "
-            f"@dx,dy | @L<açı); Enter/sağ tık = bitir{closing}, Backspace = geri, Esc = iptal"
+            f"{self.TITLES[kind]}: click points or enter coordinates (x,y | @dx,dy | "
+            f"@L<angle); Enter/right-click = finish{closing}, Backspace = undo point, "
+            "Esc = cancel"
         )
 
     def ref_point(self):
@@ -350,9 +357,8 @@ class DrawTool(Tool):
             L = math.hypot(dx, dy)
             a = math.degrees(math.atan2(dy, dx))
             self.c.status.emit(
-                f"{self.TITLES[self.kind]}: nokta {len(self.pts) + 1}  "
-                f"x = {pt[0]:.3f}, y = {pt[1]:.3f}   "
-                f"(uzunluk {L:.3f} m, açı {a:.1f}°)"
+                f"{self.TITLES[self.kind]}: point {len(self.pts) + 1}  x = {pt[0]:.3f}, y "
+                f"= {pt[1]:.3f}   (length {L:.3f} m, angle {a:.1f}°)"
             )
 
     def press(self, ev) -> None:
@@ -377,7 +383,7 @@ class DrawTool(Tool):
     def finish(self) -> None:
         if len(self.pts) < self.min_points:
             self.c.status.emit(
-                f"⚠ {self.TITLES[self.kind]} için en az {self.min_points} nokta gerekli."
+                f"⚠ {self.TITLES[self.kind]} needs at least {self.min_points} points."
             )
             return
         pts = [list(q) for q in self.pts]
@@ -408,34 +414,36 @@ class DrawTool(Tool):
 
     def command(self, text: str) -> bool:
         t = text.lower()
-        if t in ("", "done", "bitir"):
+        if t in ("", "done"):
             self.finish()
             return True
-        if t in ("c", "close", "kapat"):
+        if t in ("c", "close"):
             self.finish()
             return True
-        if t in ("u", "undo", "geri"):
+        if t in ("u", "undo"):
             if self.pts:
                 self.pts.pop()
                 self.c.update()
             return True
         pt = parse_coordinate(text, self.pts[-1] if self.pts else None)
         if pt is None:
-            self.c.status.emit(f"⚠ Koordinat anlaşılamadı: '{text}' (örnek: 10,5  @5,0  @10<30)")
+            self.c.status.emit(
+                f"⚠ Coordinate not understood: '{text}' (examples: 10,5  @5,0  @10<30)"
+            )
             return False
         self.add_point(pt)
         return True
 
     def context_menu(self, menu, pos) -> None:
         if self.pts:
-            menu.addAction("Bitir (Enter)", self.finish)
+            menu.addAction("Finish (Enter)", self.finish)
             if self.kind == "external":
-                menu.addAction("Kapat (C)", self.finish)
+                menu.addAction("Close (C)", self.finish)
             menu.addAction(
-                "Son noktayı geri al (Backspace)",
+                "Undo last point (Backspace)",
                 lambda: (self.pts.pop() if self.pts else None, self.c.update()),
             )
-        menu.addAction("İptal (Esc)", self.cancel)
+        menu.addAction("Cancel (Esc)", self.cancel)
 
     def paint(self, p) -> None:
         if not self.pts:
@@ -472,7 +480,7 @@ class DrawTool(Tool):
 # ============================================================ vertex edits
 class AddVertexTool(Tool):
     name = "add_vertex"
-    hint = "Köşe ekle: bir sınır çizgisinin üzerine tıklayın."
+    hint = "Add vertex: click on a boundary line."
     pickbox = True
 
     def move(self, ev) -> None:
@@ -484,7 +492,7 @@ class AddVertexTool(Tool):
             return
         seg = self.c.pick_segment(ev.position())
         if seg is None:
-            self.c.status.emit("⚠ Yakında sınır çizgisi yok.")
+            self.c.status.emit("⚠ No boundary line nearby.")
             return
         key, k, pt = seg
         pt = tuple(pt)
@@ -495,7 +503,7 @@ class AddVertexTool(Tool):
 
 class DeleteVertexTool(Tool):
     name = "delete_vertex"
-    hint = "Köşe sil: silinecek köşeye tıklayın."
+    hint = "Delete vertex: click the vertex to delete."
     pickbox = True
 
     def move(self, ev) -> None:
@@ -507,7 +515,7 @@ class DeleteVertexTool(Tool):
             return
         hit = self.c.pick_vertex(ev.position())
         if hit is None:
-            self.c.status.emit("⚠ Yakında köşe yok.")
+            self.c.status.emit("⚠ No vertex nearby.")
             return
         _delete_vertex(self.c, *hit)
 
@@ -515,7 +523,7 @@ class DeleteVertexTool(Tool):
 # ================================================================= assign
 class AssignTool(Tool):
     name = "assign"
-    hint = "Özellik ata: malzemeyi araç çubuğundan seçin, sonra bölgelerin içine tıklayın."
+    hint = "Assign properties: choose the material in the toolbar, then click inside the regions."
     pickbox = True
 
     def press(self, ev) -> None:
@@ -524,12 +532,12 @@ class AssignTool(Tool):
             return
         mat = c.assign_material
         if not mat:
-            c.status.emit("⚠ Önce bir malzeme seçin.")
+            c.status.emit("⚠ Choose a material first.")
             return
         x, y = c.s2w(ev.position())
         region = next((r for r in c.geometry.regions if shapely.contains_xy(r.polygon, x, y)), None)
         if region is None:
-            c.status.emit("⚠ Tıklanan nokta model içinde değil.")
+            c.status.emit("⚠ The clicked point is not inside the model.")
             return
 
         def fn(p):
@@ -538,14 +546,14 @@ class AssignTool(Tool):
             ]
             p.assignments.append({"point": [float(x), float(y)], "material": mat})
 
-        if c.request_edit(f"Özellik ata: {mat}", fn):
-            c.status.emit(f"Bölgeye '{mat}' atandı.")
+        if c.request_edit(f"Assign properties: {mat}", fn):
+            c.status.emit(f"'{mat}' assigned to the region.")
 
 
 # ================================================================ measure
 class MeasureTool(Tool):
     name = "measure"
-    hint = "Ölç: iki nokta tıklayın (uzaklık, Δx, Δy, açı)."
+    hint = "Measure: click two points (distance, Δx, Δy, angle)."
     uses_snap = True
 
     def __init__(self, canvas) -> None:
@@ -571,8 +579,8 @@ class MeasureTool(Tool):
             self.b = pt
             dx, dy = self.b[0] - self.a[0], self.b[1] - self.a[1]
             self.c.status.emit(
-                f"Uzaklık = {math.hypot(dx, dy):.3f} m   Δx = {dx:.3f}   "
-                f"Δy = {dy:.3f}   açı = {math.degrees(math.atan2(dy, dx)):.2f}°"
+                f"Distance = {math.hypot(dx, dy):.3f} m   Δx = {dx:.3f}   Δy = {dy:.3f}   "
+                f"angle = {math.degrees(math.atan2(dy, dx)):.2f}°"
             )
 
     def paint(self, p) -> None:
@@ -593,7 +601,7 @@ class MeasureTool(Tool):
 # ============================================================ zoom / pan
 class ZoomWindowTool(Tool):
     name = "zoom_window"
-    hint = "Pencereyle zoom: yakınlaştırılacak alanı sürükleyerek seçin."
+    hint = "Zoom window: drag over the area to zoom into."
 
     def __init__(self, canvas) -> None:
         super().__init__(canvas)
@@ -627,7 +635,7 @@ class ZoomWindowTool(Tool):
 
 class PanTool(Tool):
     name = "pan"
-    hint = "Kaydır: sol tuşla sürükleyin (orta tuş her araçta kaydırır)."
+    hint = "Pan: drag with the left button (the middle button pans in every tool)."
 
     def __init__(self, canvas) -> None:
         super().__init__(canvas)
@@ -660,12 +668,12 @@ class SlopeLimitsTool(Tool):
 
     def _hint(self) -> str:
         steps = [
-            "sol aralığın başlangıcı",
-            "sol aralığın bitişi",
-            "sağ aralığın başlangıcı",
-            "sağ aralığın bitişi",
+            "left range start",
+            "left range end",
+            "right range start",
+            "right range end",
         ]
-        return f"Kayma sınırları: zemin yüzeyi üzerinde {steps[len(self.xs)]} noktasına tıklayın."
+        return f"Slope limits: click the {steps[len(self.xs)]} point on the ground surface."
 
     def press(self, ev) -> None:
         if ev.button() != Qt.LeftButton:
@@ -680,7 +688,7 @@ class SlopeLimitsTool(Tool):
                 p.surfaces.left_range = L
                 p.surfaces.right_range = R
 
-            self.c.request_edit(tr("Kayma sınırları"), fn)
+            self.c.request_edit("Slope limits", fn)
             self.c.select_tool()
             return
         self.hint = self._hint()
@@ -699,7 +707,7 @@ class SlopeLimitsTool(Tool):
 # ============================================================ slice query
 class SliceQueryTool(Tool):
     name = "slice_query"
-    hint = "Dilim verisi: kayan kütle içindeki bir dilime tıklayın."
+    hint = "Slice data: click a slice inside the sliding mass."
     pickbox = True
 
     def __init__(self, canvas, callback) -> None:
@@ -714,7 +722,7 @@ class SliceQueryTool(Tool):
         s = res.slices
         idx = np.flatnonzero((s.xl <= x) & (x <= s.xr))
         if idx.size == 0:
-            self.c.status.emit("⚠ Tıklanan nokta kayan kütlenin dışında.")
+            self.c.status.emit("⚠ The clicked point is outside the sliding mass.")
             return
         self.c.highlight_slice = int(idx[0])
         self.callback(int(idx[0]))
@@ -734,8 +742,8 @@ class BoltTool(Tool):
         self.angle_getter, self.length_getter = angle_getter, length_getter
         self.preview = None
         self.hint = (
-            "Tekil bulon/ankraj: şev yüzünde başlığın konumunu tıklayın "
-            "(eğim ve boy araç çubuğundan). Esc = bitir."
+            "Single bolt/anchor: click the head position on the slope face "
+            "(inclination and length from the toolbar). Esc = finish."
         )
 
     def _bolt(self, x):
@@ -757,7 +765,7 @@ class BoltTool(Tool):
         pt, _ = self.c.snap(ev.position())
         ab = self._bolt(pt[0])
         if ab is None:
-            self.c.status.emit("⚠ Model dışında.")
+            self.c.status.emit("⚠ Outside the model.")
             return
         self.c.drawn.emit("bolt", [list(map(float, ab[0])), list(map(float, ab[1]))])
 

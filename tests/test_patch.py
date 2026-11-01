@@ -33,6 +33,7 @@ from slipsurface.updates import UpdateCheckError
         (".venv/bin/python", False),
         ("slipsurface/__pycache__/x.pyc", False),
         ("random.txt", False),
+        ("tests/test_patch.py", False),  # the test suite is not shipped in updates
     ],
 )
 def test_managed_files(rel, managed):
@@ -161,10 +162,10 @@ def test_apply_update_copies_only_changed_files(tmp_path, monkeypatch):
     assert (root / "slipsurface" / "added.py").read_text() == "added"
     assert not (root / "slipsurface" / "drop.py").exists()
     # backups of the replaced files were kept
-    backup = root / ".update-backup"
+    backup = root / ".update-backup" / "2026.2.0-to-2026.3.0"
     assert (backup / "main.py").read_text() == "old"
     assert (backup / "slipsurface" / "drop.py").read_text() == "drop"
-    assert "1 değişti" in summary or "değişti" in summary
+    assert "1 changed" in summary
     # only the two changed files were downloaded
     file_fetches = [u for u in net.fetched if not u.endswith("manifest.json")]
     assert len(file_fetches) == 2
@@ -267,3 +268,172 @@ def test_bare_version_tag_fallback_without_v_prefix(tmp_path):
     assert [d.relpath for d in plan.changed] == ["main.py"]
     apply_update(plan, "2026.3.3", root=root, opener=bare_tag_opener)
     assert (root / "main.py").read_bytes() == b"updated\n"
+
+
+# ------------------------------------------------------------- safety
+@pytest.mark.parametrize(
+    "rel",
+    [
+        "../evil.py",
+        "slipsurface/../../evil.py",
+        "/etc/passwd",
+        "C:/x.py",
+        "slipsurface\\x.py",
+        "slipsurface//x.py",
+        "./main.py",
+        "",
+    ],
+)
+def test_unsafe_paths_are_never_managed(rel):
+    assert not is_managed(rel)
+
+
+def test_manifest_with_unsafe_path_is_ignored(tmp_path):
+    root = tmp_path / "app"
+    root.mkdir()
+    (root / "main.py").write_text("v3")
+    net = FakeNet({"main.py": b"v3", "../outside.py": b"x", "slipsurface/../../o.py": b"x"})
+    plan = plan_against_local("2026.3.0", root=root, opener=net)
+    assert plan.total == 0
+    assert not (tmp_path / "outside.py").exists()
+
+
+def test_apply_refuses_unsafe_plan(tmp_path):
+    root = tmp_path / "app"
+    root.mkdir()
+    plan = UpdatePlan("1", "2", new=[FileDelta("../evil.py", "new", new_hash="x")])
+    with pytest.raises(UpdateCheckError):
+        apply_update(plan, "2026.3.0", root=root, opener=FakeNet({}))
+    assert not (tmp_path / "evil.py").exists()
+
+
+def test_user_files_in_examples_are_kept(tmp_path):
+    """A project the user saved next to the examples is not deleted by an update."""
+    root = tmp_path / "app"
+    (root / "examples").mkdir(parents=True)
+    (root / "main.py").write_text("v3")
+    (root / "examples" / "my_project.slp.json").write_text("{}")
+    net = FakeNet({"main.py": b"v3"})
+    plan = plan_against_local("2026.3.0", root=root, opener=net)
+    assert plan.total == 0
+
+
+def test_failed_download_leaves_installation_unchanged(tmp_path):
+    """Nothing is replaced or removed unless every download verified."""
+    root = tmp_path / "app"
+    (root / "slipsurface").mkdir(parents=True)
+    (root / "main.py").write_text("old")
+    (root / "slipsurface" / "drop.py").write_text("drop")
+    net = FakeNet({"main.py": b"new", "slipsurface/added.py": b"tampered"})
+    plan = UpdatePlan(
+        "2026.2.0",
+        "2026.3.0",
+        changed=[FileDelta("main.py", "changed", new_hash=sha256_bytes(b"new"))],
+        new=[FileDelta("slipsurface/added.py", "new", new_hash=sha256_bytes(b"added"))],
+        removed=[FileDelta("slipsurface/drop.py", "removed")],
+    )
+    with pytest.raises(UpdateCheckError, match="hash mismatch"):
+        apply_update(plan, "2026.3.0", root=root, opener=net)
+    assert (root / "main.py").read_text() == "old"
+    assert (root / "slipsurface" / "drop.py").read_text() == "drop"
+    assert not (root / "slipsurface" / "added.py").exists()
+    assert not (root / ".update-backup").exists()
+
+
+def test_each_update_gets_its_own_backup(tmp_path):
+    root = tmp_path / "app"
+    root.mkdir()
+    for old, new in (("v1", b"v2"), ("v2", b"v3")):
+        (root / "main.py").write_text(old)
+        plan = UpdatePlan(
+            "2026.2.0",
+            "2026.3.0",
+            changed=[FileDelta("main.py", "changed", new_hash=sha256_bytes(new))],
+        )
+        apply_update(plan, "2026.3.0", root=root, opener=FakeNet({"main.py": new}))
+    backups = sorted(p.read_text() for p in (root / ".update-backup").rglob("main.py"))
+    assert backups == ["v1", "v2"]
+
+
+# -------------------------------------------------------- signed manifests
+SEED = bytes(range(32))
+
+
+class SignedNet(FakeNet):
+    """Serves manifest.json plus a manifest.json.sig made with ``seed``."""
+
+    def __init__(self, files, seed=SEED, tamper=False, unsigned=False):
+        super().__init__(files)
+        self.seed, self.tamper, self.unsigned = seed, tamper, unsigned
+
+    def _serve(self, url, rel):
+        from slipsurface.patch import signing
+
+        if url.endswith("manifest.json.sig"):
+            if self.unsigned:
+                raise UpdateCheckError("HTTP 404 manifest.json.sig")
+            manifest = super()._serve(url[: -len(".sig")], rel)
+            return signing.sign(self.seed, manifest).hex().encode()
+        payload = super()._serve(url, rel)
+        if self.tamper and url.endswith("manifest.json"):
+            payload = payload.replace(b"2026.3.0", b"2026.3.9")
+        return payload
+
+
+@pytest.fixture
+def trusted_key(monkeypatch):
+    from slipsurface.patch import signing
+
+    monkeypatch.setattr(signing, "TRUSTED_PUBLIC_KEYS", (signing.public_key(SEED).hex(),))
+
+
+def test_ed25519_rfc8032_vector():
+    from slipsurface.patch import signing
+
+    seed = bytes.fromhex("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
+    public = signing.public_key(seed)
+    assert public.hex() == "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+    signature = signing.sign(seed, b"")
+    assert signature.hex() == (
+        "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e06522490155"
+        "5fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b"
+    )
+    assert signing.verify(public, b"", signature)
+    assert not signing.verify(public, b"x", signature)
+    assert not signing.verify(public, b"", signature[:-1] + b"\x00")
+
+
+def test_signed_manifest_is_accepted(tmp_path, trusted_key):
+    root = tmp_path / "app"
+    root.mkdir()
+    net = SignedNet({"main.py": b"new"})
+    plan = plan_against_local("2026.3.0", root=root, opener=net)
+    apply_update(plan, "2026.3.0", root=root, opener=net)
+    assert (root / "main.py").read_bytes() == b"new"
+
+
+@pytest.mark.parametrize(
+    "net",
+    [
+        SignedNet({"main.py": b"new"}, tamper=True),
+        SignedNet({"main.py": b"new"}, unsigned=True),
+        SignedNet({"main.py": b"new"}, seed=bytes(32)),  # signed by an unknown key
+    ],
+    ids=["tampered", "unsigned", "wrong-key"],
+)
+def test_unverified_manifest_is_refused(tmp_path, trusted_key, net):
+    root = tmp_path / "app"
+    root.mkdir()
+    with pytest.raises(UpdateCheckError):
+        plan_against_local("2026.3.0", root=root, opener=net)
+    # no fall-back to the unsigned Git tree listing
+    assert not any("/git/trees/" in url for url in net.fetched)
+    assert not (root / "main.py").exists()
+
+
+def test_signing_off_without_trusted_keys(tmp_path):
+    root = tmp_path / "app"
+    root.mkdir()
+    net = SignedNet({"main.py": b"new"}, unsigned=True)
+    plan = plan_against_local("2026.3.0", root=root, opener=net)
+    assert [d.relpath for d in plan.new] == ["main.py"]
