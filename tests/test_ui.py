@@ -11,12 +11,8 @@ from PySide6.QtCore import QPoint, Qt  # noqa: E402
 from PySide6.QtTest import QTest  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
-from slipsurface.project import (  # noqa: E402
-    MaterialSpec,
-    acads_1a_project,
-    empty_project,
-    layered_example_project,
-)
+from slipsurface.project import MaterialSpec, acads_1a_project, empty_project  # noqa: E402
+from tests.models import layered_example_project  # noqa: E402
 from slipsurface.ui.cad import tools as T  # noqa: E402
 from slipsurface.ui.cad.tools import parse_coordinate  # noqa: E402
 
@@ -101,6 +97,31 @@ def test_layout(win):
     assert win.workflow.steps == ["Geometry", "Support", "Loading", "Properties", "Surfaces"]
     assert set(win.status.toggles) == {"snap_on", "grid_on", "ortho_on", "osnap_on"}
     assert win.doc.geometry is not None and len(win.doc.geometry.regions) == 4
+    # icon toolbars: one vertical column on the left, main icons above the notes
+    from PySide6.QtCore import Qt
+
+    for bar in (win.main_bar, win.notes_bar):
+        assert win.toolBarArea(bar) == Qt.LeftToolBarArea
+        assert bar.orientation() == Qt.Vertical
+    assert win.main_bar.geometry().bottom() <= win.notes_bar.geometry().top()
+    assert win.main_bar.actions()[0] is win.a_new
+
+
+def test_starts_and_new_project_with_a_material(app, monkeypatch):
+    from slipsurface.ui.modeler import ModelerWindow
+
+    w = ModelerWindow(None)
+    try:
+        for project in (w.doc.project, None):
+            if project is None:
+                monkeypatch.setattr(w, "_confirm_discard", lambda: True)
+                w.new_project()
+                project = w.doc.project
+            assert project.external == []
+            assert [m.name for m in project.materials] == ["Soil 1"]
+            assert project.materials[0].model == "MC"
+    finally:
+        w.close()
 
 
 def test_model_edits_invalidate_results_but_display_edits_do_not(win):
@@ -457,7 +478,7 @@ def test_add_loads_via_tools(app, win, monkeypatch):
 
 
 def test_support_types_dialog_rename(app, win):
-    from slipsurface.project import anchored_example_project
+    from tests.models import anchored_example_project
     from slipsurface.ui.dialogs.loads_supports import SupportTypesDialog
 
     win.load_project(anchored_example_project())
@@ -480,7 +501,7 @@ def test_support_types_dialog_rename(app, win):
 
 
 def test_compute_with_supports(app, win):
-    from slipsurface.project import anchored_example_project
+    from tests.models import anchored_example_project
 
     p = anchored_example_project()
     p.methods.methods = ["bishop"]
@@ -521,7 +542,7 @@ def test_crack_from_depth_points(app, win):
 
 
 def test_compute_with_crack(app, win):
-    from slipsurface.project import cracked_example_project
+    from tests.models import cracked_example_project
 
     p = cracked_example_project()
     p.methods.methods = ["spencer"]

@@ -1,4 +1,7 @@
-from slipsurface.ui.preferences import fit_to_screen
+from pathlib import Path
+
+from PySide6.QtCore import QUrl
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -9,7 +12,19 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QMessageBox,
 )
-from slipsurface.scripting import TEMPLATE, run_script
+
+from slipsurface.ui.preferences import fit_to_screen
+from slipsurface.scripting import run_script
+
+TUTORIAL = Path(__file__).resolve().parents[3] / "docs" / "Python_Scripting_Tutorial.pdf"
+
+
+def open_tutorial(parent=None) -> bool:
+    """Open the scripting tutorial PDF in the system viewer."""
+    if not TUTORIAL.is_file():
+        QMessageBox.warning(parent, "Python Scripting Tutorial", f"Not found: {TUTORIAL}")
+        return False
+    return QDesktopServices.openUrl(QUrl.fromLocalFile(str(TUTORIAL)))
 
 
 class ScriptDialog(QDialog):
@@ -26,7 +41,11 @@ class ScriptDialog(QDialog):
             )
         )
         self.editor = QPlainTextEdit()
-        self.editor.setPlainText(TEMPLATE)
+        self.editor.setPlaceholderText(
+            "# Write a Python script here, or Open .py.\n"
+            "# Example:  project.seismic.kh = 0.1\n"
+            "# Every command is explained in the Tutorial (PDF)."
+        )
         # Text of a script opened from a file that the user has not yet
         # confirmed as trusted; cleared after the first confirmation.
         self.untrusted_source: str | None = None
@@ -41,6 +60,7 @@ class ScriptDialog(QDialog):
             ("Open .py", self.load),
             ("Save .py", self.save),
             ("Run / Apply", self.run),
+            ("Tutorial (PDF)", lambda: open_tutorial(self)),
             ("Close", self.accept),
         ):
             button = QPushButton(title)

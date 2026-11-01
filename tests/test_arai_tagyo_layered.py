@@ -14,12 +14,8 @@ from shapely.geometry import Point
 from slipsurface.analysis import search_settings
 from slipsurface.lem import analyze, make_slices
 from slipsurface.optimizer import circle_from_chord
-from slipsurface.project import (
-    Project,
-    arai_tagyo_layered_circular_project,
-    arai_tagyo_layered_noncircular_project,
-    example_project,
-)
+from slipsurface.project import Project
+from tests.models import arai_tagyo_layered_circular_project, arai_tagyo_layered_noncircular_project
 
 EXAMPLES = [
     (
@@ -49,15 +45,15 @@ BOUNDARIES = [[[24, 19], [72, 35]], [[0, 3], [96, 35]]]
 
 
 @pytest.mark.parametrize("name,filename,kind,methods", EXAMPLES)
-def test_saved_fixture_matches_preset_and_menu(name, filename, kind, methods, tmp_path):
+def test_saved_fixture_matches_preset(name, filename, kind, methods, tmp_path):
     make = (
         arai_tagyo_layered_circular_project
         if kind == "circular"
         else arai_tagyo_layered_noncircular_project
     )
     preset = make()
-    saved = Project.load(Path(__file__).parents[1] / "examples" / filename)
-    for p in (preset, saved, example_project(name)):
+    saved = Project.load(Path(__file__).parent / "data" / filename)
+    for p in (preset, saved):
         p.validate()
         assert p.external == OUTER
         assert p.material_boundaries == BOUNDARIES

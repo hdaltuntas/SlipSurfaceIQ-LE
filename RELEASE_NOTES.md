@@ -1,3 +1,34 @@
+# SlipSurfaceIQ LE 2026.4.0
+
+Scripting tutorial, left icon column, ACADS-only examples and a safer updater
+
+- New **Python Scripting Tutorial** (`docs/Python_Scripting_Tutorial.pdf`) covering every
+  scripting command: project fields, all material models and parameters, groundwater,
+  loads, supports and bolt patterns, facings, seismic, methods, surfaces, notes and display
+  options. Its field tables are generated from the code and every example is run when it is
+  built (`scripts/build_scripting_tutorial.py`). Open it from *Help* or the editor's
+  *Tutorial (PDF)* button.
+- The Python scripting editor now opens empty.
+- The main icons and the note tools moved to a vertical column on the left of the Modeler,
+  read from top to bottom; the workflow bar and the step toolbar stay at the top.
+- Only the ACADS verification problems are bundled as examples. The Arai & Tagyo and
+  Borges & Cardoso benchmark models moved to `tests/data`; the other demonstration
+  examples were removed. *File → New* starts an empty project with one material.
+- English-only interface: the Turkish UI, translation catalogues and language switch
+  were removed.
+- Updater: every file is downloaded and hash-checked before anything is replaced, unsafe
+  paths are refused, files you keep in `examples/` and `docs/` are not deleted, each update
+  has its own backup folder and the test suite is no longer shipped.
+- Signed update manifests (Ed25519, pure Python): with a trusted public key configured,
+  only a manifest with a valid `manifest.json.sig` is installed.
+- When an update changes `requirements.txt`, *Install Requirements* runs pip with the
+  running Python.
+- A script opened from a `.py` file asks for confirmation before its first run.
+- Development: 100-character line limit enforced, slow tests marked, and an extra CI job
+  on Python 3.10.
+
+Version 2026.4.0.
+
 # SlipSurfaceIQ LE 2026.3.3
 
 Delta-update HTTP 404 fix and strict `main.py` source-only execution

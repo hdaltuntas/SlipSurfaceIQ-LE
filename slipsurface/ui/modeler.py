@@ -2,8 +2,9 @@
 
 menu bar
 workflow bar   Geometry › Support › Loading › Properties › Surfaces
-toolbars       main (file, edit, settings, compute, interpret, view, tools)
-               + step toolbar (changes with the workflow step)
+toolbars       workflow steps + step toolbar (changes with the step) at the top;
+               main icons (file, edit, settings, compute, interpret, view,
+               tools) and notes in one column on the left
 centre         CAD area (rulers, grid, snapping, tools)
 status bar     hints, coordinates, command box, SNAP GRID ORTHO OSNAP
 
@@ -466,6 +467,8 @@ class ModelerWindow(QMainWindow):
         self.a_auto_updates.setChecked(auto_enabled())
         self.a_auto_updates.toggled.connect(set_auto_enabled)
         m.addSeparator()
+        m.addAction("Python Scripting Tutorial (PDF)", self._scripting_tutorial)
+        m.addSeparator()
         m.addAction("About", self._about)
 
     def _build_toolbars(self) -> None:
@@ -477,7 +480,7 @@ class ModelerWindow(QMainWindow):
         self.addToolBarBreak()
         tb = QToolBar("Main Toolbar")
         tb.setObjectName("main_toolbar")
-        tb.setIconSize(QSize(24, 24))
+        tb.setIconSize(QSize(22, 22))
         for a in (
             self.a_new,
             self.a_open,
@@ -506,15 +509,18 @@ class ModelerWindow(QMainWindow):
             self.a_export,
         ):
             tb.addSeparator() if a is None else tb.addAction(a)
-        self.addToolBar(Qt.TopToolBarArea, tb)
+        # The icon toolbars sit on the left, one column read top to bottom.
+        tb.setOrientation(Qt.Vertical)
+        self.addToolBar(Qt.LeftToolBarArea, tb)
+        self.main_bar = tb
         notes = QToolBar("Notes")
         notes.setObjectName("notes_toolbar")
-        notes.setIconSize(QSize(24, 24))
+        notes.setIconSize(QSize(22, 22))
+        notes.setOrientation(Qt.Vertical)
         for a in self.t_annots.values():
             notes.addAction(a)
-        self.addToolBar(Qt.TopToolBarArea, notes)
+        self.addToolBar(Qt.LeftToolBarArea, notes)
         self.notes_bar = notes
-        self.addToolBarBreak()
 
         self.step_bars = []
         geo = QToolBar("Geometry")
@@ -1369,6 +1375,11 @@ class ModelerWindow(QMainWindow):
                 export_dxf(self.doc.project, path)
             except Exception as exc:
                 QMessageBox.warning(self, "DXF", str(exc))
+
+    def _scripting_tutorial(self) -> None:
+        from slipsurface.ui.dialogs.script import open_tutorial
+
+        open_tutorial(self)
 
     def _about(self) -> None:
         from slipsurface.ui.preferences import TECHNOLOGIES

@@ -14,7 +14,8 @@ from slipsurface.geometry import CircularSurface, SlopeGeometry
 from slipsurface.geometry.slope import Region
 from slipsurface.lem import LEMResult, analyze, make_slices, ordinary
 from slipsurface.optimizer import SearchCancelled, SearchSettings, circle_from_chord
-from slipsurface.project import MaterialSpec, Project, default_project
+from slipsurface.project import MaterialSpec, Project
+from tests.models import default_project
 
 
 def hb_case():
@@ -191,7 +192,7 @@ def test_atomic_save_replaces_existing_file(tmp_path):
     assert list(tmp_path.iterdir()) == [path]
 
 
-LAYERED = Path(__file__).parents[1] / "examples" / "layered_water_table.slp.json"
+LAYERED = Path(__file__).parent / "data" / "layered_water_table.slp.json"
 LAYERED_CIRCLE = CircularSurface(26.33099826692277, 17.336084759010852, 20.542869201440606)
 
 

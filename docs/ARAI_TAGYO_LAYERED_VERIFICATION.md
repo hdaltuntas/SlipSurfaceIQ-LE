@@ -83,19 +83,20 @@ matching optimization histories or critical surfaces without
 comparative analysis. Do not adjust the LEM equations just to force
 a published number.
 
-## Bundled models
+## Test models
 
-- `examples/arai_tagyo_layered_circular.slp.json`:
+- `tests/data/arai_tagyo_layered_circular.slp.json`:
   Bishop Simplified, Janbu Simplified and Spencer; circular automatic search.
-- `examples/arai_tagyo_layered_noncircular.slp.json`:
+- `tests/data/arai_tagyo_layered_noncircular.slp.json`:
   Janbu Simplified and Spencer; optimized non-circular **polyline**,
   four initial interior vertices and fine search effort.
 
-Both examples appear in *File → Examples*. They can be opened directly:
+These are test fixtures, not bundled examples (the application ships only the
+ACADS examples). They can be opened directly:
 
 ```bash
-python main.py --example "Arai & Tagyo — layered (circular)"
-python main.py --example "Arai & Tagyo — layered (noncircular)"
+python main.py tests/data/arai_tagyo_layered_circular.slp.json
+python main.py tests/data/arai_tagyo_layered_noncircular.slp.json
 ```
 
 The corresponding input and geometry/slicing regression:

@@ -10,11 +10,8 @@ import pytest  # noqa: E402
 from slipsurface.analysis import run_analysis  # noqa: E402
 from slipsurface.geometry import PolylineSurface  # noqa: E402
 from slipsurface.optimizer.search import polyline_from_params  # noqa: E402
-from slipsurface.project import (  # noqa: E402
-    acads_1a_project,
-    layered_example_project,
-    nailed_shotcrete_project,
-)
+from slipsurface.project import acads_1a_project  # noqa: E402
+from tests.models import layered_example_project, nailed_shotcrete_project  # noqa: E402
 from slipsurface.report import ReportOptions, build_pdf  # noqa: E402
 
 

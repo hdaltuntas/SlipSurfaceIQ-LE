@@ -1,8 +1,8 @@
 # SlipSurfaceIQ LE
 
-**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.3.3**
+**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.4.0**
 
-[2026.3.3 release notes](RELEASE_NOTES.md) — Fix the HTTP 404 error when downloading changed files during an update (check release-asset `manifest.json` and fall back to GitHub's Git Trees API, supporting both `v`-prefixed and bare version tags), enforce `main.py` as the sole application entry point without Windows/Linux package builds, and complete English UI translations for update and geometry validation messages.
+[2026.4.0 release notes](RELEASE_NOTES.md) — Python scripting tutorial (PDF), main icons in a vertical column on the left, only the ACADS examples bundled, an empty scripting editor, English-only interface, signed update manifests and a safer delta updater.
 
 SlipSurfaceIQ LE is an open-source program for checking the stability of soil and rock
 slopes, cuts and embankments with the limit equilibrium method (LEM). You draw the slope
@@ -123,7 +123,7 @@ sudo zypper install libglvnd libxkbcommon0 fontconfig libdbus-1-3              #
 
 ```bash
 python main.py                                    # empty project, window sized to the screen
-python main.py examples/anchored_cut.slp.json     # open a project file
+python main.py examples/acads_1a.slp.json         # open a project file
 python main.py --example "ACADS EX1(a)"           # open a bundled example
 python main.py --list-examples                    # list the bundled examples
 python main.py --check                            # check Python and the required packages
@@ -187,7 +187,11 @@ asks for a new computation; display-only changes (colours, labels, notes) do not
 
 - **Menus:** File, Edit, View, Analysis, Boundaries, Loading, Support, Surfaces, Properties,
   Tools, Help.
-- **Workflow bar:** Geometry › Support › Loading › Properties › Surfaces.
+- **Workflow bar:** Geometry › Support › Loading › Properties › Surfaces, with the
+  toolbar of the current step below it.
+- **Icon column (left):** new / open / save, undo / redo, project settings, summary,
+  materials, compute, interpret, PDF report, zoom and pan, select, measure, export and the
+  note tools, read from top to bottom.
 - **View menu:** theme, zoom, grid settings, material labels, and *Display
   Options* (colours, line width, grid, ruler, material fill, legend, slope limits).
   Hovering a region with the Select tool shows the material name and strength
@@ -330,7 +334,6 @@ All loads are included as forces and moments in every method.
 |---|---|
 | End anchored | tensile capacity |
 | Grouted tieback | min(tensile, bond strength × min(bond length, L_out)) |
-| Soil nail | min(tensile, bond × L_out, plate + bond × L_in) |
 | Geotextile | min(tensile strength, pullout × min(L_in, L_out)) |
 | Geosynthetic | min(C · tensile, P_in, P_out), P = 2 · C · ∫(adhesion + σv tan δ) ds, σv = γ · depth; anchorage none / slope face / embedded end / both ends |
 | Micro-pile | pile shear strength |
@@ -425,7 +428,7 @@ results.
 
 ### Python scripting
 
-*Tools → Python scripting* opens an editor where a script can modify the `project` object
+*Tools → Python scripting* opens an empty editor where a script can modify the `project` object
 (`external`, `material_boundaries`, `assignments`, `water_table`, `tension_crack`,
 `materials`, `support_types`, `supports`, `support_patterns`, `facing_types`, `facings`,
 `loads`, `seismic`, `methods`, `surfaces`, `annotations`, …). `MaterialSpec`,
@@ -435,20 +438,24 @@ otherwise the open project is left unchanged. Scripts run with your local Python
 permissions — run trusted code only. Scripts never run when a project is opened; a script
 opened from a `.py` file asks for confirmation before its first run.
 
-A complete example that builds a model with geometry, loads, supports, facings and materials
-is [`examples/scripted_slope.py`](examples/scripted_slope.py).
+The [**Python Scripting Tutorial**](docs/Python_Scripting_Tutorial.pdf) (PDF; also under
+*Help* and the editor's *Tutorial (PDF)* button) explains every command: all project fields,
+every material model and its parameters, loads, supports, facings, settings, notes and
+display options, with tested examples and a complete model. Maintainers rebuild it with
+`python scripts/build_scripting_tutorial.py`; every example in it is run during the build.
 
 ---
 
 ## Bundled examples
 
-Available under *File → Examples* and from the command line with `--example "<name>"`
+The bundled examples are the ACADS verification problems. They are available under
+*File → Examples* and from the command line with `--example "<name>"`
 (`python main.py --list-examples` prints the names). The same models are in the
-[`examples`](examples) folder as project files.
+[`examples`](examples) folder as project files. *File → New* starts an empty project
+with one default material (Soil 1, Mohr-Coulomb).
 
 | Example (`--example`) | File | Shows |
 |---|---|---|
-| Simple slope (10 m, 2H:1V) | `simple_slope.slp.json` | homogeneous slope |
 | ACADS EX1(a) | `acads_1a.slp.json` | ACADS verification problem (homogeneous slope) |
 | ACADS EX1(b) | `acads_1b.slp.json` | ACADS verification problem (three layers, weak lens; layer starts at the toe) |
 | ACADS EX1(c) | `acads_1c.slp.json` | homogeneous slope with a water-filled tension crack (Craig depth 2.685 m); Spencer ref 1.592 |
@@ -459,16 +466,6 @@ Available under *File → Examples* and from the command line with `--example "<
 | ACADS 3(b) — weak seam specified path | `acads_3b.slp.json` | exact four-point noncircular path for a fixed-surface solver control; no critical search |
 | ACADS EX4 | `acads_4.slp.json` | weak seam, inclined piezometric surface and two surcharges; Spencer ref 0.761 (block search) |
 | ACADS EX5 | `acads_5.slp.json` | excavated 1:2 slope, water-table approximation of the published flow net; Spencer ~1.486 vs 1.500 |
-| Arai & Tagyo — layered (circular) | `arai_tagyo_layered_circular.slp.json` | dry three-layer VP15; critical circular Bishop/Janbu/Spencer searches |
-| Arai & Tagyo — layered (noncircular) | `arai_tagyo_layered_noncircular.slp.json` | same VP15 cross-section; non-circular Janbu/Spencer polyline searches |
-| Borges & Cardoso — geosynthetic embankment #2 | `borges_cardoso_case2.slp.json` | dry 5 m embankment, four clays including depth-variable su, unanchored 200 kN/m geosynthetic |
-| Layered slope + water table | `layered_water_table.slp.json` | fill, soft clay and weathered rock (Hoek-Brown) with a water table |
-| Anchored cut + surcharge | `anchored_cut.slp.json` | two rows of grouted tiebacks, distributed and line loads |
-| Slope with tension crack | `tension_crack.slp.json` | water-filled tension crack in stiff clay |
-| Soil nail + shotcrete | `soil_nail_shotcrete.slp.json` | soil-nail pattern, shotcrete facing, notes |
-| Undrained clay | `undrained_clay.slp.json` | total-stress (su) analysis |
-| Power-law envelope | `power_law.slp.json` | non-linear strength |
-| Seismic kh=0.15 | `seismic.slp.json` | pseudo-static seismic loading |
 
 ---
 
@@ -592,7 +589,7 @@ slipsurface/
   patch/             delta self-updater and manifest signatures
   report/            PDF report (ReportLab) and fonts (Source Sans 3, SIL OFL)
   ui/                Modeler, Interpret, CAD canvas and tools, dialogs
-examples/            example projects and the scripting example
+examples/            ACADS example projects
 tests/               test suite
 ```
 

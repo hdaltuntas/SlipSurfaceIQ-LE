@@ -9,7 +9,7 @@ from slipsurface.analysis import report_text, run_analysis
 from slipsurface.geometry import PolylineSurface, simple_slope
 from slipsurface.lem import LEMResult, SliceOptions, analyze
 from slipsurface.materials import MohrCoulomb
-from slipsurface.project import default_project
+from tests.models import default_project
 from slipsurface.ui.cad.fs_contour import build_grid
 
 

@@ -7,7 +7,7 @@ import pytest
 
 from slipsurface.lem.slicing import make_slices
 from slipsurface.optimizer.search import polyline_from_params
-from slipsurface.project import layered_example_project
+from tests.models import layered_example_project
 
 
 @pytest.mark.parametrize("tol", [0.005, 1e-6])
