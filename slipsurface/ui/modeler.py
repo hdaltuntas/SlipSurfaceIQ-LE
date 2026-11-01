@@ -4,9 +4,11 @@ menu bar
 workflow bar   Geometri › Destek › Yükleme › Özellikler › Yüzeyler
 toolbars       main (file, edit, settings, compute, interpret, view, tools)
                + step toolbar (changes with the workflow step)
-left dock      Belge Görüntüleyici + Görüntü Seçenekleri
 centre         CAD area (rulers, grid, snapping, tools)
 status bar     hints, coordinates, command box, SNAP GRID ORTHO OSNAP
+
+Document Viewer + Display Options live in the Interpret window. The Modeler
+reaches display options from View → Görüntü Seçenekleri.
 """
 
 from __future__ import annotations
@@ -158,6 +160,7 @@ class ModelerWindow(QMainWindow):
         self.a_zoom_in = A(tr("Yakınlaştır"), lambda: self.canvas.zoom(1.25), "zoom_in", "Ctrl++")
         self.a_zoom_out = A(tr("Uzaklaştır"), lambda: self.canvas.zoom(0.8), "zoom_out", "Ctrl+-")
         self.a_grid_settings = A(tr("Izgara ve Yakalama Ayarları…"), self.grid_settings, "grid")
+        self.a_display_opts = A(tr("Görüntü Seçenekleri…"), self.display_options)
 
         self.a_settings = A(
             tr("Proje Ayarları…"), self.project_settings, "settings", "Ctrl+Shift+J"
@@ -393,6 +396,7 @@ class ModelerWindow(QMainWindow):
         lm = m.addMenu(tr("Malzeme Etiketleri"))
         for a in self.a_labels.values():
             lm.addAction(a)
+        m.addAction(self.a_display_opts)
 
         m = mb.addMenu(tr("&Analiz"))
         m.addAction(self.a_settings)
@@ -701,6 +705,36 @@ class ModelerWindow(QMainWindow):
             "Görüntü seçenekleri: varsayılan",
             lambda p: (p.display.clear(), p.display.update(DEFAULT_DISPLAY)),
         )
+
+    def _make_display_dialog(self):
+        """Modeler View-menu replacement for the removed left-dock Display Options."""
+        from PySide6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout
+
+        from slipsurface.ui.docks import DisplayOptions
+
+        dlg = QDialog(self)
+        dlg.setWindowTitle(tr("Görüntü Seçenekleri"))
+        fit_to_screen(dlg, 340, 520)
+        opts = DisplayOptions(dlg)
+        opts.setObjectName("modeler_display_options")
+        opts.set_values(self.doc.project.display)
+
+        def reset() -> None:
+            self._display_reset()
+            opts.set_values(self.doc.project.display)
+
+        opts.option_changed.connect(self._display_option)
+        opts.reset_requested.connect(reset)
+        lay = QVBoxLayout(dlg)
+        lay.addWidget(opts, 1)
+        box = QDialogButtonBox(QDialogButtonBox.Close)
+        box.button(QDialogButtonBox.Close).setText(tr("Kapat"))
+        box.rejected.connect(dlg.close)
+        lay.addWidget(box)
+        return dlg
+
+    def display_options(self) -> None:
+        self._make_display_dialog().exec()
 
     # ============================================================ drawing
     def _on_drawn(self, kind: str, pts: list) -> None:

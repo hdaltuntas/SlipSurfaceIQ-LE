@@ -1,3 +1,20 @@
+# SlipSurfaceIQ LE 2026.3.1
+
+Modeler display options after the left-dock removal, and material hover fixes
+
+- Restore *Display Options* (colours, line width, grid, ruler, material fill,
+  legend, slope limits, labels) from **View → Display Options…** in the
+  Modeler. The Document Viewer stays Interpret-only; the drawing canvas
+  keeps the full width.
+- Material hover tooltips no longer restart on every mouse move. The
+  tooltip stays while the cursor is on the same region and hides when
+  the pointer leaves the canvas or the tool changes.
+- The Interpret context menu no longer offers *Edit This Material*; that
+  command belongs to the Modeler, where it opens the materials dialog.
+- README matches the current Modeler / Interpret layout.
+
+Version 2026.3.1.
+
 # SlipSurfaceIQ LE 2026.3.0
 
 Delta updates and the SlipSurfaceIQ-FEA interface style

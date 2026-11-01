@@ -410,6 +410,8 @@ EXTRA = {
     "Seçili kaplamayı topuk–kret arasındaki tüm şev yüzüne ata": "Assign the selected facing to the whole slope face between toe and crest",
     "Yataydan aşağı doğru eğim (şevin içine)": "Inclination below horizontal (into the slope)",
     "Görüntü seçeneği": "Display option",
+    "Görüntü Seçenekleri…": "Display Options…",
+    "Bu Malzemeyi Düzenle…": "Edit This Material…",
     "Görüntü seçenekleri: varsayılan": "Display options: defaults",
     "Kaplama ata": "Assign facing",
     "Öneri (Rankine, {}): z_c = 2c / (γ·√Ka) = {} m": "Suggestion (Rankine, {}): z_c = 2c / (γ·√Ka) = {} m",

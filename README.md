@@ -1,8 +1,8 @@
 # SlipSurfaceIQ LE
 
-**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.3.0**
+**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.3.1**
 
-[2026.3.0 release notes](RELEASE_NOTES.md) — delta updates and the FEA interface style. Run the application with `python main.py`; native packages and standalone launchers have been removed. Engineering modules, the CAD interface and verification tests remain available.
+[2026.3.1 release notes](RELEASE_NOTES.md) — Modeler display options from the View menu, material hover tooltips, and the FEA-style interface. Run the application with `python main.py`; native packages and standalone launchers have been removed. Engineering modules, the CAD interface and verification tests remain available.
 
 SlipSurfaceIQ LE is an open-source program for checking the stability of soil and rock
 slopes, cuts and embankments with the limit equilibrium method (LEM). You draw the slope
@@ -174,12 +174,16 @@ asks for a new computation; display-only changes (colours, labels, notes) do not
 - **Menus:** File, Edit, View, Analysis, Boundaries, Loading, Support, Surfaces, Properties,
   Tools, Help.
 - **Workflow bar:** Geometry › Support › Loading › Properties › Surfaces.
-- **Left panel:** *Document Viewer* (materials, boundaries, supports, facings, loads, notes,
-  methods — click an item to select it in the drawing) and *Display Options* (colours, line
-  width, grid, ruler, material fill, legend, slope limits, material labels).
+- **View menu:** theme, language, zoom, grid settings, material labels, and *Display
+  Options* (colours, line width, grid, ruler, material fill, legend, slope limits).
+  Hovering a region with the Select tool shows the material name and strength
+  parameters; the context menu offers *Edit This Material*.
+- **Interpret left dock:** *Document Viewer* (materials, boundaries, supports, facings,
+  loads, notes, methods — click an item to select it in the drawing) and the same
+  Display Options used while reviewing results.
 - **Dialogs:** Project Settings (General, Methods, Groundwater, Seismic, Advanced), Project
   Summary, Define Material Properties, Surface Options, Define Support Properties, Define
-  Facing Types, coordinate table, grid settings.
+  Facing Types, coordinate table, grid settings, display options.
 - **Material labels** on the regions: none, name, or name + strength parameters and unit
   weights.
 - **Notes:** text, line, arrow, rectangle and ellipse annotations, also on the results.

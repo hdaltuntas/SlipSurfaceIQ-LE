@@ -29,7 +29,7 @@ from PySide6.QtGui import (
     QPen,
     QPolygonF,
 )
-from PySide6.QtWidgets import QMenu, QWidget
+from PySide6.QtWidgets import QMenu, QToolTip, QWidget
 
 from slipsurface.geometry import slip_extent
 from slipsurface.lem import method_name
@@ -73,7 +73,7 @@ def fs_color(t: float) -> QColor:
 class CadCanvas(QWidget):
     view_changed = Signal()
     mouse_world = Signal(float, float)
-    material_activated = Signal(str)  # double-click a material region to edit it
+    material_activated = Signal(str)  # context-menu "edit this material" (Modeler)
     status = Signal(str)
     selection_changed = Signal(object)  # key or None
     entity_double_clicked = Signal(object)  # key
@@ -115,6 +115,7 @@ class CadCanvas(QWidget):
         self._annot_rects: dict = {}  # annotation index -> screen QRectF (hit test)
         self.assign_material: str | None = None
         self._contour_cache: tuple | None = None  # (result id, grid, image)
+        self._hover_mat: str | None = None  # last material shown in the hover tooltip
 
         from slipsurface.ui.cad.tools import SelectTool
 
@@ -246,6 +247,7 @@ class CadCanvas(QWidget):
         tool.activate()
         self.status.emit(tool.hint)
         self.tool_changed.emit(tool.name)
+        self._hide_material_tooltip()
         self.update()
 
     def select_tool(self) -> None:
@@ -434,28 +436,28 @@ class CadCanvas(QWidget):
                 return r.material
         return None
 
+    def _hide_material_tooltip(self) -> None:
+        self._hover_mat = None
+        if QToolTip.isVisible():
+            QToolTip.hideText()
+
     def _hover_material(self, wx: float, wy: float, ev) -> None:
         """Show the material name and parameters when the cursor rests on a
         material region (SelectTool only, so drawing tools stay quiet)."""
-        from PySide6.QtWidgets import QToolTip
-
-        if self.geometry is None or self.project is None:
-            if QToolTip.isVisible():
-                QToolTip.hideText()
-            return
         from slipsurface.ui.cad.tools import SelectTool
 
-        if not isinstance(self.tool, SelectTool):
-            if QToolTip.isVisible():
-                QToolTip.hideText()
+        if self.geometry is None or self.project is None or not isinstance(self.tool, SelectTool):
+            self._hide_material_tooltip()
             return
         hit = self.material_at(wx, wy)
         if hit is None:
-            if QToolTip.isVisible():
-                QToolTip.hideText()
+            self._hide_material_tooltip()
             return
+        if hit == self._hover_mat:
+            return  # same region: do not restart the tooltip (avoids flicker)
         spec = self.project.material(hit)
         if spec is None:
+            self._hide_material_tooltip()
             return
         from slipsurface.materials.catalog import model_name, parameter_text
 
@@ -465,6 +467,7 @@ class CadCanvas(QWidget):
             f"\u03b3 = {spec.gamma:g} kN/m\u00b3"
             + (f", \u03b3sat = {spec.gamma_sat:g}" if spec.use_sat else "")
         )
+        self._hover_mat = hit
         QToolTip.showText(ev.globalPosition().toPoint(), "\n".join(lines), self)
 
     def mouseReleaseEvent(self, ev) -> None:
@@ -489,6 +492,7 @@ class CadCanvas(QWidget):
     def leaveEvent(self, ev) -> None:
         self.mouse_pos = None
         self.snap_marker = None
+        self._hide_material_tooltip()
         self.update()
 
     def keyPressEvent(self, ev) -> None:
@@ -509,12 +513,20 @@ class CadCanvas(QWidget):
 
     def contextMenuEvent(self, ev) -> None:
         menu = QMenu(self)
-        self.tool.context_menu(menu, ev.pos())
+        self._fill_context_menu(menu, ev.pos())
+        menu.exec(ev.globalPos())
+        self.update()
+
+    def _fill_context_menu(self, menu, pos) -> None:
+        """Populate a context menu for screen position `pos` (no exec)."""
+        self.tool.context_menu(menu, pos)
         if not menu.isEmpty():
             menu.addSeparator()
-        wx, wy = self.s2w(ev.pos())
+        wx, wy = self.s2w(pos)
         hit = self.material_at(wx, wy)
-        if hit is not None:
+        # Interpret only edits notes (edit_kinds={"annot"}); material properties
+        # belong to the Modeler, where every entity kind is editable.
+        if hit is not None and self.edit_kinds is None:
             menu.addAction(
                 tr("Bu Malzemeyi Düzenle…"), lambda n=hit: self.material_activated.emit(n)
             )
@@ -522,8 +534,6 @@ class CadCanvas(QWidget):
         menu.addAction(tr("Tümünü göster (F2)"), self.zoom_extents)
         menu.addAction(tr("Yakınlaştır"), lambda: self.zoom(1.25))
         menu.addAction(tr("Uzaklaştır"), lambda: self.zoom(0.8))
-        menu.exec(ev.globalPos())
-        self.update()
 
     # ============================================================ painting
     def paintEvent(self, ev) -> None:

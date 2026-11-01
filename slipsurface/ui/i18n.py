@@ -267,6 +267,8 @@ EN = {
     "Yükler": "Loads",
     "Destekler": "Supports",
     "Görüntü Seçenekleri": "Display Options",
+    "Görüntü Seçenekleri…": "Display Options…",
+    "Bu Malzemeyi Düzenle…": "Edit This Material…",
     "Belge Görüntüleyici": "Document Viewer",
     "Dış sınır": "External Boundary",
     "Malzeme sınırı": "Material Boundary",
