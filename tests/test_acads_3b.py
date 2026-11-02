@@ -19,7 +19,7 @@ def test_acads_3b_fixed_path_is_not_a_3a_optimizer_result():
         assert p.surfaces.surface_type == "user"
         assert p.surfaces.user_surface == POINTS
         assert p.groundwater.method == "water_table"
-        assert p.methods.methods == ["spencer", "gle"]
+        assert p.methods.methods == ["spencer", "gle", "janbu_corrected"]
         assert p.external == a.external
         assert p.material_boundaries == a.material_boundaries
         assert p.water_table == a.water_table
