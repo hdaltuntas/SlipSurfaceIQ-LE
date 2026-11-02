@@ -49,7 +49,7 @@ def test_acads_3a_preset_matches_saved_project():
         assert p.general.failure_direction == "right_to_left"
         assert p.surfaces.surface_type == "noncircular"
         assert p.surfaces.noncircular_shape == "polyline"
-        assert p.methods.methods == ["spencer", "gle"]
+        assert p.methods.methods == ["spencer", "gle", "janbu_corrected"]
         assert p.methods.interslice == "half-sine"
 
     assert preset.analysis_inputs() == saved.analysis_inputs()

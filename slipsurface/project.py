@@ -894,7 +894,7 @@ def acads_1a_project() -> Project:
         "ACADS EX1(a) — homogeneous slope",
         [MaterialSpec("Soil 1", "MC", 20, 20, False, 3, 19.6, color=PALETTE[0])],
         [[0, -5], [60, -5], [60, 10], [40, 10], [20, 0], [0, 0]],
-        methods=["bishop", "spencer", "gle", "janbu_simplified"],
+        methods=["bishop", "spencer", "gle", "janbu_simplified", "janbu_corrected"],
         n_slices=30,
     )
 
@@ -915,7 +915,7 @@ def acads_1b_project() -> Project:
             [[40, 27], [52, 24], [70, 24]],
         ],
         assigns=[((60, 33), "Soil 1"), ((60, 27), "Soil 2"), ((40, 22), "Soil 3")],
-        methods=["bishop", "spencer", "gle", "janbu_simplified"],
+        methods=["bishop", "spencer", "gle", "janbu_simplified", "janbu_corrected"],
         n_slices=30,
     )
 
@@ -938,7 +938,7 @@ def acads_1c_project() -> Project:
         "ACADS EX1(c) — slope with tension crack",
         [MaterialSpec("Soil 1", "MC", 20, 20, False, 32.0, 10.0, color=PALETTE[0])],
         [[0, -5], [60, -5], [60, 10], [40, 10], [20, 0], [0, 0]],
-        methods=["bishop", "spencer", "gle"],
+        methods=["bishop", "spencer", "gle", "janbu_corrected"],
         n_slices=40,
     )
     p.tension_crack = [[42.0, 10 - z0], [60.0, 10 - z0]]
@@ -955,7 +955,7 @@ def acads_1d_project() -> Project:
     """
     p = acads_1b_project()
     p.summary.title = "ACADS EX1(d) — seismic kh = 0.15"
-    p.methods.methods = ["bishop", "spencer", "gle"]
+    p.methods.methods = ["bishop", "spencer", "gle", "janbu_corrected"]
     p.seismic.kh = 0.15
     return p
 
@@ -1012,7 +1012,7 @@ def acads_5_project() -> Project:
         [MaterialSpec("Soil 1", "MC", 20, 20, False, 11.0, 28.0, color=PALETTE[0])],
         [[0, -10], [80, -10], [80, 0], [50, 0], [30, 10], [0, 10]],
         wt=[[0, 6], [30, 6], [40, 3], [50, 0], [80, 0]],
-        methods=["bishop", "spencer", "gle"],
+        methods=["bishop", "spencer", "gle", "janbu_corrected"],
         n_slices=40,
     )
     p.general.failure_direction = "left_to_right"  # high ground on the left
@@ -1044,7 +1044,7 @@ def acads_3a_project() -> Project:
             ((60, 26.75), "Soil 2"),
             ((60, 23), "Soil 1"),
         ],
-        methods=["spencer", "gle"],
+        methods=["spencer", "gle", "janbu_corrected"],
         n_slices=60,
     )
     p.surfaces.surface_type = "noncircular"
@@ -1139,7 +1139,7 @@ def acads_2a_project() -> Project:
     # The downstream face is a distinct geometry / mechanism.
     p.surfaces.left_range = [0.0, 315.4]
     p.surfaces.right_range = [0.1, 315.5]
-    p.methods.methods = ["bishop", "janbu_simplified", "spencer", "gle"]
+    p.methods.methods = ["bishop", "janbu_simplified", "janbu_corrected", "spencer", "gle"]
     return p
 
 

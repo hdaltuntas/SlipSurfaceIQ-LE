@@ -477,6 +477,13 @@ with one default material (Soil 1, Mohr-Coulomb).
 
 ## Verification
 
+The [ACADS Janbu validation](docs/ACADS_JANBU_VALIDATION.md) separates
+Janbu Simplified from Janbu Corrected, lists method-matched Slide2 factors,
+and verifies published fixed surfaces. Deep-surface Janbu correction is
+bounded at its empirical peak; use Spencer/GLE to corroborate unusual
+non-circular mechanisms.
+
+
 A reproducible 29-slice **GeoStudio / Seequent hand-calculation reference**
 now checks the Ordinary and Simplified Bishop equilibrium equations and the
 existing LE solver independently. In 2026.1.4, Ordinary's pore-pressure

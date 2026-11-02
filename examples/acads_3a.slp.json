@@ -142,7 +142,8 @@
     "methods": {
       "methods": [
         "spencer",
-        "gle"
+        "gle",
+        "janbu_corrected"
       ],
       "n_slices": 60,
       "tolerance": 0.005,

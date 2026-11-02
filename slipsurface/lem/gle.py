@@ -493,7 +493,9 @@ def janbu_correction_factor(s: SliceSet) -> float:
     if L <= 0:
         return 1.0
     nvec = np.array([-(p1 - p0)[1], (p1 - p0)[0]]) / L
-    d = float(np.max(np.abs((pts - p0) @ nvec)))
+    # d is the maximum distance *below* the chord. Taking abs() would
+    # incorrectly count upward humps in a non-convex failure surface.
+    d = max(0.0, -float(np.min((pts - p0) @ nvec)))
     # Classify the actual base strengths, including total-stress models
     # (Undrained / SHANSEP) that do not expose MC's c and phi attributes.
     cs, tp = _strength(s, _initial_sigma_n(s))
@@ -503,11 +505,12 @@ def janbu_correction_factor(s: SliceSet) -> float:
         b1 = 0.69
     else:
         b1 = 0.50
-    r = d / L
-    f0 = 1.0 + b1 * (r - 1.4 * r * r)
-    # Janbu's 1973 chart is not valid once this expression falls below 1
-    # (d/L > 1/1.4). Do not report a corrected FS below the simplified value.
-    return float(max(f0, 1.0))
+    # The empirical Janbu curve is not defined for very deep surfaces.
+    # Its polynomial peaks at r=1/2.8, then turns downward and eventually
+    # returns to f0=1. This is a mathematical artifact, not a justified
+    # loss of shear-force correction. Saturate at the peak (XSLOPE convention).
+    r = min(d / L, 1.0 / 2.8)
+    return float(1.0 + b1 * (r - 1.4 * r * r))
 
 
 def janbu_corrected(s: SliceSet, **kw) -> LEMResult:

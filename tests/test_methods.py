@@ -82,8 +82,8 @@ def test_force_methods_mirror_invariant(method):
     assert b.fos == pytest.approx(a.fos, rel=1e-6)
 
 
-def test_janbu_correction_does_not_fall_below_one():
-    """d/L above Janbu's chart must not reduce the simplified factor of safety."""
+def test_janbu_deep_surface_correction_saturates_at_curve_peak():
+    """Out-of-domain depth may not make the f0 curve turn down to 1.0."""
     from shapely.geometry import Polygon
 
     from slipsurface.geometry.slope import Region, SlopeGeometry
@@ -97,7 +97,21 @@ def test_janbu_correction_does_not_fall_below_one():
     surf = PolylineSurface(np.array([[2.0, 0.0], [8.0, -12.0], [14.0, 0.0]]))
     mats = {"Soil 1": MohrCoulomb("Soil 1", gamma=20, c=5, phi=25)}
     slices = make_slices(geom, surf, mats, opts=SliceOptions(pore="none"))
-    assert janbu_correction_factor(slices) == 1.0
+    peak = 1.0 / 2.8
+    expected = 1.0 + 0.5 * (peak - 1.4 * peak * peak)
+    assert janbu_correction_factor(slices) == pytest.approx(expected, rel=1e-12)
+
+
+def test_janbu_sagitta_ignores_upward_excursions(monkeypatch):
+    """Distance above the exit-entry chord is not slip depth."""
+    from types import SimpleNamespace
+
+    import slipsurface.lem.gle as gle_module
+
+    monkeypatch.setattr(gle_module, "_initial_sigma_n", lambda s: np.ones(4))
+    monkeypatch.setattr(gle_module, "_strength", lambda s, sn: (np.zeros(4), np.ones(4)))
+    dummy = SimpleNamespace(base_points=lambda: np.array([[0, 0], [2, 0.5], [4, 0.5], [6, 0]]))
+    assert gle_module.janbu_correction_factor(dummy) == pytest.approx(1.0)
 
 
 def test_janbu_correction_increases_fos():
