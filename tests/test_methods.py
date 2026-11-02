@@ -109,12 +109,8 @@ def test_janbu_sagitta_ignores_upward_excursions(monkeypatch):
     import slipsurface.lem.gle as gle_module
 
     monkeypatch.setattr(gle_module, "_initial_sigma_n", lambda s: np.ones(4))
-    monkeypatch.setattr(
-        gle_module, "_strength", lambda s, sn: (np.zeros(4), np.ones(4))
-    )
-    dummy = SimpleNamespace(
-        base_points=lambda: np.array([[0, 0], [2, 0.5], [4, 0.5], [6, 0]])
-    )
+    monkeypatch.setattr(gle_module, "_strength", lambda s, sn: (np.zeros(4), np.ones(4)))
+    dummy = SimpleNamespace(base_points=lambda: np.array([[0, 0], [2, 0.5], [4, 0.5], [6, 0]]))
     assert gle_module.janbu_correction_factor(dummy) == pytest.approx(1.0)
 
 
