@@ -253,6 +253,7 @@
       "methods": [
         "bishop",
         "janbu_simplified",
+        "janbu_corrected",
         "spencer",
         "gle"
       ],
