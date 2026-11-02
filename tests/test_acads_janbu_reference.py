@@ -39,16 +39,12 @@ def test_janbu_corrected_on_published_circle(name, factory, circle, reference):
     geom, mats = p.build_geometry(), p.build_materials()
     surf = CircularSurface(*circle)
     corrected, slices = analyze(
-        geom, surf, mats, method="janbu_corrected",
-        opts=p.slice_options(), **p.solver_kw()
+        geom, surf, mats, method="janbu_corrected", opts=p.slice_options(), **p.solver_kw()
     )
     simplified, raw_slices = analyze(
-        geom, surf, mats, method="janbu_simplified",
-        opts=p.slice_options(), **p.solver_kw()
+        geom, surf, mats, method="janbu_simplified", opts=p.slice_options(), **p.solver_kw()
     )
-    assert corrected.ok and simplified.ok, (
-        name, corrected.message, simplified.message
-    )
+    assert corrected.ok and simplified.ok, (name, corrected.message, simplified.message)
     assert slices is not None and raw_slices is not None
     assert np.isfinite(corrected.fos)
     f0 = janbu_correction_factor(slices)
@@ -56,7 +52,11 @@ def test_janbu_corrected_on_published_circle(name, factory, circle, reference):
     assert 1 <= f0 <= 1.125
     # 3-4% covers the source's slice discretization and rounding.
     assert corrected.fos == pytest.approx(reference, rel=0.04), (
-        name, corrected.fos, simplified.fos, f0, reference
+        name,
+        corrected.fos,
+        simplified.fos,
+        f0,
+        reference,
     )
 
 
@@ -64,8 +64,12 @@ def test_acads_3b_janbu_corrected_on_published_noncircular_path():
     p = acads_3b_project()
     path = PolylineSurface(p.surfaces.user_surface)
     corrected, slices = analyze(
-        p.build_geometry(), path, p.build_materials(),
-        method="janbu_corrected", opts=p.slice_options(), **p.solver_kw()
+        p.build_geometry(),
+        path,
+        p.build_materials(),
+        method="janbu_corrected",
+        opts=p.slice_options(),
+        **p.solver_kw(),
     )
     assert corrected.ok, corrected.message
     assert slices is not None
