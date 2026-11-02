@@ -24,7 +24,11 @@ def test_talbingo_2a_is_not_the_prescribed_circle_in_2b():
         assert p.surfaces.right_range == [0.1, 315.5]
         assert p.groundwater.method == "none"
         assert p.methods.methods == [
-            "bishop", "janbu_simplified", "janbu_corrected", "spencer", "gle"
+            "bishop",
+            "janbu_simplified",
+            "janbu_corrected",
+            "spencer",
+            "gle",
         ]
         assert p.surfaces.seed == 0
         assert p.surfaces.effort == "fine"
