@@ -149,7 +149,12 @@ def _material_crossings(
 ) -> np.ndarray:
     """x where the slip surface crosses a material boundary (Slide2 adds a
     slice boundary there, so each slice base lies in a single material)."""
-    line = shapely.LineString(surf.points(x_exit, x_entry, n))
+    if hasattr(surf, "pts"):
+        px = surf.pts[:, 0]
+        xs = np.concatenate([[x_exit], px[(px > x_exit) & (px < x_entry)], [x_entry]])
+        line = shapely.LineString(np.column_stack([xs, surf.y(xs)]))
+    else:
+        line = shapely.LineString(surf.points(x_exit, x_entry, n))
     hits = shapely.intersection(line, [r.polygon.boundary for r in geom.regions])
     return shapely.get_coordinates(hits)[:, 0]
 

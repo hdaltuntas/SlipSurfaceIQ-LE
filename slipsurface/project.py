@@ -926,14 +926,14 @@ def acads_1c_project() -> Project:
 
     Slide2 verification problem #2 / RS2 #2 (Giam & Donald, 1989).
     The crack depth follows Craig (1997):
-    z0 = 2c/gamma * sqrt((1 - sin phi) / (1 + sin phi)) = 2.685 m
+    z0 = 2c/gamma * sqrt((1 + sin phi) / (1 - sin phi)) = 3.814 m
     for c=32 kPa, phi=10 deg, gamma=20 kN/m3. Published FoS:
     Spencer 1.592, GLE 1.592 (Slide2); referee 1.65 (Giam).
     """
     import math
 
     phi = math.radians(10.0)
-    z0 = 2 * 32.0 / 20.0 * math.sqrt((1 - math.sin(phi)) / (1 + math.sin(phi)))
+    z0 = 2 * 32.0 / 20.0 * math.sqrt((1 + math.sin(phi)) / (1 - math.sin(phi)))
     p = _mk(
         "ACADS EX1(c) — slope with tension crack",
         [MaterialSpec("Soil 1", "MC", 20, 20, False, 32.0, 10.0, color=PALETTE[0])],

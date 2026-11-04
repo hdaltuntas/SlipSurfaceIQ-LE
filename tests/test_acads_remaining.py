@@ -60,8 +60,8 @@ def test_1c_tension_crack_inputs():
     x1, y1 = p.tension_crack[0]
     x2, y2 = p.tension_crack[1]
     assert x2 > x1 and y1 == pytest.approx(y2)
-    # Craig (1997) depth: z0 = 2c/gamma*sqrt(KN) = 2.685 m for c=32, phi=10
-    assert y1 == pytest.approx(10 - 2.685, abs=1e-2)
+    # Craig (1997) depth: z0 = 2c/gamma / sqrt(Ka) = 3.814 m for c=32, phi=10
+    assert y1 == pytest.approx(10 - 3.814, abs=1e-2)
     assert p.groundwater.crack_water == 1.0  # water-filled crack
     m = p.materials[0]
     assert m.c == 32.0 and m.phi == 10.0 and m.gamma == 20

@@ -266,9 +266,11 @@ def search(
         if progress is not None and progress(gen, best_seen):
             raise SearchCancelled()
 
+    min_chord = max(st.min_chord, 0.02 * (geom.x_max - geom.x_min))
+
     def evaluate(p) -> float:
         check_cancel()
-        if abs(p[1] - p[0]) < st.min_chord:
+        if abs(p[1] - p[0]) < min_chord:
             return PENALTY
         try:
             surf = build(p)
@@ -336,6 +338,8 @@ def search(
         stat["stage"] = "polish"
         lo = np.array([b[0] for b in bounds])
         hi = np.array([b[1] for b in bounds])
+        if st.surface_type == "circular":
+            lo[2] = min(lo[2], np.radians(0.5))
         nm = minimize(
             lambda p: evaluate(np.clip(p, lo, hi)),
             x_best,
@@ -437,6 +441,82 @@ def _optimize_polyline(geom, surf: PolylineSurface, f_best: float, evaluate_surf
     return best, fb
 
 
+def _boundary_seeds(
+    geom: SlopeGeometry, st: SearchSettings, lo: np.ndarray, hi: np.ndarray
+) -> list[np.ndarray]:
+    """Composite active-sliding-passive candidate seeds along interior material
+    boundaries so DE explores thin weak seams that a circular Stage-1 seed misses."""
+    if len(geom.regions) <= 1:
+        return []
+    L = _range(st.left_range, geom)
+    R = _range(st.right_range, geom)
+    ybot = geom.bounds[1]
+    segs: list[tuple[np.ndarray, np.ndarray]] = []
+    for r in geom.regions:
+        coords = np.asarray(r.polygon.exterior.coords, dtype=float)
+        for a, b in zip(coords[:-1], coords[1:], strict=False):
+            if abs(b[0] - a[0]) < 1.0:
+                continue
+            p1, p2 = (a, b) if a[0] < b[0] else (b, a)
+            xm, ym = 0.5 * (p1[0] + p2[0]), 0.5 * (p1[1] + p2[1])
+            if ybot + 1e-2 < ym < float(geom.ground_y(xm)) - 1e-2 and not any(
+                np.allclose(p1, q1, atol=1e-2) and np.allclose(p2, q2, atol=1e-2) for q1, q2 in segs
+            ):
+                segs.append((p1, p2))
+    if not segs:
+        return []
+    gs = np.asarray(geom.surface, dtype=float)
+    dx, dy = np.diff(gs[:, 0]), np.diff(gs[:, 1])
+    inc = np.where(np.abs(dy) > 0.05 * np.maximum(np.abs(dx), 1e-6))[0]
+    if len(inc) == 0:
+        return []
+    x_face_lo, x_face_hi = float(gs[inc[0], 0]), float(gs[inc[-1] + 1, 0])
+    if float(geom.ground_y(x_face_hi)) < float(geom.ground_y(x_face_lo)):
+        return []
+    seeds: list[np.ndarray] = []
+    for p1, p2 in segs:
+        slope = (p2[1] - p1[1]) / (p2[0] - p1[0])
+
+        def y_seg(x: float, p1=p1, slope=slope) -> float:
+            return float(p1[1] + slope * (x - p1[0])) + 2e-3
+
+        h_toe = float(geom.ground_y(x_face_lo)) - y_seg(x_face_lo)
+        x_toe_ref = x_face_lo
+        if h_toe < 0.0:
+            xs = np.linspace(x_face_lo, x_face_hi, 80)
+            yg = np.asarray(geom.ground_y(xs), dtype=float)
+            ys = np.array([y_seg(float(x)) for x in xs])
+            above = np.where(yg > ys + 0.2)[0]
+            if len(above) == 0:
+                continue
+            x_toe_ref = float(xs[above[0]])
+            h_toe = float(yg[above[0]] - ys[above[0]])
+        x1 = float(np.clip(x_toe_ref - 1.5 * max(h_toe, 0.5), L[0], L[1]))
+        x_b1 = float(x_toe_ref + 0.5 * max(h_toe, 0.5))
+        for frac in (0.7, 0.85, 1.0):
+            x_b2 = float(x_face_lo + frac * (x_face_hi - x_face_lo))
+            if x_b2 <= x_b1 + 1.0 or x_b2 > p2[0]:
+                continue
+            yb1, yb2 = y_seg(x_b1), y_seg(x_b2)
+            h_kink = float(geom.ground_y(x_b2)) - yb2
+            if h_kink <= 0.2:
+                continue
+            for s_inv in (0.65, 0.9):
+                x2 = float(np.clip(x_b2 + s_inv * h_kink, R[0], R[1]))
+                if x2 > x_b2 + 0.5 and x1 < x_b1 - 0.5 and x2 - x1 > st.min_chord:
+                    sf = PolylineSurface(
+                        [
+                            [x1, float(geom.ground_y(x1))],
+                            [x_b1, yb1],
+                            [x_b2, yb2],
+                            [x2, float(geom.ground_y(x2))],
+                        ]
+                    )
+                    q = spline_params_from_surface(geom, sf, x1, x2, st.n_ctrl, st.surface_type)
+                    seeds.append(np.clip(q, lo, hi))
+    return seeds
+
+
 def _seeded_population(
     geom, materials, st: SearchSettings, bounds, progress, stat: dict | None = None
 ):
@@ -466,6 +546,7 @@ def _seeded_population(
     n_pop = 2**m
     rng = np.random.default_rng(st.seed)
     pop = qmc.scale(qmc.Sobol(dim, seed=st.seed).random_base2(m), lo, hi)
+    b_seeds = _boundary_seeds(geom, st, lo, hi)[: max(0, n_pop // 4)]
 
     def stage1_progress(gen, best):
         if stat is not None:
@@ -477,6 +558,8 @@ def _seeded_population(
     except SearchCancelled:
         raise
     except (RuntimeError, ValueError):
+        if b_seeds:
+            pop[: len(b_seeds)] = np.vstack(b_seeds)
         return pop, n_pop // dim
     seed = spline_params_from_surface(
         geom, circ.surface, circ.slices.x_exit, circ.slices.x_entry, st.n_ctrl, st.surface_type
@@ -486,6 +569,8 @@ def _seeded_population(
     span = hi - lo
     jitter = rng.normal(0, 0.03, size=(n_seed - 1, dim)) * span
     pop[:n_seed] = np.clip(np.vstack([seed, seed + jitter]), lo, hi)
+    if b_seeds:
+        pop[n_seed : n_seed + len(b_seeds)] = np.vstack(b_seeds)
     return pop, n_pop // dim
 
 
