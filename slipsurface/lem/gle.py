@@ -205,15 +205,24 @@ def _root_1d(fn, F_guess, span=(0.2, 5.0), n=17, resid_tol=1e-6, valid=None):
     """
     grid = F_guess * np.geomspace(span[0], span[1], n)
     vals = np.array([fn(F) for F in grid])
+    # A root exactly on a sample has no strictly sign-changing adjacent
+    # bracket. Rank exact roots together with brackets so a distant sampled
+    # root does not take precedence over a nearby equilibrium branch.
+    candidates = [(abs(np.log(grid[k] / F_guess)), True, k) for k in np.flatnonzero(vals == 0.0)]
     mids = np.abs(np.log(np.sqrt(grid[:-1] * grid[1:]) / F_guess))
-    for k in np.argsort(mids, kind="stable"):
+    for k in range(len(grid) - 1):
         if np.isfinite(vals[k]) and np.isfinite(vals[k + 1]) and vals[k] * vals[k + 1] < 0:
+            candidates.append((mids[k], False, k))
+    for _, exact, k in sorted(candidates):
+        if exact:
+            r = float(grid[k])
+        else:
             try:
                 r = brentq(fn, grid[k], grid[k + 1], xtol=1e-10)
             except (ValueError, RuntimeError):
                 continue
-            if abs(fn(r)) < resid_tol and (valid is None or valid(r)):
-                return r
+        if abs(fn(r)) < resid_tol and (valid is None or valid(r)):
+            return r
     return np.nan
 
 
@@ -273,12 +282,7 @@ def _solve_linear(fr, c, tp, fint, F0, lam0, tol):
 
     def f_force(lam):
         g = lambda F: _residuals(F, lam, fr, c, tp, fint)[0]  # noqa: E731
-        grid = F0 * np.geomspace(FALLBACK_WINDOW[0], FALLBACK_WINDOW[1], 12)
-        vals = [g(F) for F in grid]
-        for k in range(len(grid) - 1):
-            if np.isfinite(vals[k]) and np.isfinite(vals[k + 1]) and vals[k] * vals[k + 1] < 0:
-                return _safe_brentq(g, grid[k], grid[k + 1])
-        return np.nan
+        return _root_1d(g, F0, span=FALLBACK_WINDOW, n=12)
 
     def h(lam):
         F = f_force(lam)
@@ -287,13 +291,19 @@ def _solve_linear(fr, c, tp, fint, F0, lam0, tol):
     lams = np.linspace(-1.2, 1.2, 13)
     hv = [h(x) for x in lams]
     lo, hi = FALLBACK_WINDOW[0] * F0, FALLBACK_WINDOW[1] * F0
-    for k in range(len(lams) - 1):
-        if np.isfinite(hv[k]) and np.isfinite(hv[k + 1]) and hv[k] * hv[k + 1] < 0:
+    for k in range(len(lams)):
+        if not np.isfinite(hv[k]):
+            continue
+        if hv[k] == 0.0:
+            lam = lams[k]
+        elif k + 1 < len(lams) and np.isfinite(hv[k + 1]) and hv[k] * hv[k + 1] < 0:
             lam = _safe_brentq(h, lams[k], lams[k + 1])
-            if np.isfinite(lam):
-                F = float(f_force(lam))
-                if lo <= F <= hi and _balanced(F, lam, fr, c, tp, fint):
-                    return F, float(lam)
+        else:
+            continue
+        if np.isfinite(lam):
+            F = float(f_force(lam))
+            if lo <= F <= hi and _balanced(F, lam, fr, c, tp, fint):
+                return F, float(lam)
     return np.nan, np.nan
 
 

@@ -133,6 +133,26 @@ def test_complete_script_example():
     assert project.support_patterns and project.facings and project.tension_crack
 
 
+def test_tutorial_standalone_scripts_include_required_imports():
+    import importlib.util
+
+    root = Path(__file__).parents[1]
+    spec = importlib.util.spec_from_file_location(
+        "build_scripting_tutorial", root / "scripts" / "build_scripting_tutorial.py"
+    )
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    builder.build_story()
+
+    namespace = {"__name__": "__main__"}
+    exec(compile(builder.SNIPPETS["first_script.py"], "first_script.py", "exec"), namespace)
+    assert namespace["project"].summary.title == "My first slope"
+
+    namespace = {"__name__": "__main__"}
+    exec(compile(builder.SNIPPETS["complete_model.py"], "complete_model.py", "exec"), namespace)
+    assert namespace["project"].summary.title == "Scripted layered cut"
+
+
 @pytest.mark.parametrize("model,expected", [("UD", "su ="), ("PL", "pa =")])
 def test_new_models_in_pdf(tmp_path, model, expected):
     from pypdf import PdfReader

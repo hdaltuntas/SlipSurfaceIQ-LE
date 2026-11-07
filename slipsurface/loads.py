@@ -204,11 +204,36 @@ class LoadSet:
 def support_intersection(sup: Support, surf, x_exit: float, x_entry: float):
     """First point where the support crosses the slip surface, from A towards B."""
     A, B = np.asarray(sup.a, float), np.asarray(sup.b, float)
+    delta = B - A
     # quick reject: support entirely outside the sliding mass in x
     if max(A[0], B[0]) < x_exit - 1e-9 or min(A[0], B[0]) > x_entry + 1e-9:
         return None
-    ts = np.linspace(0.0, 1.0, 241)
-    P = A[None, :] + ts[:, None] * (B - A)[None, :]
+    # Include the finite surface domain and every polyline corner. A uniform
+    # scan alone can jump over the entire domain (long supports), or over a
+    # short segment that crosses the support and returns between samples.
+    lo, hi = surf.x_range()
+    lo, hi = max(lo, x_exit), min(hi, x_entry)
+    if hi < lo or not np.any(delta):
+        return None
+    t0, t1 = 0.0, 1.0
+    extra = []
+    if delta[0] != 0:
+        ta, tb = sorted(((lo - A[0]) / delta[0], (hi - A[0]) / delta[0]))
+        t0, t1 = max(t0, ta), min(t1, tb)
+        if t1 <= t0:
+            return None
+        if hasattr(surf, "pts"):
+            extra.extend((surf.pts[:, 0] - A[0]) / delta[0])
+        elif hasattr(surf, "r"):
+            # line minus the lower circle is concave. Include its maximum
+            # so even a very short positive interval brackets the exit root.
+            x_peak = surf.xc + np.sign(delta[0]) * delta[1] * surf.r / np.hypot(*delta)
+            extra.append((x_peak - A[0]) / delta[0])
+    elif not lo <= A[0] <= hi:
+        return None
+    ts = np.unique(np.concatenate([np.linspace(t0, t1, 241), extra]))
+    ts = ts[(ts >= t0) & (ts <= t1)]
+    P = A[None, :] + ts[:, None] * delta[None, :]
     with np.errstate(invalid="ignore"):
         vals = P[:, 1] - surf.y(P[:, 0])  # vectorized
     ok = np.isfinite(vals[:-1]) & np.isfinite(vals[1:])

@@ -104,7 +104,7 @@ def test_acads_2b_fixed_circle_methods_reproduce_published_benchmark():
         assert found.n_evals == 1, "Fixed-circle computation must not run search."
         assert found.lem.ok, (method, found.lem.message)
         assert np.isfinite(found.fos), method
-        assert found.fos == pytest.approx(reference, abs=0.05), (method, found.fos, reference)
+        assert found.fos == pytest.approx(reference, rel=0.01), (method, found.fos, reference)
 
 
 def test_acads_2b_user_polyline_behavior_is_unchanged():

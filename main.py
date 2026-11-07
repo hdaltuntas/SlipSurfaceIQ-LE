@@ -91,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
     if not check_environment(verbose=False):
         return 1
 
-    from slipsurface.project import EXAMPLES
+    from slipsurface.project import EXAMPLE_ALIASES, EXAMPLES
 
     if args.list_examples:
         for name in EXAMPLES:
@@ -106,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.example and args.project:
         print("[ERROR] --example and a project file cannot be given together.")
         return 1
-    if args.example and args.example not in EXAMPLES:
+    if args.example and args.example not in EXAMPLES and args.example not in EXAMPLE_ALIASES:
         print(f"[ERROR] Example not found: {args.example!r}. Options: {', '.join(EXAMPLES)}")
         return 1
     project_path = None

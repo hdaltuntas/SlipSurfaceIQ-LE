@@ -67,6 +67,8 @@ def analyze(
 
     Ordinary/Fellenius on a non-circular surface uses its force form.
     """
+    if method not in SOLVERS:
+        raise ValueError(f"Unknown method: {method}")
     try:
         s = make_slices(geom, surf, materials, n_slices=n_slices, opts=opts)
     except SlicingError as exc:

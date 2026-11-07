@@ -34,12 +34,13 @@ def test_acads_3b_really_solves_prescribed_path():
 
     result = run_analysis(acads_3b_project())
     assert not result.errors, result.errors
-    for method in ("spencer", "gle"):
+    for method, reference in {"spencer": 1.277, "gle": 1.262, "janbu_corrected": 1.294}.items():
         solution = result.results[method]
         assert solution.lem.ok, (method, solution.lem.message)
         assert solution.n_evals == 1
         assert solution.slices.n > 20
-        assert solution.fos == pytest.approx(1.26, abs=0.12)
+        # Slide2 VP8 Table 8.3, each method on the same prescribed surface.
+        assert solution.fos == pytest.approx(reference, rel=0.01)
 
 
 def test_tensile_roots_are_inadmissible_but_reference_paths_pass():

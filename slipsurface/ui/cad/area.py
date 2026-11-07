@@ -17,7 +17,7 @@ class CadArea(QFrame):
         self.hruler = Ruler(self.canvas, vertical=False)
         corner = QWidget()
         corner.setFixedSize(THICK, THICK)
-        corner.setStyleSheet("background:#f4f5f7;")
+        corner.setAutoFillBackground(True)
         lay = QGridLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)

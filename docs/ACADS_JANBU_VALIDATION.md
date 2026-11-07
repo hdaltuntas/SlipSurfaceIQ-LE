@@ -15,12 +15,12 @@ Janbu Corrected FoS, or a minimum found by search to the FoS of a
 | ACADS example | Verification problem | Janbu Corrected reference FoS | Comparison |
 | --- | --- | ---: | --- |
 | EX1(a), dry homogeneous | VP1 | 0.990 | critical circular search |
-| EX1(b), three materials | VP3 | 1.357 | critical circular search |
-| EX1(c), tension crack | VP2 | 1.489 | critical circular search |
+| EX1(b), tension crack | VP2 | 1.489 | critical circular search |
+| EX1(c), three materials | VP3 | 1.357 | critical circular search |
 | EX1(d), seismic | VP4 | 0.965 | critical circular search |
 | 2(a), Talbingo Dam | VP5 | 1.949 | shallow upstream critical circle search |
 | 2(b), Talbingo Dam | VP6 | 2.073 | one **given** circle (100.3,291.0,R=278.8 m) |
-| 3(a), weak seam | VP7 | 1.275 | critical non-circular search |
+| 3(a), weak seam | VP7 | 1.258 | critical non-circular search |
 | 3(b), weak seam | VP8 | 1.294 | one **given** four-vertex non-circular surface |
 | 4, weak seam / water / surcharge | VP9 | 0.699 | block search with optimization |
 | 5, excavated slope | VP10 | 1.457 | source pore-pressure **grid** |
@@ -28,6 +28,12 @@ Janbu Corrected FoS, or a minimum found by search to the FoS of a
 ACADS 5's project uses an approximated *water-table line* rather
 than the published pore-pressure grid; direct agreement must **not**
 be claimed until that field is modeled.
+
+The 3(a) value above is from the Slide2 2022 table. RS2 Part I section 5
+instead reports Janbu Corrected 1.275; the two manuals' method rows differ.
+Do not interchange those reference sets. Legacy `acads_1b` file/factory identifiers
+refer to published EX1(c), and legacy `acads_1c` identifiers refer to EX1(b).
+See [the ACADS review](ACADS_REVIEW_2026.md) for the corrected mapping and measured results.
 
 ### What was corrected
 
@@ -55,7 +61,7 @@ with a reference number.
 `tests/test_acads_janbu_reference.py` uses the published VP1,
 VP3, VP4, VP6 circles and the VP8 non-circular path. It checks
 actual Janbu Corrected FoS at the **same slip surface** to a
-4% relative tolerance, and `F_corrected = f0 F_simplified`.
+1% relative tolerance, and `F_corrected = f0 F_simplified`.
 
 It does not claim that the search engine reproduced the published
 critical minimum: optimizer bounds, slice counts, source method
