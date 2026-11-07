@@ -6,7 +6,14 @@ import numpy as np
 import pytest
 
 from slipsurface.geometry import CircularSurface, simple_slope, slip_extent
-from slipsurface.lem import SliceOptions, analyze_circle, bishop_simplified, make_slices, ordinary
+from slipsurface.lem import (
+    SliceOptions,
+    analyze,
+    analyze_circle,
+    bishop_simplified,
+    make_slices,
+    ordinary,
+)
 from slipsurface.materials import HoekBrown, MohrCoulomb
 
 
@@ -34,6 +41,12 @@ def test_surface_outside_model_rejected():
     assert s is None and not res.ok
     res, s = analyze_circle(g, CircularSurface(30, 40, 5), mats)  # above ground
     assert s is None and not res.ok
+
+
+def test_unknown_analysis_method_is_rejected_before_slicing():
+    g, mats = acads_1a()
+    with pytest.raises(ValueError, match="Unknown method: invalid"):
+        analyze(g, CircularSurface(20, 28, 28), mats, method="invalid")
 
 
 def test_slice_weights_sum_to_mass_area():
@@ -178,7 +191,7 @@ def test_circle_from_chord_passes_through_points():
 
 # ------------------------------------------------------- Spencer / GLE
 from slipsurface.geometry import PolylineSurface, SplineSurface  # noqa: E402
-from slipsurface.lem import analyze, morgenstern_price, spencer  # noqa: E402
+from slipsurface.lem import morgenstern_price, spencer  # noqa: E402
 from slipsurface.lem.gle import _Frame, _residuals, interslice_function  # noqa: E402
 from slipsurface.lem.bishop import _strength, _initial_sigma_n  # noqa: E402
 

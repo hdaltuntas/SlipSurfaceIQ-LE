@@ -18,7 +18,7 @@ class WorkflowBar(QWidget):
         self.current = 0
         self.hover = -1
         self.setMouseTracking(True)
-        self.setFixedHeight(30)
+        self.setFixedHeight(36)
         self._rects: list[QRectF] = []
         self._font = QFont()
         self._font.setPointSize(9)
@@ -54,6 +54,11 @@ class WorkflowBar(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
         p.setFont(self._font)
+        pal = self.palette()
+        accent = pal.color(pal.Highlight)
+        text_color = pal.color(pal.Text)
+        base = pal.color(pal.Base)
+        mid = pal.color(pal.AlternateBase)
         for i, (s, r) in enumerate(zip(self.steps, self._rects, strict=False)):
             path = QPainterPath()
             path.moveTo(r.left(), r.top())
@@ -65,11 +70,11 @@ class WorkflowBar(QWidget):
                 path.lineTo(r.left() + ARROW, r.center().y())
             path.closeSubpath()
             if i == self.current:
-                fill, text, edge = QColor("#5aa9f0"), QColor("white"), QColor("#2f80cf")
+                fill, text, edge = accent, QColor("white"), accent.darker(115)
             elif i == self.hover:
-                fill, text, edge = QColor("#dcebfb"), QColor("#1b3a63"), QColor("#8fb4e3")
+                fill, text, edge = mid, text_color, accent
             else:
-                fill, text, edge = QColor("#e8eaee"), QColor("#333"), QColor("#b8bec7")
+                fill, text, edge = base, text_color, pal.color(pal.Mid)
             p.setPen(QPen(edge, 1))
             p.setBrush(fill)
             p.drawPath(path)

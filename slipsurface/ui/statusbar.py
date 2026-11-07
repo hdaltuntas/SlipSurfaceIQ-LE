@@ -8,11 +8,6 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QLabel, QLineEdit, QStatusBar, QToolButton
 
-TOGGLE_CSS = (
-    "QToolButton{border:none;padding:0 5px;color:#9aa0a6;font-weight:bold;}"
-    "QToolButton:checked{color:#111;}"
-)
-
 
 class CadStatusBar(QStatusBar):
     def __init__(self, canvas, parent=None, with_command: bool = True) -> None:
@@ -41,10 +36,10 @@ class CadStatusBar(QStatusBar):
             ("OSNAP", "osnap_on", "F3", "Object Snap: Endpoint, Midpoint, Intersection, Nearest"),
         ):
             b = QToolButton()
+            b.setObjectName("status_toggle")
             b.setText(name)
             b.setCheckable(True)
             b.setChecked(getattr(canvas, attr))
-            b.setStyleSheet(TOGGLE_CSS)
             b.setToolTip(f"{tip} ({key})")
             b.toggled.connect(lambda on, a=attr: self._toggle(a, on))
             self.addPermanentWidget(b)

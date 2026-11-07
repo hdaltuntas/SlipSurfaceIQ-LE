@@ -294,7 +294,9 @@ def build_story() -> list:
     s.append(
         snippet(
             "first_script.py",
-            """project = empty_project()
+            """from slipsurface.project import empty_project, MaterialSpec
+
+project = empty_project()
 project.summary.title = "My first slope"
 project.external = [[0, -10], [60, -10], [60, 10], [40, 10], [20, 0], [0, 0]]
 project.materials = [MaterialSpec(name="Clay", gamma=19, c=8, phi=26)]
@@ -824,7 +826,10 @@ project.display["show_slices"] = True""",
     return s
 
 
-COMPLETE = """project = empty_project()
+COMPLETE = """from slipsurface.project import empty_project, MaterialSpec
+from slipsurface.loads import SupportType, FacingType
+
+project = empty_project()
 project.summary.title = "Scripted layered cut"
 project.external = [[0, -8], [48, -8], [48, 12], [26, 12], [20, 0], [0, 0]]
 project.materials = [

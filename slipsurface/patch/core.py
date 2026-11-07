@@ -442,16 +442,28 @@ def apply_update(
                 copy = backup / delta.relpath
                 copy.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(local, copy)
-        # 3) install (local moves and deletes only)
-        for delta in downloads:
-            dest = root / delta.relpath
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(tmp_dir / delta.relpath), dest)
-        for delta in plan.removed:
-            local = root / delta.relpath
-            if local.is_file():
-                os.remove(local)
-            done += 1
+        # 3) install (local moves and deletes only). If any operation fails,
+        # restore every path touched by this update from the backup.
+        try:
+            for delta in downloads:
+                dest = root / delta.relpath
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(tmp_dir / delta.relpath), dest)
+            for delta in plan.removed:
+                local = root / delta.relpath
+                if local.is_file():
+                    os.remove(local)
+                done += 1
+        except Exception:
+            for delta in deltas:
+                local = root / delta.relpath
+                saved = backup / delta.relpath
+                if saved.is_file():
+                    local.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(saved, local)
+                elif delta in downloads and local.exists():
+                    local.unlink()
+            raise
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
     return plan.summary()

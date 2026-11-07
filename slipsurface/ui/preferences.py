@@ -86,18 +86,18 @@ def apply_theme(dark=None):
         )
     else:  # FEA-style explicit light palette
         c = dict(
-            bg="#f1f4f7",
+            bg="#eef2f6",
             base="#ffffff",
             text="#243746",
-            border="#ccd7e0",
-            mid="#e6edf3",
-            hover="#e7f1f8",
-            checked="#d9edf9",
+            border="#d5dee7",
+            mid="#e8eef4",
+            hover="#e8f3fb",
+            checked="#d8ecf8",
             sel_bg="#dcecf7",
             sel_text="#124d70",
             disabled="#71818d",
-            header="#e6edf3",
-            highlight="#2182b3",
+            header="#edf2f6",
+            highlight="#1879aa",
             tab_sel_bg="#ffffff",
         )
     pal = QPalette()
@@ -115,52 +115,99 @@ def apply_theme(dark=None):
     app.setStyleSheet(f"""
         QWidget {{ font-family: "Source Sans 3"; font-size: 14px; color: {c["text"]}; }}
         QMainWindow, QDialog {{ background: {c["bg"]}; }}
-        QMenuBar, QMenu, QToolBar {{ background: {c["base"]}; color: {c["text"]}; }}
-        QMenuBar::item {{ padding: 7px 12px; background: transparent; }}
+        QMainWindow::separator {{ background: {c["border"]}; width: 1px; height: 1px; }}
+        QMenuBar {{
+            background: {c["base"]}; color: {c["text"]};
+            border-bottom: 1px solid {c["border"]}; padding: 2px 6px;
+        }}
+        QMenuBar::item {{ padding: 8px 13px; margin: 2px 1px; border-radius: 6px; }}
         QMenuBar::item:selected, QMenu::item:selected {{
             background: {c["sel_bg"]}; color: {c["sel_text"]}; }}
-        QMenu::item {{ padding: 7px 26px; }}
-        QToolBar {{ spacing: 4px; padding: 5px; border: 0;
-                    border-bottom: 1px solid {c["border"]}; }}
+        QMenu {{
+            background: {c["base"]}; color: {c["text"]};
+            border: 1px solid {c["border"]}; padding: 5px; border-radius: 8px;
+        }}
+        QMenu::item {{ padding: 8px 30px 8px 12px; border-radius: 5px; }}
+        QToolBar {{
+            background: {c["base"]}; spacing: 6px; padding: 6px 8px;
+            border: 0; border-bottom: 1px solid {c["border"]};
+        }}
+        QToolBar#workflow_toolbar {{
+            background: {c["bg"]}; padding: 6px 12px; border-bottom: 1px solid {c["border"]};
+        }}
+        QToolBar#main_toolbar, QToolBar#notes_toolbar {{
+            background: {c["base"]}; padding: 8px 6px; border-right: 1px solid {c["border"]};
+        }}
+        QToolBar#main_toolbar QToolButton, QToolBar#notes_toolbar QToolButton {{
+            min-width: 38px; min-height: 38px; padding: 5px; border-radius: 8px;
+        }}
+        QToolBar#main_toolbar::separator, QToolBar#notes_toolbar::separator {{
+            height: 10px; width: 10px; background: transparent;
+        }}
         QToolButton, QPushButton {{
             background: {c["base"]}; color: {c["text"]};
-            border: 1px solid {c["border"]}; border-radius: 4px;
-            padding: 6px 9px; min-height: 18px; }}
+            border: 1px solid {c["border"]}; border-radius: 6px;
+            padding: 7px 11px; min-height: 20px; }}
         QToolButton:hover, QPushButton:hover {{
             background: {c["hover"]}; border-color: {c["mid"]}; }}
         QToolButton:checked, QPushButton:checked {{
             background: {c["checked"]}; color: {c["sel_text"] if not dark else "#ffffff"};
             border-color: {c["highlight"]}; }}
+        QPushButton:default {{
+            background: {c["highlight"]}; color: #ffffff;
+            border-color: {c["highlight"]}; font-weight: 600;
+        }}
+        QPushButton:default:hover {{ background: {c["sel_text"]}; }}
         QToolButton:disabled, QPushButton:disabled {{
             background: {c["mid"]}; color: {c["disabled"]}; }}
         QLineEdit, QComboBox, QPlainTextEdit, QTextEdit, QAbstractItemView {{
             background: {c["base"]}; color: {c["text"]};
             selection-background-color: {c["sel_bg"]};
             selection-color: {c["sel_text"]};
-            border: 1px solid {c["border"]}; border-radius: 3px; padding: 4px; }}
+            border: 1px solid {c["border"]}; border-radius: 6px; padding: 5px; }}
+        QLineEdit:focus, QComboBox:focus, QPlainTextEdit:focus, QTextEdit:focus {{
+            border: 1px solid {c["highlight"]};
+        }}
         QSpinBox, QDoubleSpinBox {{
-            background: {c["base"]}; color: {c["text"]}; min-height: 24px; }}
+            background: {c["base"]}; color: {c["text"]}; min-height: 28px;
+            border: 1px solid {c["border"]}; border-radius: 6px; padding: 2px 5px;
+        }}
         QSpinBox QLineEdit, QDoubleSpinBox QLineEdit {{ padding: 0; border: none; }}
         QAbstractItemView::item:selected {{ background: {c["sel_bg"]}; color: {c["sel_text"]}; }}
-        QListWidget::item {{ padding: 5px; }}
+        QListWidget::item {{ padding: 7px 6px; border-radius: 4px; }}
         QHeaderView::section {{
             background: {c["header"]}; color: {c["text"]};
-            padding: 6px; border: 1px solid {c["border"]}; }}
-        QTabWidget::pane {{ border: 1px solid {c["border"]}; background: {c["base"]}; }}
-        QTabBar::tab {{ background: {c["header"]}; color: {c["text"]}; padding: 8px 13px; }}
+            padding: 7px; border: 0; border-bottom: 1px solid {c["border"]}; }}
+        QTabWidget::pane {{
+            border: 1px solid {c["border"]}; background: {c["base"]}; border-radius: 6px; }}
+        QTabBar::tab {{
+            background: {c["header"]}; color: {c["text"]};
+            padding: 9px 15px; margin-right: 2px; }}
         QTabBar::tab:selected {{
             background: {c["tab_sel_bg"]}; color: {c["sel_text"] if not dark else c["text"]};
             border-bottom: 2px solid {c["highlight"]}; }}
-        QDockWidget::title {{ background: {c["mid"]}; color: {c["text"]}; padding: 6px; }}
+        QDockWidget::title {{
+            background: {c["mid"]}; color: {c["text"]};
+            padding: 8px 10px; font-weight: 600; }}
         QSplitter::handle {{ background: {c["mid"]}; }}
-        QTreeWidget, QListWidget, QTableWidget {{ border: 1px solid {c["border"]}; }}
+        QTreeWidget, QListWidget, QTableWidget {{
+            border: 1px solid {c["border"]}; border-radius: 6px; }}
         QStatusBar {{
             background: {c["mid"]}; color: {c["text"]};
             border-top: 1px solid {c["border"]}; }}
+        QStatusBar QLabel {{ padding: 2px 8px; }}
+        QStatusBar QToolButton {{
+            border: 0; background: transparent; padding: 4px 8px;
+            color: {c["disabled"]}; font-weight: 600; border-radius: 5px;
+        }}
+        QStatusBar QToolButton:hover {{ background: {c["hover"]}; color: {c["text"]}; }}
+        QStatusBar QToolButton:checked {{
+            background: {c["checked"]}; color: {c["sel_text"]}; }}
+        QWidget#ruler_corner {{ background: {c["mid"]}; }}
         QProgressBar {{
             background: {c["header"]}; color: {c["text"]}; border: 0; text-align: center; }}
         QProgressBar::chunk {{ background: {c["highlight"]}; }}
-        QToolTip {{ background: {c["text"]}; color: {c["bg"]}; border: 0; padding: 5px; }}
+        QToolTip {{ background: {c["text"]}; color: {c["bg"]}; border: 0; padding: 6px 8px; }}
     """)
     for widget in app.topLevelWidgets():
         widget.update()

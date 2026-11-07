@@ -1,3 +1,18 @@
+# SlipSurfaceIQ LE 2026.5.0
+
+Modernized desktop interface and verified scripting workflow
+
+- Refreshed the light and dark desktop themes with clearer hierarchy, spacing, rounded
+  controls, polished toolbars, tabs, docks and status-bar toggles.
+- Updated the workflow navigation and CAD ruler chrome to follow the active application
+  palette consistently.
+- Corrected the standalone Python examples in the scripting tutorial and regenerated
+  `docs/Python_Scripting_Tutorial.pdf`.
+- Added validation for unknown analysis methods and safer updater rollback behavior.
+- Rechecked the limit-equilibrium methods against the ACADS benchmark suite.
+
+Version 2026.5.0.
+
 # SlipSurfaceIQ LE 2026.4.0
 
 Scripting tutorial, left icon column, ACADS-only examples and a safer updater
