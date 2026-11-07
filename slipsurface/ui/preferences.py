@@ -58,46 +58,41 @@ def show_screen_sized(window) -> None:
 
 
 def apply_theme(dark=None):
-    """Apply the SlipSurfaceIQ FEA-style theme (explicit light / dark palettes).
-
-    The light mode mirrors the SlipSurfaceIQ-FEA desktop app: an explicit
-    palette independent of the system dark mode, with matching QSS for
-    menus, toolbars, buttons, tabs and headers.
-    """
+    """Apply a compact, palette-consistent desktop theme to all windows."""
     app = QApplication.instance()
     if dark is None:
         dark = settings().value("dark", False, type=bool)
     settings().setValue("dark", dark)
     if dark:
         c = dict(
-            bg="#1b2735",
-            base="#223042",
-            text="#e6edf7",
-            border="#39516b",
-            mid="#31435c",
-            hover="#2a3d54",
-            checked="#3a5f8f",
-            sel_bg="#3a5f8f",
+            bg="#141e2d",
+            base="#1d2a3c",
+            text="#e5edf8",
+            border="#34465e",
+            mid="#27384e",
+            hover="#2b405b",
+            checked="#294b76",
+            sel_bg="#294b76",
             sel_text="#ffffff",
-            disabled="#7f90a5",
-            header="#26354a",
-            highlight="#4d8fd1",
-            tab_sel_bg="#2e4260",
+            disabled="#91a2b9",
+            header="#233249",
+            highlight="#78adf5",
+            tab_sel_bg="#1d2a3c",
         )
-    else:  # FEA-style explicit light palette
+    else:
         c = dict(
-            bg="#f1f4f7",
+            bg="#f4f6fa",
             base="#ffffff",
-            text="#243746",
-            border="#ccd7e0",
-            mid="#e6edf3",
-            hover="#e7f1f8",
-            checked="#d9edf9",
-            sel_bg="#dcecf7",
-            sel_text="#124d70",
-            disabled="#71818d",
-            header="#e6edf3",
-            highlight="#2182b3",
+            text="#253650",
+            border="#d8e0ec",
+            mid="#e9eef5",
+            hover="#edf4ff",
+            checked="#e1edff",
+            sel_bg="#e1edff",
+            sel_text="#2358a3",
+            disabled="#74839a",
+            header="#f0f3f8",
+            highlight="#3978d4",
             tab_sel_bg="#ffffff",
         )
     pal = QPalette()
@@ -110,22 +105,25 @@ def apply_theme(dark=None):
         pal.setColor(QPalette.Disabled, role, QColor(c["disabled"]))
     pal.setColor(QPalette.Highlight, QColor(c["highlight"]))
     pal.setColor(QPalette.HighlightedText, QColor("#ffffff"))
+    pal.setColor(QPalette.PlaceholderText, QColor(c["disabled"]))
+    pal.setColor(QPalette.Mid, QColor(c["border"]))
     app.setPalette(pal)
     app.setFont(interface_font())
     app.setStyleSheet(f"""
         QWidget {{ font-family: "Source Sans 3"; font-size: 14px; color: {c["text"]}; }}
         QMainWindow, QDialog {{ background: {c["bg"]}; }}
         QMenuBar, QMenu, QToolBar {{ background: {c["base"]}; color: {c["text"]}; }}
-        QMenuBar::item {{ padding: 7px 12px; background: transparent; }}
+        QMenuBar::item {{ padding: 6px 10px; background: transparent; }}
         QMenuBar::item:selected, QMenu::item:selected {{
             background: {c["sel_bg"]}; color: {c["sel_text"]}; }}
         QMenu::item {{ padding: 7px 26px; }}
         QToolBar {{ spacing: 4px; padding: 5px; border: 0;
                     border-bottom: 1px solid {c["border"]}; }}
+        QToolBar::separator {{ background: {c["border"]}; width: 1px; margin: 5px; }}
         QToolButton, QPushButton {{
             background: {c["base"]}; color: {c["text"]};
-            border: 1px solid {c["border"]}; border-radius: 4px;
-            padding: 6px 9px; min-height: 18px; }}
+            border: 1px solid {c["border"]}; border-radius: 6px;
+            padding: 5px 8px; min-height: 18px; }}
         QToolButton:hover, QPushButton:hover {{
             background: {c["hover"]}; border-color: {c["mid"]}; }}
         QToolButton:checked, QPushButton:checked {{
@@ -133,6 +131,34 @@ def apply_theme(dark=None):
             border-color: {c["highlight"]}; }}
         QToolButton:disabled, QPushButton:disabled {{
             background: {c["mid"]}; color: {c["disabled"]}; }}
+        QToolButton:focus, QPushButton:focus {{ border-color: {c["highlight"]}; }}
+        QToolButton[workflowStep="true"] {{
+            border: 1px solid transparent; background: transparent;
+            font-size: 13px; padding: 6px 9px; }}
+        QToolButton[workflowStep="true"]:hover {{ background: {c["hover"]}; }}
+        QToolButton[workflowStep="true"]:checked {{
+            background: {c["checked"]}; color: {c["sel_text"]}; font-weight: 600; }}
+        QToolButton[workflowStep="true"]:focus {{ border-color: {c["highlight"]}; }}
+        QToolButton[primaryAction="true"] {{
+            background: {c["checked"]}; color: {c["sel_text"]};
+            border-color: {c["highlight"]}; font-weight: 600; }}
+        QToolButton[primaryAction="true"]:disabled {{
+            background: {c["mid"]}; color: {c["disabled"]}; border-color: {c["border"]}; }}
+        QScrollArea#action_rail, QWidget#action_rail_content {{
+            background: {c["base"]}; border: none; }}
+        QScrollArea#action_rail {{ border-right: 1px solid {c["border"]}; }}
+        QLabel[railHeading="true"] {{
+            color: {c["disabled"]}; font-size: 10px; font-weight: 600; padding: 2px 0; }}
+        QToolButton[railButton="true"] {{
+            background: transparent; border: 1px solid transparent; padding: 4px; }}
+        QToolButton[railButton="true"]:hover {{ background: {c["hover"]}; }}
+        QToolButton[railButton="true"]:checked {{
+            background: {c["checked"]}; border-color: {c["highlight"]}; }}
+        QToolButton[railButton="true"]:focus {{ border-color: {c["highlight"]}; }}
+        QToolButton[railButton="true"]:disabled {{ background: transparent; }}
+        QLabel[sectionHeading="true"] {{
+            background: {c["header"]}; color: {c["text"]};
+            font-weight: 600; padding: 8px; border-radius: 4px; }}
         QLineEdit, QComboBox, QPlainTextEdit, QTextEdit, QAbstractItemView {{
             background: {c["base"]}; color: {c["text"]};
             selection-background-color: {c["sel_bg"]};
@@ -155,8 +181,24 @@ def apply_theme(dark=None):
         QSplitter::handle {{ background: {c["mid"]}; }}
         QTreeWidget, QListWidget, QTableWidget {{ border: 1px solid {c["border"]}; }}
         QStatusBar {{
-            background: {c["mid"]}; color: {c["text"]};
+            background: {c["base"]}; color: {c["text"]};
             border-top: 1px solid {c["border"]}; }}
+        QStatusBar::item {{ border: none; }}
+        QToolButton[statusToggle="true"] {{
+            background: transparent; color: {c["disabled"]}; font-size: 12px;
+            border: 1px solid transparent; padding: 2px 5px; font-weight: 600; }}
+        QToolButton[statusToggle="true"]:checked {{
+            background: {c["checked"]}; color: {c["sel_text"]}; }}
+        QToolButton[statusToggle="true"]:hover {{ background: {c["hover"]}; }}
+        QToolButton[statusToggle="true"]:focus {{ border-color: {c["highlight"]}; }}
+        QScrollBar:vertical {{ width: 10px; background: {c["bg"]}; margin: 0; }}
+        QScrollBar:horizontal {{ height: 10px; background: {c["bg"]}; margin: 0; }}
+        QScrollBar::handle {{ background: {c["border"]}; border-radius: 4px; }}
+        QScrollBar::handle:vertical {{ min-height: 30px; }}
+        QScrollBar::handle:horizontal {{ min-width: 30px; }}
+        QScrollBar::handle:hover {{ background: {c["disabled"]}; }}
+        QScrollBar::add-line, QScrollBar::sub-line {{ width: 0; height: 0; }}
+        QScrollBar::add-page, QScrollBar::sub-page {{ background: transparent; }}
         QProgressBar {{
             background: {c["header"]}; color: {c["text"]}; border: 0; text-align: center; }}
         QProgressBar::chunk {{ background: {c["highlight"]}; }}

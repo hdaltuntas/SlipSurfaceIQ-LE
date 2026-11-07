@@ -1,12 +1,9 @@
-"Breadcrumb workflow bar (Geometry › Properties › Surfaces), Slide2 style."
+"""Accessible workflow tabs shared with the modeler's contextual tools."""
 
 from __future__ import annotations
 
-from PySide6.QtCore import QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPainterPath, QPen
-from PySide6.QtWidgets import QWidget
-
-ARROW = 12
+from PySide6.QtCore import QEvent, Qt, Signal
+from PySide6.QtWidgets import QButtonGroup, QHBoxLayout, QToolButton, QWidget
 
 
 class WorkflowBar(QWidget):
@@ -16,84 +13,52 @@ class WorkflowBar(QWidget):
         super().__init__(parent)
         self.steps = steps
         self.current = 0
-        self.hover = -1
-        self.setMouseTracking(True)
-        self.setFixedHeight(30)
-        self._rects: list[QRectF] = []
-        self._font = QFont()
-        self._font.setPointSize(9)
-
-    def sizeHint(self):
-        from PySide6.QtCore import QSize
-
-        self._layout()
-        w = int(self._rects[-1].right() + 8) if self._rects else 200
-        return QSize(w, 30)
-
-    def minimumSizeHint(self):
-        return self.sizeHint()
+        self.setObjectName("workflow_steps")
+        self.setAccessibleName("Modeling workflow")
+        self.buttons = []
+        self.group = QButtonGroup(self)
+        self.group.setExclusive(True)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(2, 0, 2, 0)
+        layout.setSpacing(3)
+        for i, step in enumerate(steps):
+            button = QToolButton(self)
+            button.setText(f"{i + 1}  {step}")
+            button.setAccessibleName(step)
+            button.setToolTip(f"{step} tools · use Left / Right to switch steps")
+            button.setProperty("workflowStep", True)
+            button.setCheckable(True)
+            button.setFocusPolicy(Qt.StrongFocus)
+            button.installEventFilter(self)
+            self.group.addButton(button, i)
+            self.buttons.append(button)
+            layout.addWidget(button)
+        self.group.idClicked.connect(self.set_current)
+        if self.buttons:
+            self.buttons[0].setChecked(True)
+            self.setFocusProxy(self.buttons[0])
 
     def set_current(self, i: int, emit: bool = True) -> None:
+        if not 0 <= i < len(self.steps):
+            raise IndexError(f"Workflow step {i} is out of range")
+        self.buttons[i].setChecked(True)
         if i != self.current:
             self.current = i
-            self.update()
             if emit:
                 self.step_changed.emit(i)
 
-    def _layout(self) -> None:
-        fm = QFontMetrics(self._font)
-        x = 6.0
-        self._rects = []
-        for s in self.steps:
-            w = fm.horizontalAdvance(s) + 46
-            self._rects.append(QRectF(x, 3, w, self.height() - 6))
-            x += w - ARROW + 4
-
-    def paintEvent(self, ev) -> None:
-        self._layout()
-        p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
-        p.setFont(self._font)
-        for i, (s, r) in enumerate(zip(self.steps, self._rects, strict=False)):
-            path = QPainterPath()
-            path.moveTo(r.left(), r.top())
-            path.lineTo(r.right() - ARROW, r.top())
-            path.lineTo(r.right(), r.center().y())
-            path.lineTo(r.right() - ARROW, r.bottom())
-            path.lineTo(r.left(), r.bottom())
-            if i > 0:
-                path.lineTo(r.left() + ARROW, r.center().y())
-            path.closeSubpath()
-            if i == self.current:
-                fill, text, edge = QColor("#5aa9f0"), QColor("white"), QColor("#2f80cf")
-            elif i == self.hover:
-                fill, text, edge = QColor("#dcebfb"), QColor("#1b3a63"), QColor("#8fb4e3")
-            else:
-                fill, text, edge = QColor("#e8eaee"), QColor("#333"), QColor("#b8bec7")
-            p.setPen(QPen(edge, 1))
-            p.setBrush(fill)
-            p.drawPath(path)
-            p.setPen(text)
-            p.drawText(r.adjusted(ARROW if i else 4, 0, -ARROW, 0), Qt.AlignCenter, s)
-        p.end()
-
-    def _index_at(self, pos) -> int:
-        for i, r in enumerate(self._rects):
-            if r.contains(QPointF(pos)):
-                return i
-        return -1
-
-    def mouseMoveEvent(self, ev) -> None:
-        h = self._index_at(ev.position())
-        if h != self.hover:
-            self.hover = h
-            self.update()
-
-    def leaveEvent(self, ev) -> None:
-        self.hover = -1
-        self.update()
-
-    def mousePressEvent(self, ev) -> None:
-        i = self._index_at(ev.position())
-        if i >= 0:
-            self.set_current(i)
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.KeyPress and watched in self.buttons:
+            key = event.key()
+            index = self.buttons.index(watched)
+            if key in (Qt.Key_Left, Qt.Key_Right, Qt.Key_Home, Qt.Key_End):
+                if key == Qt.Key_Home:
+                    index = 0
+                elif key == Qt.Key_End:
+                    index = len(self.buttons) - 1
+                else:
+                    index = (index + (1 if key == Qt.Key_Right else -1)) % len(self.buttons)
+                self.set_current(index)
+                self.buttons[index].setFocus(Qt.TabFocusReason)
+                return True
+        return super().eventFilter(watched, event)

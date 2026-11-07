@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import shutil
 
 import pytest
 
@@ -202,6 +203,37 @@ def test_apply_update_progress_cancel(tmp_path):
         )  # cancel immediately
     # the local file was not replaced (backup only)
     assert (root / "main.py").read_text() == "old"
+
+
+def test_apply_update_rolls_back_installation_failure(tmp_path, monkeypatch):
+    root = tmp_path / "app"
+    (root / "slipsurface").mkdir(parents=True)
+    (root / "main.py").write_text("old")
+    (root / "slipsurface" / "drop.py").write_text("drop")
+    net = FakeNet({"main.py": b"new", "slipsurface/added.py": b"added"})
+    plan = UpdatePlan(
+        "2026.2.0",
+        "2026.3.0",
+        changed=[FileDelta("main.py", "changed", new_hash=sha256_bytes(b"new"))],
+        new=[FileDelta("slipsurface/added.py", "new", new_hash=sha256_bytes(b"added"))],
+        removed=[FileDelta("slipsurface/drop.py", "removed")],
+    )
+    original_move = shutil.move
+    calls = 0
+
+    def fail_on_second_move(source, destination):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise OSError("simulated install failure")
+        return original_move(source, destination)
+
+    monkeypatch.setattr("slipsurface.patch.core.shutil.move", fail_on_second_move)
+    with pytest.raises(OSError, match="simulated install failure"):
+        apply_update(plan, "2026.3.0", root=root, opener=net)
+    assert (root / "main.py").read_text() == "old"
+    assert (root / "slipsurface" / "drop.py").read_text() == "drop"
+    assert not (root / "slipsurface" / "added.py").exists()
 
 
 def test_local_hash_ignores_extra_files(tmp_path):

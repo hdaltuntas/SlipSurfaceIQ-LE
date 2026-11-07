@@ -1,5 +1,44 @@
 # Published benchmark discrepancies: separate the mechanisms before changing a solver
 
+## Review update — 7 November 2026
+
+The [ACADS review](ACADS_REVIEW_2026.md) records the current input corrections,
+method-specific fixed-surface comparisons and remaining search-verification
+limits. In particular, EX4's inclined seam was previously modeled as a
+horizontal layer, and EX1(b)/(c) display names were interchanged.
+
+Two numerical defects were reproduced and corrected independently of those
+reference values:
+
+- Force-equilibrium bracketing discarded roots exactly on its sampling grid.
+  Exact roots now participate in the existing nearest-branch selection and
+  physical-validity checks. GLE's fallback force and lambda scans also retain
+  exact sampled equilibria.
+- Reinforcement intersection sampling could skip a short slip-surface domain
+  or short polyline segment, and an earlier crossing outside the selected
+  sliding mass could hide a later valid crossing. Sampling now includes the
+  mass/domain bounds, polyline vertices and circle extrema. Arbitrary spline
+  intersections still use finite sampling; this is a remaining limitation.
+
+`tests/test_numerical_audit.py` contains 12 focused regressions, including
+mirrored geometry, branch ordering and forced Newton fallback.
+
+The UI audit also replaced the overflowing left toolbars with a grouped,
+scrollable action rail, kept Compute/Interpret in the top bar, and made
+contextual input controls horizontally scrollable. Small-screen tests cover
+800×600, 1024×680 and 1366×768; themed tests cover light/dark appearance and
+keyboard navigation. Actual previews: [light](images/modeler-light.png),
+[dark](images/modeler-dark.png).
+
+Validation on this checkout: **607 regular tests and 15 slow tests passed**,
+including the complete ACADS search smoke checks and reinforced-model searches.
+Ruff lint/format checks and Mypy (16 computation source files) passed.
+`main.py --check` and an offscreen launch at Qt scale factor 1.5 also passed.
+GUI checks use Qt's offscreen platform; native desktop behavior on other
+operating systems was not exercised in this review.
+
+## Earlier discrepancy investigations
+
 This is a verification audit, NOT a claim that all calculated FoS values
 now match. Reported SlipSurfaceIQ-LE outputs (user's 2026-10-28 runs):
 
@@ -55,8 +94,8 @@ specified surface directly selectable for the same section, with no
 optimizer. A tight comparison of that solver control with the published
 FoS helps distinguish a solver problem from an optimizer search problem.
 
-The very low reported FoS=0.462 is not yet explained. Check that
-the returned lowest-FoS path:
+The low reported FoS=0.462 was investigated using the checks below and
+resolved as described after the list. Check that each returned lowest-FoS path:
 
 1. Intersects ground at both ends and remains in the soil domain.
 2. Has a physically defensible failure mechanism and positive normal

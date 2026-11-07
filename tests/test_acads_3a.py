@@ -1,6 +1,6 @@
 """ACADS 3(a) / VS_7: weak seam + phreatic line verification.
 
-The published minimum (ACADS 1.26; Slide2 Spencer 1.258, GLE 1.246)
+The published minimum (ACADS 1.26; RS2 Part I Spencer 1.258, GLE 1.246)
 is a SEARCH result. A fixed ACADS 3(b) control surface is tested only
 for slicing and solver integrity; it is not misreported as that minimum.
 """

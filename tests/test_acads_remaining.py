@@ -1,4 +1,4 @@
-"""ACADS EX1(c), EX1(d), EX4 and EX5 input-fidelity regression tests.
+"""Published ACADS EX1(b), EX1(d), EX4 and EX5 input-fidelity tests.
 
 These models complete the ACADS (Giam & Donald, 1989) benchmark set as
 reproduced in the Rocscience verification manuals (RS2/Slide2 VP #2, #4,
@@ -20,7 +20,7 @@ from slipsurface.project import (
 )
 
 NAMES = {
-    "1c": "ACADS EX1(c) — slope with tension crack",
+    "1c": "ACADS EX1(b) — slope with tension crack",
     "1d": "ACADS EX1(d) — seismic kh = 0.15",
     "4": "ACADS EX4 — weak seam, water table, surcharge",
     "5": "ACADS EX5 — excavated slope with groundwater",
@@ -43,6 +43,7 @@ def test_preset_saved_file_and_menu_entry_agree(key, tmp_path):
     menu.validate()
     for a in (p, saved, menu):
         assert a.summary.title == NAMES[key]
+    assert saved.analysis_inputs() == p.analysis_inputs()
 
 
 def acads_project(key):
@@ -85,6 +86,44 @@ def test_4_has_inclined_water_table_and_two_loads():
     q1, q2 = p.loads
     assert q1["q"] == [20, 20]
     assert q2["q"] == [20, 40]
+
+
+def test_4_inclined_seam_matches_published_geometry_and_assignments():
+    """RS2 Part 1 section 6 Figure 1: EX4 must not inherit EX3(a)'s seam."""
+    from shapely.geometry import Point
+
+    for p in (acads_4_project(), Project.load(FILES["4"])):
+        assert p.external[:2] == [[20, 15], [84, 15]]
+        assert p.material_boundaries == [
+            [[20, 18.88], [84, 36.8]],
+            [[20, 18.28], [84, 36.2]],
+        ]
+        geometry = p.build_geometry()
+        assert len(geometry.regions) == 3
+        for x in (25.0, 60.0, 80.0):
+            middle = 18.58 + 0.28 * (x - 20)
+            for y, material in ((middle, "Soil 2"), (middle - 1, "Soil 1"), (middle + 1, "Soil 1")):
+                regions = [r for r in geometry.regions if r.polygon.contains(Point(x, y))]
+                assert len(regions) == 1 and regions[0].material == material
+
+
+def test_published_names_and_legacy_identifiers_preserve_geometry():
+    from slipsurface.project import EXAMPLES, acads_1b_project
+
+    assert "ACADS EX1(c) — non-homogeneous slope" in EXAMPLES
+    assert "ACADS EX1(b) — slope with tension crack" in EXAMPLES
+    layered = acads_1b_project()
+    crack = acads_1c_project()
+    assert "EX1(c)" in layered.summary.title
+    assert "EX1(b)" in crack.summary.title
+    assert Project.load("examples/acads_1b.slp.json").analysis_inputs() == layered.analysis_inputs()
+    for name in ("ACADS EX1(b)", "ACADS EX1(c) — non-homogeneous slope"):
+        assert example_project(name).analysis_inputs() == layered.analysis_inputs()
+    for name in (
+        "ACADS EX1(c) — slope with tension crack",
+        "ACADS EX1(b) — slope with tension crack",
+    ):
+        assert example_project(name).analysis_inputs() == crack.analysis_inputs()
 
 
 def test_5_direction_and_water_table():

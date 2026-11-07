@@ -25,17 +25,11 @@ from slipsurface.lem import method_name
 from slipsurface.project import DEFAULT_DISPLAY
 from slipsurface.ui.icons import color_icon, icon
 
-HEADER_CSS = (
-    "QLabel{background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #e9f2fd,"
-    "stop:1 #cfe2fa);border:1px solid #8fb4e3;color:#1b3a63;font-weight:bold;"
-    "padding:2px;}"
-)
-
 
 def header(text: str) -> QLabel:
-    lab = QLabel(f"▾  {text}")
-    lab.setAlignment(Qt.AlignCenter)
-    lab.setStyleSheet(HEADER_CSS)
+    lab = QLabel(text)
+    lab.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+    lab.setProperty("sectionHeading", True)
     return lab
 
 

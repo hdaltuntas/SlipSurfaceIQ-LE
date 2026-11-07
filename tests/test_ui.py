@@ -97,14 +97,57 @@ def test_layout(win):
     assert win.workflow.steps == ["Geometry", "Support", "Loading", "Properties", "Surfaces"]
     assert set(win.status.toggles) == {"snap_on", "grid_on", "ortho_on", "osnap_on"}
     assert win.doc.geometry is not None and len(win.doc.geometry.regions) == 4
-    # icon toolbars: one vertical column on the left, main icons above the notes
-    from PySide6.QtCore import Qt
+    assert win.tool_rail.geometry().right() < win.area.geometry().left()
+    assert win.tool_rail.buttons[win.a_new].defaultAction() is win.a_new
 
-    for bar in (win.main_bar, win.notes_bar):
-        assert win.toolBarArea(bar) == Qt.LeftToolBarArea
-        assert bar.orientation() == Qt.Vertical
-    assert win.main_bar.geometry().bottom() <= win.notes_bar.geometry().top()
-    assert win.main_bar.actions()[0] is win.a_new
+
+@pytest.mark.parametrize("size", [(800, 600), (1024, 680), (1366, 768)])
+def test_tools_remain_reachable_on_short_screens(app, win, size):
+    win.resize(*size)
+    for _ in range(3):
+        app.processEvents()
+    assert win.width() == size[0] and win.height() == size[1]
+    assert win.canvas.height() >= size[1] - 220
+    rail = win.tool_rail
+    assert rail.verticalScrollBar().maximum() > 0
+    # Every action, including the final annotation tool, can be brought wholly
+    # into view. No tools disappear into a clipped toolbar or overflow submenu.
+    for button in rail.buttons.values():
+        rail.ensureWidgetVisible(button, 0, 0)
+        app.processEvents()
+        top_left = button.mapTo(rail.viewport(), QPoint(0, 0))
+        assert rail.viewport().rect().contains(top_left)
+        assert top_left.y() + button.height() <= rail.viewport().height()
+    last = list(rail.buttons.values())[-1]
+    rail.verticalScrollBar().setValue(0)
+    last.setFocus(Qt.TabFocusReason)
+    app.processEvents()
+    assert rail.verticalScrollBar().value() > 0
+    # QAction state and tool selection stay shared with menus and shortcuts.
+    button = rail.buttons[win.t_measure]
+    rail.ensureWidgetVisible(button)
+    QTest.mouseClick(button, Qt.LeftButton)
+    assert win.t_measure.isChecked()
+
+
+def test_context_inputs_remain_reachable_in_narrow_window(app, win):
+    win.resize(800, 600)
+    for index, control in ((1, win.bolt_length), (3, win.facing_combo)):
+        win.workflow.set_current(index)
+        for _ in range(4):
+            app.processEvents()
+        strip = win.step_strips[index]
+        assert strip.horizontalScrollBar().maximum() > 0
+        strip.ensureWidgetVisible(control, 0, 0)
+        app.processEvents()
+        pos = control.mapTo(strip.viewport(), QPoint(0, 0))
+        assert pos.x() >= 0
+        assert pos.x() + control.width() <= strip.viewport().width()
+        assert control.isVisible()
+    win.workflow.set_current(0)
+    app.processEvents()
+    assert win.step_bars[0].isVisible()
+    assert not win.step_bars[3].isVisible()
 
 
 def test_starts_and_new_project_with_a_material(app, monkeypatch):

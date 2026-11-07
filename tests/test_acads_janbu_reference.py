@@ -27,7 +27,7 @@ from slipsurface.project import (
 # center but DO NOT alter its radius.
 CASES = [
     ("VP1-ACADS-1a", acads_1a_project, (20.149, 26.471, 26.407), 0.990),
-    ("VP3-ACADS-1b", acads_1b_project, (35.109, 40.222, 16.389), 1.357),
+    ("VP3-ACADS-1c", acads_1b_project, (35.109, 40.222, 16.389), 1.357),
     ("VP4-ACADS-1d", acads_1d_project, (35.109, 41.233, 17.205), 0.965),
     ("VP6-Talbingo-2b", acads_2b_project, (100.3, 291.0, 278.8), 2.073),
 ]
@@ -50,8 +50,9 @@ def test_janbu_corrected_on_published_circle(name, factory, circle, reference):
     f0 = janbu_correction_factor(slices)
     assert corrected.fos == pytest.approx(simplified.fos * f0, rel=1e-10)
     assert 1 <= f0 <= 1.125
-    # 3-4% covers the source's slice discretization and rounding.
-    assert corrected.fos == pytest.approx(reference, rel=0.04), (
+    # One percent allows slice discretization differences; current deviations
+    # are below 0.14%, so a several-percent drift should fail this check.
+    assert corrected.fos == pytest.approx(reference, rel=0.01), (
         name,
         corrected.fos,
         simplified.fos,
@@ -73,7 +74,7 @@ def test_acads_3b_janbu_corrected_on_published_noncircular_path():
     )
     assert corrected.ok, corrected.message
     assert slices is not None
-    assert corrected.fos == pytest.approx(1.294, rel=0.04), corrected.fos
+    assert corrected.fos == pytest.approx(1.294, rel=0.01), corrected.fos
 
 
 def test_acads_preset_method_names_are_distinct():

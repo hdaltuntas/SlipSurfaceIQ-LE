@@ -900,10 +900,13 @@ def acads_1a_project() -> Project:
 
 
 def acads_1b_project() -> Project:
-    """ACADS EX1(b): the EX1(a) cut with three layers; Soil #2 is a wedge-shaped
-    weak lens. Layer 1 starts at the toe, a concave corner of the boundary."""
+    """Published ACADS EX1(c), Slide2 VP3: three layers with a weak lens.
+
+    The legacy Python/file identifier ``1b`` is kept for compatibility.
+    Layer 1 starts at the toe, a concave corner of the boundary.
+    """
     return _mk(
-        "ACADS EX1(b) — non-homogeneous slope",
+        "ACADS EX1(c) — non-homogeneous slope",
         [
             MaterialSpec("Soil 1", "MC", 19.5, 19.5, False, 0.0, 38.0, color=PALETTE[0]),
             MaterialSpec("Soil 2", "MC", 19.5, 19.5, False, 5.3, 23.0, color=PALETTE[3]),
@@ -921,8 +924,9 @@ def acads_1b_project() -> Project:
 
 
 def acads_1c_project() -> Project:
-    """ACADS EX1(c): the EX1(a) homogeneous slope with a water-filled
-    tension crack in the crest zone.
+    """Published ACADS EX1(b): homogeneous slope with a water-filled crack.
+
+    The legacy Python/file identifier ``1c`` is kept for compatibility.
 
     Slide2 verification problem #2 / RS2 #2 (Giam & Donald, 1989).
     The crack depth follows Craig (1997):
@@ -935,7 +939,7 @@ def acads_1c_project() -> Project:
     phi = math.radians(10.0)
     z0 = 2 * 32.0 / 20.0 * math.sqrt((1 + math.sin(phi)) / (1 - math.sin(phi)))
     p = _mk(
-        "ACADS EX1(c) — slope with tension crack",
+        "ACADS EX1(b) — slope with tension crack",
         [MaterialSpec("Soil 1", "MC", 20, 20, False, 32.0, 10.0, color=PALETTE[0])],
         [[0, -5], [60, -5], [60, 10], [40, 10], [20, 0], [0, 0]],
         methods=["bishop", "spencer", "gle", "janbu_corrected"],
@@ -948,7 +952,7 @@ def acads_1c_project() -> Project:
 
 
 def acads_1d_project() -> Project:
-    """ACADS EX1(d): the EX1(b) three-layer slope with kh = 0.15.
+    """ACADS EX1(d): the published EX1(c) three-layer slope with kh = 0.15.
 
     Slide2 verification problem #4 / RS2 #4 (Giam & Donald, 1989).
     Published FoS: Spencer 0.991, GLE 0.989 (Slide2); referee 1.00 (Giam).
@@ -964,12 +968,23 @@ def acads_4_project() -> Project:
     """ACADS EX4: weak seam, piezometric surface and surcharge.
 
     Slide2 verification problem #9 / RS2 #9 (Giam & Donald, 1989).
-    Same geometry and materials as 3(a) with an inclined piezometric
-    surface and two distributed loads. Published FoS: Spencer 0.761,
-    GLE 0.721 (Slide2, block search); referee 0.78 (Giam).
+    The seam is INCLINED, unlike 3(a). Exact coordinates: RS2 slope
+    verification Part 1, section 6, Figure 1 (printed page 13).
+    Slide2 optimized block-search FoS: Spencer 0.707, GLE 0.683;
+    unoptimized block search: Spencer 0.760, GLE 0.720.
     """
     p = acads_3a_project()
     p.summary.title = "ACADS EX4 — weak seam, water table, surcharge"
+    p.external = [[20, 15], [84, 15], [84, 40], [67.5, 40], [43, 27.75], [20, 27.75]]
+    p.material_boundaries = [
+        [[20, 18.88], [84, 36.8]],
+        [[20, 18.28], [84, 36.2]],
+    ]
+    p.assignments = [
+        {"point": [60, 36], "material": "Soil 1"},
+        {"point": [60, 29.78], "material": "Soil 2"},
+        {"point": [60, 22], "material": "Soil 1"},
+    ]
     p.water_table = [
         [20, 27.75],
         [43, 27.75],
@@ -1145,8 +1160,8 @@ def acads_2a_project() -> Project:
 
 EXAMPLES = {
     "ACADS EX1(a)": acads_1a_project,
-    "ACADS EX1(b)": acads_1b_project,
-    "ACADS EX1(c) — slope with tension crack": acads_1c_project,
+    "ACADS EX1(b) — slope with tension crack": acads_1c_project,
+    "ACADS EX1(c) — non-homogeneous slope": acads_1b_project,
     "ACADS EX1(d) — seismic kh = 0.15": acads_1d_project,
     "ACADS 2(a) — Talbingo critical upstream search": acads_2a_project,
     "ACADS 2(b) — Talbingo fixed circle": acads_2b_project,
@@ -1156,7 +1171,15 @@ EXAMPLES = {
     "ACADS EX5 — excavated slope with groundwater": acads_5_project,
 }
 
+# Preserve script/CLI names from releases that interchanged EX1(b) and EX1(c).
+# These aliases intentionally do not appear in the example menu.
+EXAMPLE_ALIASES = {
+    "ACADS EX1(b)": acads_1b_project,
+    "ACADS EX1(c) — slope with tension crack": acads_1c_project,
+}
+
 
 def example_project(name: str) -> Project:
     """Bundled example by name (see EXAMPLES)."""
-    return EXAMPLES[name]()
+    factory = EXAMPLES.get(name) or EXAMPLE_ALIASES[name]
+    return factory()

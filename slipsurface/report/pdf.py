@@ -1646,11 +1646,7 @@ def _nice_step(x: float) -> float:
 
 
 def _pattern_xs(p, pt, geom) -> list:
-    try:
-        return p.pattern_bolts(pt, geom)
-    except Exception:
-        log.warning("Bolt pattern could not be drawn in the report: %s", pt, exc_info=True)
-        return []
+    return p.pattern_bolts(pt, geom)
 
 
 # ================================================================ public

@@ -50,8 +50,10 @@ identical search algorithms, admissibility checks or slice discretization.
 | Source and method | Published FoS |
 | --- | ---: |
 | Original ACADS referee | 1.26 |
-| Slide2/Rocscience Spencer | 1.258 |
-| Slide2/Rocscience GLE | 1.246 |
+| RS2 Part I section 5, Spencer | 1.258 |
+| RS2 Part I section 5, GLE | 1.246 |
+| Slide2 2022 VP7 Table 7.2, Spencer | 1.246 |
+| Slide2 2022 VP7 Table 7.2, GLE | 1.275 |
 | SVSLOPE Spencer — Slide | 1.258 |
 | SVSLOPE Spencer — Slope Stability | 1.269 |
 | SVSLOPE GLE — Slide | 1.246 |
@@ -61,6 +63,11 @@ The screenshot also lists a 1.268 / 1.264 comparison column; these
 are **published comparison values**, not our measured results.
 A method-to-method comparison must use each method's **own optimized**
 critical surface, not one shared trial circle.
+
+The RS2 and Slide2 manuals assign different values to method rows for this
+problem. Keep each comparison tied to its named source; the RS2 values must
+not be attributed to Slide2 2022 Table 7.2. The latter table gives Janbu
+Corrected 1.258, while RS2 Part I gives 1.275.
 
 ## Run the model and inspect the actual critical surface
 

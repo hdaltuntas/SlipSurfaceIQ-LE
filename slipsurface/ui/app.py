@@ -78,14 +78,14 @@ def run(
     app.setWindowIcon(icon("interpret"))
     _install_excepthook()
 
-    from slipsurface.project import EXAMPLES
+    from slipsurface.project import EXAMPLE_ALIASES, EXAMPLES, example_project
     from slipsurface.ui.modeler import ModelerWindow
 
-    if example is not None and example not in EXAMPLES:
+    if example is not None and example not in EXAMPLES and example not in EXAMPLE_ALIASES:
         print(f"[ERROR] Example not found: {example!r}. Options: {', '.join(EXAMPLES)}")
         return 1
 
-    win = ModelerWindow(EXAMPLES[example]() if example else None)
+    win = ModelerWindow(example_project(example) if example else None)
     if project_path:
         win.open_project(project_path)
     from slipsurface.ui.preferences import show_screen_sized

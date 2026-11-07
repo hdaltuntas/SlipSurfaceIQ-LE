@@ -8,11 +8,6 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QLabel, QLineEdit, QStatusBar, QToolButton
 
-TOGGLE_CSS = (
-    "QToolButton{border:none;padding:0 5px;color:#9aa0a6;font-weight:bold;}"
-    "QToolButton:checked{color:#111;}"
-)
-
 
 class CadStatusBar(QStatusBar):
     def __init__(self, canvas, parent=None, with_command: bool = True) -> None:
@@ -20,13 +15,14 @@ class CadStatusBar(QStatusBar):
         self.c = canvas
         self.showMessage("F1 for Help")
         self.coords = QLabel("x: —   y: —")
-        self.coords.setMinimumWidth(190)
+        self.coords.setMinimumWidth(155)
         self.addPermanentWidget(self.coords)
         self.cmd = None
         if with_command:
             self.cmd = QLineEdit()
-            self.cmd.setPlaceholderText("x,y  |  @dx,dy  |  @L<angle")
-            self.cmd.setFixedWidth(170)
+            self.cmd.setPlaceholderText("x,y · @dx,dy · @L<a")
+            self.cmd.setFixedWidth(155)
+            self.cmd.setAccessibleName("Drawing coordinates")
             self.cmd.setToolTip(
                 "Coordinate entry (drawing tools): absolute x,y, relative @dx,dy, polar "
                 "@length<angle. Empty Enter = finish, c = close, u = undo."
@@ -44,7 +40,9 @@ class CadStatusBar(QStatusBar):
             b.setText(name)
             b.setCheckable(True)
             b.setChecked(getattr(canvas, attr))
-            b.setStyleSheet(TOGGLE_CSS)
+            b.setProperty("statusToggle", True)
+            b.setAccessibleName(tip)
+            b.setFocusPolicy(Qt.StrongFocus)
             b.setToolTip(f"{tip} ({key})")
             b.toggled.connect(lambda on, a=attr: self._toggle(a, on))
             self.addPermanentWidget(b)

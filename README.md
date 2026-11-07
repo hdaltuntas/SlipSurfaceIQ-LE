@@ -1,8 +1,10 @@
 # SlipSurfaceIQ LE
 
-**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.4.0**
+**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.5.0**
 
-[2026.4.0 release notes](RELEASE_NOTES.md) — Python scripting tutorial (PDF), main icons in a vertical column on the left, only the ACADS examples bundled, an empty scripting editor, English-only interface, signed update manifests and a safer delta updater.
+[2026.5.0 release notes](RELEASE_NOTES.md) — equilibrium and reinforcement fixes,
+corrected ACADS and scripting examples, safer updates, and a modern light/dark
+interface with scrollable tools that remain accessible on small screens.
 
 SlipSurfaceIQ LE is an open-source program for checking the stability of soil and rock
 slopes, cuts and embankments with the limit equilibrium method (LEM). You draw the slope
@@ -187,11 +189,14 @@ asks for a new computation; display-only changes (colours, labels, notes) do not
 
 - **Menus:** File, Edit, View, Analysis, Boundaries, Loading, Support, Surfaces, Properties,
   Tools, Help.
-- **Workflow bar:** Geometry › Support › Loading › Properties › Surfaces, with the
-  toolbar of the current step below it.
+- **Workflow bar:** Geometry › Support › Loading › Properties › Surfaces, with
+  keyboard-accessible tabs and Compute / Interpret always available above the drawing.
+  The current step's tools scroll horizontally on narrow screens, including material
+  selectors and support length / angle inputs.
 - **Icon column (left):** new / open / save, undo / redo, project settings, summary,
   materials, compute, interpret, PDF report, zoom and pan, select, measure, export and the
-  note tools, read from top to bottom.
+  note tools, grouped from top to bottom. Scroll the column to reach every tool on
+  short screens; keyboard focus also brings the selected tool into view.
 - **View menu:** theme, zoom, grid settings, material labels, and *Display
   Options* (colours, line width, grid, ruler, material fill, legend, slope limits).
   Hovering a region with the Select tool shows the material name and strength
@@ -463,19 +468,29 @@ with one default material (Soil 1, Mohr-Coulomb).
 | Example (`--example`) | File | Shows |
 |---|---|---|
 | ACADS EX1(a) | `acads_1a.slp.json` | ACADS verification problem (homogeneous slope) |
-| ACADS EX1(b) | `acads_1b.slp.json` | ACADS verification problem (three layers, weak lens; layer starts at the toe) |
-| ACADS EX1(c) | `acads_1c.slp.json` | homogeneous slope with a water-filled tension crack (Craig depth 2.685 m); Spencer ref 1.592 |
-| ACADS EX1(d) | `acads_1d.slp.json` | the EX1(b) three-layer slope with kh = 0.15; Spencer ref 0.991 |
+| ACADS EX1(b) — slope with tension crack | `acads_1c.slp.json` | homogeneous slope with a water-filled tension crack (Craig depth 3.814 m); Spencer ref 1.592 |
+| ACADS EX1(c) — non-homogeneous slope | `acads_1b.slp.json` | three layers, weak lens; layer starts at the toe |
+| ACADS EX1(d) — seismic kh = 0.15 | `acads_1d.slp.json` | the EX1(c) three-layer slope with kh = 0.15; Spencer ref 0.991 |
 | ACADS 2(a) — Talbingo critical upstream search | `acads_2a.slp.json` | upstream-face critical-circle search; infinite-slope reference FoS ~1.951 |
 | ACADS 2(b) — Talbingo fixed circle | `acads_2b.slp.json` | four-material dry embankment; exact circle (100.3, 291, 278.8); Bishop/Spencer/GLE/Janbu |
 | ACADS 3(a) — weak seam + water table | `acads_3a.slp.json` | two materials, 0.5 m weak seam, water table at its base; non-circular Spencer/GLE search |
 | ACADS 3(b) — weak seam specified path | `acads_3b.slp.json` | exact four-point noncircular path for a fixed-surface solver control; no critical search |
-| ACADS EX4 | `acads_4.slp.json` | weak seam, inclined piezometric surface and two surcharges; Spencer ref 0.761 (block search) |
-| ACADS EX5 | `acads_5.slp.json` | excavated 1:2 slope, water-table approximation of the published flow net; Spencer ~1.486 vs 1.500 |
+| ACADS EX4 — weak seam, water table, surcharge | `acads_4.slp.json` | inclined weak seam, piezometric surface and two surcharges; Spencer reference 0.760 (block search), 0.707 (optimized) |
+| ACADS EX5 — excavated slope with groundwater | `acads_5.slp.json` | excavated 1:2 slope; water-table approximation, not the published pore-pressure grid |
+
+EX1(b)/(c) display names now follow the published ACADS numbering. Their legacy
+Python factory names and filenames are retained to avoid changing existing scripts:
+`acads_1b_project` / `acads_1b.slp.json` contain published EX1(c), while
+`acads_1c_project` / `acads_1c.slp.json` contain published EX1(b). The old CLI names
+remain aliases, but the menu shows only the corrected names.
 
 ---
 
 ## Verification
+
+The [2026 ACADS review](docs/ACADS_REVIEW_2026.md) records the corrected EX4
+geometry, published problem numbering, method-specific fixed-surface results,
+and the remaining limits of search and groundwater comparisons.
 
 The [ACADS Janbu validation](docs/ACADS_JANBU_VALIDATION.md) separates
 Janbu Simplified from Janbu Corrected, lists method-matched Slide2 factors,

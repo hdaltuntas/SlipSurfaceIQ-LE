@@ -26,10 +26,15 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
     QFileDialog,
+    QHBoxLayout,
     QLabel,
     QMainWindow,
     QMessageBox,
+    QSizePolicy,
+    QStackedWidget,
     QToolBar,
+    QVBoxLayout,
+    QWidget,
 )
 
 from slipsurface import __version__
@@ -60,6 +65,7 @@ from slipsurface.ui.dialogs.surface_options import SurfaceOptionsDialog
 from slipsurface.ui.document import Document
 from slipsurface.ui.icons import color_icon, icon
 from slipsurface.ui.statusbar import CadStatusBar
+from slipsurface.ui.toolrail import ActionRail, ToolStrip
 from slipsurface.ui.updates import UpdateChecker, auto_enabled, set_auto_enabled
 from slipsurface.ui.worker import AnalysisWorker, start_worker
 from slipsurface.ui.workflow import WorkflowBar
@@ -86,7 +92,21 @@ class ModelerWindow(QMainWindow):
         self.canvas = self.area.canvas
         self.canvas.doc = self.doc
         self.workflow = WorkflowBar(STEPS)
-        self.setCentralWidget(self.area)
+        workspace = QWidget()
+        workspace.setObjectName("model_workspace")
+        self.workspace_layout = QHBoxLayout(workspace)
+        self.workspace_layout.setContentsMargins(0, 0, 0, 0)
+        self.workspace_layout.setSpacing(0)
+        self.workspace_layout.addWidget(self.area, 1)
+        central = QWidget()
+        central_layout = QVBoxLayout(central)
+        central_layout.setContentsMargins(0, 0, 0, 0)
+        central_layout.setSpacing(0)
+        self.context_stack = QStackedWidget()
+        self.context_stack.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        central_layout.addWidget(self.context_stack)
+        central_layout.addWidget(workspace, 1)
+        self.setCentralWidget(central)
 
         # --------------------------------------------------------- docks
         # The left Project dock (Document Viewer + Display Options) is shown
@@ -477,53 +497,34 @@ class ModelerWindow(QMainWindow):
         wf.setObjectName("workflow_toolbar")
         wf.setMovable(False)
         wf.addWidget(self.workflow)
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        wf.addWidget(spacer)
+        wf.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        wf.addAction(self.a_compute)
+        wf.addAction(self.a_interpret)
+        wf.widgetForAction(self.a_compute).setProperty("primaryAction", True)
         self.addToolBar(Qt.TopToolBarArea, wf)
-        self.addToolBarBreak()
-        tb = QToolBar("Main Toolbar")
-        tb.setObjectName("main_toolbar")
-        tb.setIconSize(QSize(22, 22))
-        for a in (
-            self.a_new,
-            self.a_open,
-            self.a_save,
-            None,
-            self.a_undo,
-            self.a_redo,
-            None,
-            self.a_settings,
-            self.a_summary,
-            self.a_define_mat,
-            None,
-            self.a_compute,
-            self.a_interpret,
-            self.a_report,
-            None,
-            self.a_zoom_all,
-            self.a_zoom_in,
-            self.a_zoom_out,
-            self.t_zoom_win,
-            self.t_pan,
-            None,
-            self.t_select,
-            self.t_measure,
-            None,
-            self.a_export,
+        # A scroll area has no toolbar overflow menu or minimum content height:
+        # short windows retain the canvas and expose every action by scrolling.
+        self.tool_rail = ActionRail(self)
+        self.workspace_layout.insertWidget(0, self.tool_rail)
+        for title, actions in (
+            ("FILE", (self.a_new, self.a_open, self.a_save)),
+            ("EDIT", (self.a_undo, self.a_redo)),
+            ("MODEL", (self.a_settings, self.a_summary, self.a_define_mat)),
+            ("RESULTS", (self.a_compute, self.a_interpret, self.a_report)),
+            (
+                "VIEW",
+                (self.a_zoom_all, self.a_zoom_in, self.a_zoom_out, self.t_zoom_win, self.t_pan),
+            ),
+            ("TOOLS", (self.t_select, self.t_measure, self.a_export)),
+            ("NOTES", tuple(self.t_annots.values())),
         ):
-            tb.addSeparator() if a is None else tb.addAction(a)
-        # The icon toolbars sit on the left, one column read top to bottom.
-        tb.setOrientation(Qt.Vertical)
-        self.addToolBar(Qt.LeftToolBarArea, tb)
-        self.main_bar = tb
-        notes = QToolBar("Notes")
-        notes.setObjectName("notes_toolbar")
-        notes.setIconSize(QSize(22, 22))
-        notes.setOrientation(Qt.Vertical)
-        for a in self.t_annots.values():
-            notes.addAction(a)
-        self.addToolBar(Qt.LeftToolBarArea, notes)
-        self.notes_bar = notes
+            self.tool_rail.add_group(title, actions)
 
         self.step_bars = []
+        self.step_strips = []
         geo = QToolBar("Geometry")
         geo.setObjectName("geometry_toolbar")
         for a in (
@@ -602,14 +603,16 @@ class ModelerWindow(QMainWindow):
         ):
             surf.addSeparator() if a is None else surf.addAction(a)
         for bar in (geo, sup, load, props, surf):
+            bar.setMovable(False)
             bar.setIconSize(QSize(24, 24))
             bar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-            self.addToolBar(Qt.TopToolBarArea, bar)
+            strip = ToolStrip(bar)
+            self.context_stack.addWidget(strip)
             self.step_bars.append(bar)
+            self.step_strips.append(strip)
 
     def _step_changed(self, i: int) -> None:
-        for k, bar in enumerate(self.step_bars):
-            bar.setVisible(k == i)
+        self.context_stack.setCurrentIndex(i)
         if STEPS[i] == "Properties":
             self.canvas.set_tool(T.AssignTool(self.canvas))
             self.t_assign.setChecked(True)

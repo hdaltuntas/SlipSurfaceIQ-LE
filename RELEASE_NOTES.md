@@ -1,3 +1,42 @@
+# SlipSurfaceIQ LE 2026.5.0
+
+Numerical corrections, ACADS verification and a responsive Modeler interface
+
+- Fix force-equilibrium bracketing that discarded roots exactly on its sampling
+  grid. Exact roots retain the existing nearest-branch preference and physical
+  validity checks; GLE's fallback force and lambda scans receive the same correction.
+- Fix missed reinforcement intersections across short surface domains and polyline
+  segments, including a valid crossing hidden by an earlier crossing outside the
+  selected sliding mass. Sampling includes domain bounds, polyline corners and
+  circle extrema; arbitrary spline intersections still use finite sampling.
+- Correct ACADS EX4's inclined weak-layer geometry, base elevation and saved project
+  data. Correct EX1(b)/EX1(c) display titles while preserving existing Python names,
+  example filenames and legacy CLI aliases for compatibility.
+- Tighten ACADS fixed-surface checks against method-specific reference values.
+  The documented comparisons differ from the published factors by at most 0.131%.
+  See the [ACADS review](docs/ACADS_REVIEW_2026.md) for inputs, results and sources.
+- Replace the overflowing left toolbars with a grouped, scrollable action rail.
+  Contextual toolbars scroll horizontally so material selectors and support inputs
+  remain reachable. Compute and Interpret stay available in the top bar.
+- Refresh light/dark styling and add keyboard-accessible workflow tabs. Fix dark-mode
+  status text and ruler-corner colours; keyboard focus scrolls hidden controls into view.
+- Correct the standalone Python examples in the scripting tutorial and regenerate
+  both PDF guides with the current release version.
+- Reject unknown analysis methods, improve updater rollback handling, and propagate
+  report-generation errors so failures can be reported to the user.
+- Initial audit validation: **622 tests passed** (607 regular and 15 slow), with Ruff
+  lint/format and Mypy checks passing. GUI tests cover 800×600, 1024×680 and 1366×768
+  windows on Qt's offscreen platform; a launch at scale factor 1.5 also passed.
+  Additional release checks cover standalone tutorial scripts, unknown-method
+  rejection, updater rollback and the version printed in both PDF guides.
+
+Verification limits remain explicit: ACADS EX5 uses a water-table approximation of
+the source pore-pressure grid, and agreement on prescribed surfaces does not establish
+that every critical-surface search reproduces the published minimum. See the
+[repository review](docs/VERIFICATION_DISCREPANCY_AUDIT.md).
+
+Version 2026.5.0.
+
 # SlipSurfaceIQ LE 2026.4.0
 
 Scripting tutorial, left icon column, ACADS-only examples and a safer updater

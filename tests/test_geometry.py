@@ -59,7 +59,7 @@ def test_boundary_geometry_extends_valid_water_table():
 
 
 def test_layer_starting_at_a_concave_toe_vertex_splits_the_domain():
-    # ACADS EX1(b): layer 1 starts at the toe (30, 25), a concave corner of the
+    # ACADS EX1(c): layer 1 starts at the toe (30, 25), a concave corner of the
     # external boundary. Its end used to be pushed ~tol inside the domain, so
     # the top and bottom layers merged into one region (and one material).
     from slipsurface.geometry.builder import build_regions
@@ -90,6 +90,6 @@ def test_acads_1b_matches_published_factors_of_safety():
     p = acads_1b_project()
     p.methods.methods = ["bishop", "spencer"]
     res = run_analysis(p)
-    # Slide2 verification problem #2 (ACADS EX1(b)): Bishop 1.405, Spencer 1.375
+    # Slide2 verification problem #3 (ACADS EX1(c)): Bishop 1.405, Spencer 1.375
     assert res.results["bishop"].fos == pytest.approx(1.405, abs=0.015)
     assert res.results["spencer"].fos == pytest.approx(1.375, abs=0.015)
