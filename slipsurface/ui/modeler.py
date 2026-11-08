@@ -665,6 +665,8 @@ class ModelerWindow(QMainWindow):
             self.a_labels[mode].setChecked(True)
         if self.doc.geometry_error and p.has_geometry:
             self.status.showMessage(f"⚠ Model: {self.doc.geometry_error}", 10000)
+        elif self.doc.geometry_warnings:
+            self.status.showMessage("⚠ " + " ".join(self.doc.geometry_warnings), 15000)
         self._update_title()
         self._update_actions()
 

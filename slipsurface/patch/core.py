@@ -29,7 +29,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from slipsurface import __version__
-from slipsurface.patch import signing
 from slipsurface.updates import REPOSITORY, UpdateCheckError, ssl_context
 
 RAW_BASE = f"https://raw.githubusercontent.com/{REPOSITORY}"
@@ -124,6 +123,17 @@ class UpdatePlan:
         )
 
 
+def _signing():
+    """The signing module, imported on first use.
+
+    Importing it lazily keeps ``python -m slipsurface.patch.signing`` free of
+    runpy's "found in sys.modules" warning (the package imports this module).
+    """
+    from slipsurface.patch import signing
+
+    return signing
+
+
 def manifest_url(version: str) -> str:
     v = version.strip().lstrip("v")
     return f"{RELEASE_BASE}/v{v}/manifest.json"
@@ -177,15 +187,15 @@ def fetch_manifest(
     ``manifest.json.sig`` verifies is accepted; there is no unsigned fallback.
     """
     if require_signature is None:
-        require_signature = signing.signature_required()
+        require_signature = _signing().signature_required()
     last_err: UpdateCheckError | None = None
     for ref in _candidate_refs(version):
         url = f"{RELEASE_BASE}/{ref}/manifest.json"
         try:
             raw = _fetch_bytes(url, timeout, opener)
             if require_signature:
-                sig = _fetch_bytes(url + signing.SIGNATURE_SUFFIX, timeout, opener)
-                if not signing.verify_manifest(raw, sig.decode("ascii", "replace")):
+                sig = _fetch_bytes(url + _signing().SIGNATURE_SUFFIX, timeout, opener)
+                if not _signing().verify_manifest(raw, sig.decode("ascii", "replace")):
                     raise UpdateCheckError(f"manifest signature of {ref} is not valid")
             try:
                 data = json.loads(raw.decode("utf-8"))
@@ -242,7 +252,7 @@ def plan_update(
     except UpdateCheckError:
         old = {"files": {}}
     if old.get("hash", "sha256") != new.get("hash", "sha256"):
-        if signing.signature_required():
+        if _signing().signature_required():
             old = {"files": {}}  # never trade the signed target for a tree listing
         else:
             old = _fetch_tree_manifest(from_version, timeout, opener)
@@ -286,6 +296,11 @@ def plan_against_local(
     Local files are hashed and compared with the target manifest, so an
     installation that already matches the target in some files downloads
     nothing for them (resume-friendly).
+
+    Files in ``examples/`` and ``docs/`` that the target does not list are kept
+    (users store their own files there), unless they are unmodified copies of
+    files an earlier release shipped: listed in ``retired.RETIRED_FILES`` or
+    in the running version's manifest, with an identical hash.
     """
     root = root or application_root()
     target = fetch_manifest(to_version, timeout, opener)
@@ -301,17 +316,35 @@ def plan_against_local(
             added.append(FileDelta(rel, "new", new_hash=digest))
         elif local != digest:
             changed.append(FileDelta(rel, "changed", old_hash=local, new_hash=digest))
+    shipped: dict[str, set[str]] | None = None
     for p in sorted(root.rglob("*")):
         if not p.is_file():
             continue
         rel = p.relative_to(root).as_posix()
-        if (
-            is_managed(rel)
-            and rel not in target_files
-            and not rel.startswith(KEEP_UNLISTED_PREFIXES)
-        ):
-            removed.append(FileDelta(rel, "removed", old_hash=sha256_of(p)))
+        if not is_managed(rel) or rel in target_files:
+            continue
+        if rel.startswith(KEEP_UNLISTED_PREFIXES):
+            if shipped is None:
+                shipped = _shipped_hashes(timeout, opener)
+            if not any(local_hash(rel, root, h) == h for h in shipped.get(rel, ())):
+                continue  # the user's own file, or one they edited
+        removed.append(FileDelta(rel, "removed", old_hash=sha256_of(p)))
     return UpdatePlan(__version__, to_version.strip().lstrip("v"), changed, added, removed)
+
+
+def _shipped_hashes(timeout: float = 30.0, opener=None) -> dict[str, set[str]]:
+    """Hashes of files earlier releases shipped (see plan_against_local)."""
+    from slipsurface.patch.retired import RETIRED_FILES
+
+    shipped = {rel: set(hashes) for rel, hashes in RETIRED_FILES.items()}
+    try:  # the running release's own inventory (signed when signing is on)
+        running = fetch_manifest(__version__, timeout, opener)
+    except UpdateCheckError:
+        running = {}
+    for rel, digest in running.get("files", {}).items():
+        if isinstance(digest, str) and is_managed(rel):
+            shipped.setdefault(rel, set()).add(digest)
+    return shipped
 
 
 MANAGED_PREFIXES = (

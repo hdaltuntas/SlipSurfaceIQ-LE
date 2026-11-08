@@ -1,3 +1,26 @@
+# SlipSurfaceIQ LE 2026.5.1
+
+Complete 2026.5.0 delivery, boundary warnings and update clean-up
+
+- The published 2026.5.0 files were built before the final 2026.5.0 changes were merged,
+  so updated installations missed the numerical fixes, the corrected ACADS EX4 geometry,
+  the EX1(b)/(c) names and the scrollable Modeler tools listed below. 2026.5.1 delivers
+  them; nothing else changed in those areas.
+- A material boundary that does not divide a region (its ends stop short of the external
+  boundary or another boundary) is no longer ignored silently: the Modeler status bar and
+  the DXF import message name it. The DXF guide explains the message.
+- Updates now remove unmodified copies of files that earlier releases shipped in
+  `examples/` and `docs/` and later dropped, such as the examples removed in 2026.4.0.
+  Your own and edited files there are still kept, and every removal is backed up.
+- Legacy example names (`ACADS EX1(b)`, `ACADS EX1(c) — slope with tension crack`) still
+  open the same models but now print a notice naming the current example.
+- Distributed loads are applied to all slices at once, with identical results
+  (differences below 10⁻¹⁵): a Spencer search of ACADS EX4 takes about a third less
+  time, the full three-method EX4 analysis about a tenth less.
+- `python -m slipsurface.patch.signing` no longer prints a runpy warning.
+
+Version 2026.5.1.
+
 # SlipSurfaceIQ LE 2026.5.0
 
 Numerical corrections, ACADS verification and a responsive Modeler interface

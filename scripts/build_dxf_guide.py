@@ -435,8 +435,9 @@ def build_story() -> list:
             "Ends must reach the outline",
             "Ends are snapped within <b>0.2 % of the larger model dimension</b> (12 cm for a "
             "60 m wide model). A boundary that stops farther away is kept but does not split "
-            "the region — the model then has fewer regions than expected. Extend the lines "
-            "onto the outline in CAD.",
+            "the region; the import message then says “Material boundary N does not divide a "
+            "region”, and the Modeler status bar repeats it. Extend the lines onto the outline "
+            "in CAD.",
         )
     )
     ch.h2("Water table — SS_WATER")
@@ -585,6 +586,11 @@ print(len(project.build_geometry().regions), "regions")""",
                     "Set the drawing units if the drawing is not in metres.",
                 ],
                 ["Skipped entities/layers: …", "These entities were ignored (see chapter 03)."],
+                [
+                    "Material boundary N does not divide a region (… m of it is loose): …",
+                    "Its ends do not reach the outline or another boundary; extend them "
+                    "(chapter 05).",
+                ],
                 [
                     "DXF transfers geometry only. Assign materials, loads and supports separately.",
                     "Always shown; continue with chapter 06.",

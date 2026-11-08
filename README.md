@@ -1,10 +1,10 @@
 # SlipSurfaceIQ LE
 
-**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.5.0**
+**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.5.1**
 
-[2026.5.0 release notes](RELEASE_NOTES.md) — equilibrium and reinforcement fixes,
-corrected ACADS and scripting examples, safer updates, and a modern light/dark
-interface with scrollable tools that remain accessible on small screens.
+[2026.5.1 release notes](RELEASE_NOTES.md) — delivers the 2026.5.0 fixes that missed
+the published 2026.5.0 files, warns about material boundaries that divide nothing,
+removes outdated example files during updates and speeds up loaded analyses.
 
 SlipSurfaceIQ LE is an open-source program for checking the stability of soil and rock
 slopes, cuts and embankments with the limit equilibrium method (LEM). You draw the slope
@@ -140,7 +140,8 @@ and replace only the modified source files in place (with automatic backups in
 `.update-backup`), or open the release page on GitHub. Every file is downloaded
 and hash-checked before anything is replaced, so a failed or cancelled update
 leaves the installation unchanged; the test suite (`tests/`) is not part of
-updates, and files you keep in `examples/` or `docs/` are never deleted. When a
+updates, and files you keep in `examples/` or `docs/` are never deleted (an unmodified copy
+of a file an earlier release shipped there, such as a retired example, is removed). When a
 release changes `requirements.txt`, the completion dialog offers **Install
 Requirements**, which runs `python -m pip install -r requirements.txt` with the
 same Python that runs the application. Always start the application with

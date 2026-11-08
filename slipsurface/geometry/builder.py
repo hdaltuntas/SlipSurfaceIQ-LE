@@ -92,8 +92,14 @@ def build_regions(
     default_material: str,
     snap_tol: float | None = None,
     min_area: float = 1e-6,
+    warnings: list[str] | None = None,
 ):
-    """Return (domain polygon, [Region], clipped material lines)."""
+    """Return (domain polygon, [Region], clipped material lines).
+
+    When ``warnings`` is a list, a message is appended for every material
+    boundary (or a long part of one) that does not separate two regions, e.g.
+    because its ends stop short of the external boundary.
+    """
     ext = np.asarray(external, dtype=float)
     if ext.ndim != 2 or ext.shape[1] != 2 or len(ext) < 3 or not np.all(np.isfinite(ext)):
         raise ValueError("The external boundary must have at least 3 vertices.")
@@ -109,6 +115,7 @@ def build_regions(
     boundary = domain.exterior
     lines = [boundary]
     clipped = []
+    inside_parts: list = []  # per material boundary, its part inside the domain
     for i, ml in enumerate(material_lines or []):
         ml = np.asarray(ml, dtype=float)
         if ml.ndim != 2 or ml.shape[1] != 2 or len(ml) < 2 or not np.all(np.isfinite(ml)):
@@ -119,6 +126,7 @@ def build_regions(
         # outside the domain are dangles that polygonize ignores
         lines.append(ls)
         inside = ls.intersection(domain)
+        inside_parts.append(inside)
         for g in getattr(inside, "geoms", [inside]):
             if isinstance(g, LineString) and g.length > 0:
                 clipped.append(np.asarray(g.coords))
@@ -139,7 +147,24 @@ def build_regions(
             if p.contains(Point(x, y)):
                 mat = name
         regions.append(Region(p, mat))
+    if warnings is not None and inside_parts:
+        warnings.extend(_dangling_messages(inside_parts, polys, tol))
     return domain, regions, clipped
+
+
+def _dangling_messages(inside_parts, polys, tol: float) -> list[str]:
+    """Material boundaries that do not lie on any region edge."""
+    edges = unary_union([p.exterior for p in polys]).buffer(0.25 * tol)
+    out = []
+    for i, part in enumerate(inside_parts, 1):
+        loose = part.difference(edges).length
+        if loose > 2 * tol:
+            out.append(
+                f"Material boundary {i} does not divide a region ({loose:.2f} m of it is "
+                "loose): its ends must reach the external boundary or another material "
+                "boundary."
+            )
+    return out
 
 
 def boundary_geometry(
@@ -150,8 +175,9 @@ def boundary_geometry(
     water_table=None,
     name: str = "Model",
 ) -> SlopeGeometry:
+    warnings: list[str] = []
     domain, regions, clipped = build_regions(
-        external, material_lines, assignments, default_material
+        external, material_lines, assignments, default_material, warnings=warnings
     )
     surface = upper_profile(domain)
     x0, x1 = surface[0, 0], surface[-1, 0]
@@ -174,5 +200,6 @@ def boundary_geometry(
             "external": np.asarray(external, float),
             "boundaries": clipped,
             "domain": domain,
+            "warnings": warnings,
         },
     )

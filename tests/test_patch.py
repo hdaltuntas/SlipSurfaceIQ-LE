@@ -484,3 +484,82 @@ def test_signing_off_without_trusted_keys(tmp_path):
     net = SignedNet({"main.py": b"new"}, unsigned=True)
     plan = plan_against_local("2026.3.0", root=root, opener=net)
     assert [d.relpath for d in plan.new] == ["main.py"]
+
+
+def test_retired_examples_removed_only_when_unmodified(tmp_path, monkeypatch):
+    """Examples dropped by a release are removed if, and only if, untouched."""
+    from slipsurface.patch import retired
+
+    shipped_a, shipped_b = b'{"slope": 1}\n', b'{"seismic": 1}\n'
+    monkeypatch.setattr(
+        retired,
+        "RETIRED_FILES",
+        {
+            "examples/simple_slope.slp.json": (sha256_bytes(shipped_a),),
+            "examples/seismic.slp.json": (sha256_bytes(shipped_b),),
+            "examples/power_law.slp.json": (sha256_bytes(b"original"),),
+        },
+    )
+    root = tmp_path / "app"
+    (root / "examples").mkdir(parents=True)
+    (root / "main.py").write_text("v3")
+    (root / "examples" / "simple_slope.slp.json").write_bytes(shipped_a)
+    # a Windows checkout of a shipped file still counts as unmodified
+    (root / "examples" / "seismic.slp.json").write_bytes(shipped_b.replace(b"\n", b"\r\n"))
+    (root / "examples" / "power_law.slp.json").write_bytes(b'{"edited": true}')
+    (root / "examples" / "my_project.slp.json").write_text("{}")
+    plan = plan_against_local("2026.3.0", root=root, opener=FakeNet({"main.py": b"v3"}))
+    assert sorted(d.relpath for d in plan.removed) == [
+        "examples/seismic.slp.json",
+        "examples/simple_slope.slp.json",
+    ]
+
+
+def test_retired_table_lists_only_files_no_longer_shipped():
+    from pathlib import Path
+
+    from slipsurface.patch.core import KEEP_UNLISTED_PREFIXES, is_managed
+    from slipsurface.patch.retired import RETIRED_FILES
+
+    root = Path(__file__).parents[1]
+    assert "examples/simple_slope.slp.json" in RETIRED_FILES
+    for rel, hashes in RETIRED_FILES.items():
+        assert is_managed(rel) and rel.startswith(KEEP_UNLISTED_PREFIXES)
+        assert not (root / rel).exists(), f"{rel} is shipped again; drop it from the table"
+        assert hashes and all(len(h) == 64 and int(h, 16) >= 0 for h in hashes)
+
+
+def test_file_of_the_running_release_dropped_by_the_target_is_removed(tmp_path, monkeypatch):
+    from slipsurface.patch import core
+
+    root = tmp_path / "app"
+    (root / "docs").mkdir(parents=True)
+    (root / "main.py").write_text("v3")
+    (root / "docs" / "old_guide.pdf").write_bytes(b"old guide")
+    (root / "docs" / "notes.pdf").write_bytes(b"my notes")
+    running = {"files": {"docs/old_guide.pdf": sha256_bytes(b"old guide"), "main.py": "x"}}
+    target = {"files": {"main.py": sha256_bytes(b"v3")}}
+    monkeypatch.setattr(core, "__version__", "2026.2.0")
+    monkeypatch.setattr(
+        core,
+        "fetch_manifest",
+        lambda version, *a, **k: running if version == "2026.2.0" else target,
+    )
+    plan = core.plan_against_local("2026.3.0", root=root)
+    assert [d.relpath for d in plan.removed] == ["docs/old_guide.pdf"]
+
+
+def test_signing_command_line_runs_without_runpy_warning():
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    done = subprocess.run(
+        [sys.executable, "-W", "error::RuntimeWarning", "-m", "slipsurface.patch.signing"],
+        cwd=Path(__file__).parents[1],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert done.returncode == 2, done.stderr  # usage text, no warning turned error
+    assert "RuntimeWarning" not in done.stderr
