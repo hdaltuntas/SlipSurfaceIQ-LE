@@ -44,6 +44,7 @@ class Document(QObject):
         self.path = None
         self.geometry: SlopeGeometry | None = None
         self.geometry_error = ""
+        self.geometry_warnings: list[str] = []
         self._rebuild()
 
     # ------------------------------------------------------------ state
@@ -85,10 +86,12 @@ class Document(QObject):
     def _rebuild(self) -> None:
         self.geometry = None
         self.geometry_error = ""
+        self.geometry_warnings = []
         if not self.project.has_geometry:
             self.geometry_error = "No external boundary defined."
             return
         try:
             self.geometry = self.project.build_geometry()
+            self.geometry_warnings = list(self.geometry.meta.get("warnings", []))
         except ValueError as exc:
             self.geometry_error = str(exc)

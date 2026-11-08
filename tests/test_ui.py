@@ -871,3 +871,12 @@ def test_modeler_has_no_left_dock(app, win):
     it.setCheckState(1, Qt.Unchecked)
     assert win.doc.project.display["show_ruler"] is False
     dlg.close()
+
+
+def test_loose_material_boundary_shows_a_status_warning(win):
+    win.doc.edit(
+        "Loose boundary", lambda p: p.material_boundaries.append([[30.0, 1.0], [32.0, 1.0]])
+    )
+    QApplication.processEvents()
+    assert win.doc.geometry is not None and win.doc.geometry_warnings
+    assert "does not divide a region" in win.status.currentMessage()

@@ -1171,15 +1171,33 @@ EXAMPLES = {
     "ACADS EX5 — excavated slope with groundwater": acads_5_project,
 }
 
-# Preserve script/CLI names from releases that interchanged EX1(b) and EX1(c).
-# These aliases intentionally do not appear in the example menu.
-EXAMPLE_ALIASES = {
-    "ACADS EX1(b)": acads_1b_project,
-    "ACADS EX1(c) — slope with tension crack": acads_1c_project,
+# Names used before 2026.5.0, when EX1(b) and EX1(c) were interchanged. They
+# still open the same model as before, with a notice that names the current
+# example; they do not appear in the example menu.
+LEGACY_EXAMPLE_NAMES = {
+    "ACADS EX1(b)": "ACADS EX1(c) — non-homogeneous slope",
+    "ACADS EX1(c) — slope with tension crack": "ACADS EX1(b) — slope with tension crack",
 }
+EXAMPLE_ALIASES = {old: EXAMPLES[new] for old, new in LEGACY_EXAMPLE_NAMES.items()}
+
+
+def legacy_example_notice(name: str) -> str | None:
+    """Explain a legacy example name, or None for a current one."""
+    new = LEGACY_EXAMPLE_NAMES.get(name)
+    if new is None:
+        return None
+    return (
+        f"Example name {name!r} is from an older release and opens {new!r}; "
+        "the ACADS EX1(b)/(c) names now follow the published numbering."
+    )
 
 
 def example_project(name: str) -> Project:
-    """Bundled example by name (see EXAMPLES)."""
+    """Bundled example by name (see EXAMPLES); legacy names warn."""
+    notice = legacy_example_notice(name)
+    if notice is not None:
+        import warnings
+
+        warnings.warn(notice, FutureWarning, stacklevel=2)
     factory = EXAMPLES.get(name) or EXAMPLE_ALIASES[name]
     return factory()

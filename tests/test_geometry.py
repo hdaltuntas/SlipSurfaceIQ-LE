@@ -93,3 +93,32 @@ def test_acads_1b_matches_published_factors_of_safety():
     # Slide2 verification problem #3 (ACADS EX1(c)): Bishop 1.405, Spencer 1.375
     assert res.results["bishop"].fos == pytest.approx(1.405, abs=0.015)
     assert res.results["spencer"].fos == pytest.approx(1.375, abs=0.015)
+
+
+@pytest.mark.parametrize(
+    "lines,regions,loose",
+    [
+        ([[[0.05, -4], [59.9, -4]]], 2, False),  # ends snapped onto the outline
+        ([[[-1, -4], [61, -4]]], 2, False),  # overshoots the outline
+        ([[[0, -4], [60, -4]], [[30, -4], [30, -10]]], 3, False),  # T-junction
+        ([[[2, -4], [58, -4]]], 1, True),  # both ends 2 m short
+        ([[[0, -4], [30, -4]]], 1, True),  # stops in the middle
+    ],
+)
+def test_material_boundary_that_divides_nothing_is_reported(lines, regions, loose):
+    from slipsurface.geometry.builder import boundary_geometry
+
+    ext = [[0, -10], [60, -10], [60, 10], [40, 10], [20, 0], [0, 0]]
+    g = boundary_geometry(ext, lines)
+    assert len(g.regions) == regions
+    warnings = g.meta["warnings"]
+    assert bool(warnings) is loose
+    if loose:
+        assert "Material boundary 1 does not divide a region" in warnings[0]
+
+
+def test_bundled_examples_have_no_loose_material_boundaries():
+    from slipsurface.project import EXAMPLES
+
+    for name, factory in EXAMPLES.items():
+        assert factory().build_geometry().meta["warnings"] == [], name

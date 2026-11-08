@@ -380,25 +380,29 @@ def slice_forces(
         idx = np.flatnonzero((xl - 1e-9 <= x) & (x <= xr + 1e-9))
         return int(idx[0]) if idx.size else None
 
-    # distributed loads (midpoint rule on the overlap with each slice top)
+    # distributed loads (8-point midpoint rule on the overlap with each slice
+    # top), evaluated for all loaded slices at once
+    m = 8
+    xl_a, xr_a = np.asarray(xl, float), np.asarray(xr, float)
     for d in loads.distributed:
         lo, hi = sorted((d.x1, d.x2))
-        for i in range(n):
-            a, b = max(xl[i], lo), min(xr[i], hi)
-            if b - a <= 1e-12:
-                continue
-            m = 8
-            xs = a + (np.arange(m) + 0.5) * (b - a) / m
-            dx = (b - a) / m
-            q = d.q_at(xs)
-            ys = geom.ground_y(xs)
-            if d.orientation == "normal":
-                dy = _ground_slope(geom, xs) * dx
-                fx, fy = q * dy, -q * dx
-            else:
-                fx, fy = np.zeros(m), -q * dx
-            for xk, yk, fxk, fyk in zip(xs, ys, fx, fy, strict=False):
-                add(i, xk, yk, fxk, fyk)
+        left, right = np.maximum(xl_a, lo), np.minimum(xr_a, hi)
+        rows = np.flatnonzero(right - left > 1e-12)
+        if rows.size == 0:
+            continue
+        dx = (right[rows] - left[rows]) / m  # (k,)
+        xs = left[rows, None] + (np.arange(m) + 0.5)[None, :] * dx[:, None]  # (k, m)
+        q = d.q_at(xs)
+        ys = geom.ground_y(xs.ravel()).reshape(xs.shape)
+        fy = -q * dx[:, None]
+        if d.orientation == "normal":
+            dy = _ground_slope(geom, xs.ravel()).reshape(xs.shape) * dx[:, None]
+            fx = q * dy
+        else:
+            fx = np.zeros_like(fy)
+        out["Qx_a"][rows] += fx.sum(axis=1)
+        out["Qy_a"][rows] += fy.sum(axis=1)
+        out["M_a"][rows] += (xs * fy - ys * fx).sum(axis=1)
 
     # line loads
     for ln in loads.line:

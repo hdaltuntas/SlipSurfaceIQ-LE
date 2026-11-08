@@ -77,7 +77,7 @@ def import_dxf(path: str | Path) -> tuple[Project, list[str]]:
     if len(external) != 1:
         raise ValueError("DXF needs exactly one closed SS_EXTERNAL (or layer 0) boundary.")
     project.external = external[0]
-    project.build_geometry()
+    warnings.extend(project.build_geometry().meta.get("warnings", []))
     if ignored:
         warnings.append("Skipped entities/layers: " + ", ".join(sorted(ignored)))
     warnings.append("DXF transfers geometry only. Assign materials, loads and supports separately.")

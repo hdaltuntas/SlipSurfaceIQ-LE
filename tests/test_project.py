@@ -170,3 +170,20 @@ def test_user_defined_surface():
     p.methods.methods = ["bishop", "spencer"]
     r = run_analysis(p)
     assert "bishop" in r.errors and r.results["spencer"].fos == pytest.approx(0.985, abs=0.02)
+
+
+def test_legacy_example_names_open_the_same_model_with_a_notice():
+    from slipsurface.project import (
+        EXAMPLES,
+        LEGACY_EXAMPLE_NAMES,
+        example_project,
+        legacy_example_notice,
+    )
+
+    for old, new in LEGACY_EXAMPLE_NAMES.items():
+        assert old not in EXAMPLES and new in EXAMPLES
+        with pytest.warns(FutureWarning, match="older release"):
+            p = example_project(old)
+        assert p.to_dict() == EXAMPLES[new]().to_dict()
+        assert new in legacy_example_notice(old)
+    assert legacy_example_notice("ACADS EX1(a)") is None

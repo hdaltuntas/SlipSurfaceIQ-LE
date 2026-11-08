@@ -85,7 +85,11 @@ def run(
         print(f"[ERROR] Example not found: {example!r}. Options: {', '.join(EXAMPLES)}")
         return 1
 
-    win = ModelerWindow(example_project(example) if example else None)
+    import warnings
+
+    with warnings.catch_warnings():  # main.py already printed the notice
+        warnings.simplefilter("ignore", FutureWarning)
+        win = ModelerWindow(example_project(example) if example else None)
     if project_path:
         win.open_project(project_path)
     from slipsurface.ui.preferences import show_screen_sized

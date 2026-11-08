@@ -296,3 +296,18 @@ def test_help_menu_opens_both_guides(monkeypatch):
         w.close()
     assert opened == [guides.SCRIPTING_TUTORIAL, guides.DXF_GUIDE]
     assert all(path.is_file() for path in opened)
+
+
+def test_dxf_import_reports_a_loose_material_boundary(tmp_path):
+    import ezdxf
+
+    doc = ezdxf.new()
+    doc.units = 6
+    msp = doc.modelspace()
+    msp.add_lwpolyline(default_project().external, close=True)
+    msp.add_line((2, -4), (50, -4), dxfattribs={"layer": "SS_MATERIAL"})
+    path = tmp_path / "loose.dxf"
+    doc.saveas(path)
+    project, warnings = import_dxf(path)
+    assert len(project.build_geometry().regions) == 1
+    assert any("does not divide a region" in w for w in warnings)
