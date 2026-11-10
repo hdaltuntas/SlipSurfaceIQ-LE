@@ -1363,8 +1363,10 @@ class ModelerWindow(QMainWindow):
     def script_editor(self):
         from slipsurface.ui.dialogs.script import ScriptDialog
 
+        before = self.doc.undo_stack.index()
         ScriptDialog(self.doc, self).exec()
-        self.canvas.zoom_extents()
+        if self.doc.undo_stack.index() != before:  # the view is kept otherwise
+            self.canvas.zoom_extents()
 
     def import_dxf(self):
         from slipsurface.exchange import import_dxf
@@ -1372,6 +1374,17 @@ class ModelerWindow(QMainWindow):
         path, _ = QFileDialog.getOpenFileName(self, "Import DXF", "", "DXF (*.dxf)")
         if not path:
             return
+        p = self.doc.project
+        if p.has_geometry or p.loads or p.supports or p.support_patterns or p.facings:
+            ans = QMessageBox.question(
+                self,
+                "Import DXF",
+                "Importing replaces the whole model: geometry, materials, loads, supports "
+                "and settings are reset and only the DXF geometry is kept.\n\n"
+                "Replace the current model? (Edit → Undo restores it.)",
+            )
+            if ans != QMessageBox.Yes:
+                return
         try:
             project, warnings = import_dxf(path)
             self.doc.edit("Import DXF", lambda p: p.__dict__.update(project.__dict__))

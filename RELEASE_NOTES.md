@@ -1,3 +1,68 @@
+# SlipSurfaceIQ LE 2026.6.0
+
+Code and interface review: values kept exact, damaged files refused, dark theme and report fixes
+
+Numerical results are unchanged: no solver, slicing or search code was modified.
+
+**Values that were changed without being edited**
+
+- The coordinate table and the material parameter table showed numbers with 6 significant
+  digits and wrote the rounded text back on OK (456789.123 became 456789). They now keep
+  the stored value.
+- Load, support, bolt pattern, facing, given-circle, slip-limit and project-settings boxes
+  round to their displayed decimals. A value you did not edit is now saved exactly as it
+  was stored; only edited boxes are taken from the dialog.
+- Project Settings no longer clips stored values to narrower limits than the program
+  accepts (for example 3 slices, a tolerance below 10⁻⁶ or γw above 20), keeps the order
+  of the selected methods, and has an **Automatic** failure direction. Before, a project
+  with the automatic direction was shown as "Left to right" and saved that way on OK.
+
+**Project files**
+
+- A project file with a malformed load, support, bolt pattern, facing, note, slip limit,
+  user surface, setting or material model raised errors on every repaint. Opening such a
+  file is now refused and the message names the entry. Display options of the wrong type
+  fall back to their defaults.
+- A distributed load with x₁ = x₂ made the whole model invalid. The load dialog, the draw
+  tool and vertex dragging refuse it.
+- File → Import DXF asks before it replaces a model that already has geometry.
+
+**Interface**
+
+- Dark theme: the crosshair cursor and the lines to the slip centre were drawn near-black
+  on the dark canvas; dialog notes and formulas used fixed dark greys. They follow the
+  theme now.
+- Define Materials: OK did nothing after a refused delete ("At least one material must
+  remain").
+- Cancelling just as the last method finished left "Cancelling computation…" in the
+  status bar.
+- Deleting from the right-click menu left a different entity selected.
+- The scripting window no longer reports "Applied" when the script changed nothing, and
+  closing it keeps the current view unless the script changed the model.
+- English labels for "Standart" and "Rastgele tohum" and for the default image name.
+
+**PDF report and Information Viewer**
+
+- Appendix headings read "Appendix A" instead of "Ek A".
+- The reason a method gave no result is printed in full below the results table; it was
+  cut after 40 characters.
+- Material tables are printed when "Material properties" is selected without "Model
+  figure and geometry"; they were dropped silently.
+- For a given (user-defined) surface the report no longer describes a search; the mα
+  threshold shown is the one set in Project Settings instead of a fixed 0.2; the
+  automatic failure direction is named; the search population is described as
+  "× number of variables", as in Surface Options.
+
+**Updates and start-up**
+
+- When installing an update fails, the message says so and that the installed files are
+  unchanged; it used to read "Could not check for updates".
+- File names with spaces or non-ASCII characters are downloaded correctly.
+- `python main.py --check` reported an installed package as missing when a system
+  library it needs (such as libEGL on Linux) could not be loaded; it now prints the cause.
+
+Version 2026.6.0.
+
 # SlipSurfaceIQ LE 2026.5.1
 
 Complete 2026.5.0 delivery, boundary warnings and update clean-up

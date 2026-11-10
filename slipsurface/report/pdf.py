@@ -51,7 +51,7 @@ from reportlab.platypus import (
 from reportlab.platypus.tableofcontents import TableOfContents
 
 from slipsurface import __version__
-from slipsurface.analysis import governing_kv_lines
+from slipsurface.analysis import direction_label, governing_kv_lines
 from slipsurface.lem import method_name
 
 # ------------------------------------------------------------------ fonts
@@ -449,7 +449,7 @@ class _Builder:
         self.story.append(para)
 
     def appendix(self, letter: str, text: str) -> None:
-        para = _p(f"Ek {letter}&nbsp;&nbsp;&nbsp;{_e(text)}", self.st["h1"])
+        para = _p(f"Appendix {letter}&nbsp;&nbsp;&nbsp;{_e(text)}", self.st["h1"])
         para.toc_level = 0
         self.story.append(PageBreak())
         self.story.append(para)
@@ -708,10 +708,14 @@ class _Builder:
             "user": "user-defined",
         }[p.surfaces.surface_type]
         n = len(r.results)
+        how = (
+            "the given (user-defined) slip surface was analysed without a search."
+            if p.surfaces.surface_type == "user"
+            else f"the critical slip surface was found by a {kind} surface search."
+        )
         txt = (
             "This report presents the 2D limit equilibrium analysis of the <b>"
-            f"{_e(o.project or p.summary.title)}</b> slope. {n} method(s) were used "
-            f"and the critical slip surface was found by a {kind} surface search."
+            f"{_e(o.project or p.summary.title)}</b> slope. {n} method(s) were used and {how}"
         )
         if gm:
             k, res = gm
@@ -792,8 +796,8 @@ class _Builder:
             rc[(i, 8)] = col
             if gm and k == gm[0]:
                 bold.add(i)
-        for k, e in r.errors.items():
-            rows.append([_e(method_name(k)), "—", "—", "—", "—", "—", "—", "—", _e(e[:40])])
+        for k in r.errors:
+            rows.append([_e(method_name(k)), "—", "—", "—", "—", "—", "—", "—", "no result"])
         widths = [0.21, 0.07, 0.07, 0.1, 0.1, 0.15, 0.07, 0.1, 0.13]
         align = ["l", "r", "r", "r", "r", "r", "r", "r", "c"]
         if not any(hasattr(res.surface, "r") for res in r.results.values()):
@@ -805,6 +809,8 @@ class _Builder:
             widths = [0.27, 0.09, 0.09, 0.13, 0.13, 0.13, 0.16]
             rc = {(i, 6): c for (i, _), c in rc.items()}
         self.table(header, rows, widths, caption, align, row_colors=rc, bold_rows=bold)
+        for k, e in r.errors.items():  # the table cell is too narrow for the reason
+            self.para(f"<b>{_e(method_name(k))}</b> — no result: {_e(e)}", "small")
         if gm:
             self.para(
                 (
@@ -819,6 +825,8 @@ class _Builder:
         res = [(k, v.fos) for k, v in self.r.results.items() if np.isfinite(v.fos)]
         tgt = self.o.target_fs
         n = len(res)
+        if not res:
+            return Drawing(FRAME_W, 1)
         bar_h, gap, left, right, top, bottom = 13, 7, 128, 40, 22, 26
         H = top + bottom + n * (bar_h + gap)
         W = FRAME_W
@@ -924,21 +932,23 @@ class _Builder:
     # -------------------------------------------------------------- model
     def model(self) -> None:
         p, o = self.p, self.o
-        self.h1("Model and Geometry")
+        self.h1("Model and Geometry" if o.model else "Material Properties")
         g = self.r.geometry
-        self.para(
-            (
-                f"The model consists of {len(g.regions)} region(s) and {len(p.materials)} "
-                f"material(s). The external boundary has {len(p.external)} vertices; the "
-                f"model spans x = {g.x_min:.2f} – {g.x_max:.2f} m."
+        if o.model:
+            self.para(
+                (
+                    f"The model consists of {len(g.regions)} region(s) and {len(p.materials)} "
+                    f"material(s). The external boundary has {len(p.external)} vertices; the "
+                    f"model spans x = {g.x_min:.2f} – {g.x_max:.2f} m."
+                )
+                + (" " + "A water table is defined." if p.water_table else "")
+                + (" " + "A tension crack boundary is defined." if p.tension_crack else "")
             )
-            + (" " + "A water table is defined." if p.water_table else "")
-            + (" " + "A tension crack boundary is defined." if p.tension_crack else "")
-        )
-        self.story.append(Spacer(1, 4))
-        self.figure(self.figs.model, "Analysis model: geometry, materials, loads and supports")
+            self.story.append(Spacer(1, 4))
+            self.figure(self.figs.model, "Analysis model: geometry, materials, loads and supports")
         if o.materials:
-            self.h2("Material properties")
+            if o.model:
+                self.h2("Material properties")
             mc = [m for m in p.materials if m.model == "MC"]
             hb = [m for m in p.materials if m.model == "HB"]
             if mc:
@@ -1085,28 +1095,31 @@ class _Builder:
         rows = [
             ("Methods", ", ".join(_e(method_name(k)) for k in p.methods.methods)),
             ("Units", "Metric — kN, kPa, m"),
-            (
-                "Failure Direction",
-                "Right to left"
-                if p.general.failure_direction == "right_to_left"
-                else "Left to right",
-            ),
+            ("Failure Direction", direction_label(p.general.failure_direction)),
             ("Number of slices", str(p.methods.n_slices)),
             ("Tolerance / max. iterations", f"{p.methods.tolerance:g} / {p.methods.max_iter}"),
             ("GLE interslice function", inter),
             ("Slip surface", surf_txt),
             (
                 "Search",
-                (
-                    f"Differential evolution + Nelder-Mead (population {pop}, at most {it} "
-                    f"generations, seed {s.seed})"
+                "None (the surface is given)"
+                if s.surface_type == "user"
+                else (
+                    f"Differential evolution + Nelder-Mead (population {pop} × number of "
+                    f"variables, at most {it} generations, seed {s.seed})"
                 ),
             ),
-            ("Slope limits", "; ".join(x for x in lim) if lim else "Whole model"),
+            (
+                "Slope limits",
+                "Not used (the surface is given)"
+                if s.surface_type == "user"
+                else ("; ".join(x for x in lim) if lim else "Whole model"),
+            ),
             ("Minimum sliding mass depth", f"{p.advanced.min_depth:g} m"),
             (
                 "Admissibility check",
-                "On (mα &lt; 0.2 and negative base shear resistance are rejected)"
+                f"On (mα &lt; {p.advanced.m_alpha_min:g} and negative base shear resistance "
+                "are rejected)"
                 if p.advanced.check_admissibility
                 else "Off",
             ),
@@ -1115,7 +1128,7 @@ class _Builder:
         ]
         critical_kv = governing_kv_lines(p, self.r.results)
         if critical_kv:
-            rows.append(("Critical vertical", "\n".join(critical_kv)))
+            rows.append(("Critical vertical", "<br/>".join(_e(x) for x in critical_kv)))
         if p.tension_crack:
             rows.append(("Tension crack", f"Crack water {100 * gw.crack_water:.0f}% full"))
         self.kv_table(rows, "Analysis and search parameters")
@@ -1581,7 +1594,7 @@ class _Builder:
             self.toc()
             self.story.append(PageBreak())
         self.summary()
-        if o.model:
+        if o.model or o.materials:  # the material tables do not need the figure
             self.story.append(PageBreak())
             self.model()
         if o.settings:

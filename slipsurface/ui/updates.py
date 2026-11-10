@@ -52,6 +52,7 @@ class UpdateChecker(QObject):
 
     found = Signal(object, bool)  # ReleaseInfo, manual
     failed = Signal(str, bool)  # reason, manual
+    apply_failed = Signal(str)  # reason an update could not be installed
     applied = Signal(str, str, bool)  # version, summary, requirements.txt changed
     installed = Signal(bool, str)  # pip succeeded, last lines of its output
     progressed = Signal(int, int, str)  # done, total, relpath
@@ -64,6 +65,7 @@ class UpdateChecker(QObject):
         self.dialog: QMessageBox | None = None
         self.found.connect(self._on_found)
         self.failed.connect(self._on_failed)
+        self.apply_failed.connect(self._on_apply_failed)
         self.applied.connect(self._on_applied)
         self.progressed.connect(self._on_progressed)
         self.installed.connect(self._on_installed)
@@ -121,6 +123,16 @@ class UpdateChecker(QObject):
                 "Update Check",
                 f"Could not check for updates: {reason}",
             )
+
+    def _on_apply_failed(self, reason: str) -> None:
+        self._busy = False
+        self._status("")
+        self._show(
+            QMessageBox.Warning,
+            "Update",
+            f"The update could not be installed: {reason}\n\n"
+            "The installed files are unchanged. Try again later or open the release page.",
+        )
 
     def _on_applied(self, version: str, summary: str, requirements: bool = False) -> None:
         """A delta update finished successfully."""
@@ -230,7 +242,7 @@ class UpdateChecker(QObject):
                     progress=lambda done, total, rel: self._progress(done, total, rel),
                 )
             except Exception as exc:  # UpdateCheckError or any network error
-                self.failed.emit(str(exc), True)
+                self.apply_failed.emit(str(exc) or type(exc).__name__)
             else:
                 self.applied.emit(info.version, summary, requirements_changed(plan))
 

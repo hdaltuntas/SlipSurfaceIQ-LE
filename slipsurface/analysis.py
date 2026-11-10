@@ -62,6 +62,12 @@ def extend_to_ground(geom: SlopeGeometry, pts) -> np.ndarray:
     return np.asarray(out)
 
 
+def direction_label(direction: str) -> str:
+    return {"right_to_left": "Right to left", "left_to_right": "Left to right"}.get(
+        direction, "Automatic"
+    )
+
+
 def _kv_cases(p: Project) -> list[float]:
     """Vertical coefficients to solve. Positive kv is upward."""
     kv = float(p.seismic.kv)
@@ -79,7 +85,7 @@ def _at_kv(p: Project, kv: float) -> Project:
 
 
 def governing_kv_lines(p: Project, results: dict) -> list[str]:
-    """One Turkish line per method when both vertical directions were solved."""
+    """One line per method when both vertical directions were solved."""
     if not (p.seismic.both_vertical and p.seismic.kv != 0.0):
         return []
     lines = []
@@ -264,10 +270,7 @@ def report_text(r: AnalysisResults) -> str:
         "Project settings",
         "-" * 60,
         "Units              : Metric (kN, kPa, m)",
-        (
-            "Failure direction  : "
-            f"{('Right to left' if g.failure_direction == 'right_to_left' else 'Left to right')}"
-        ),
+        f"Failure direction  : {direction_label(g.failure_direction)}",
         f"Number of slices   : {p.methods.n_slices}",
         f"Tolerance / max it : {p.methods.tolerance} / {p.methods.max_iter}",
         f"Interslice function: {p.methods.interslice} (GLE)",

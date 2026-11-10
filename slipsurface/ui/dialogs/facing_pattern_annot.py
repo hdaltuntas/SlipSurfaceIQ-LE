@@ -31,6 +31,7 @@ from PySide6.QtWidgets import (
 )
 
 from slipsurface.loads import FacingType
+from slipsurface.ui.dialogs.misc import set_stored, stored_value as V
 from slipsurface.ui.icons import color_icon
 
 TITLE_CSS = "color:#2a7ad0;font-size:16px;"
@@ -56,7 +57,7 @@ def _spin(lo, hi, dec, val, suffix=""):
     s = QDoubleSpinBox()
     s.setRange(lo, hi)
     s.setDecimals(dec)
-    s.setValue(val)
+    set_stored(s, val)
     if suffix:
         s.setSuffix(suffix)
     return s
@@ -190,13 +191,13 @@ class FacingTypesDialog(QDialog):
         self.title.setText(t.name)
         self.name.setText(t.name)
         self.color.setIcon(color_icon(t.color, 18))
-        self.thickness.setValue(t.thickness)
-        self.gamma.setValue(t.gamma)
-        self.tau.setValue(t.tau)
+        set_stored(self.thickness, t.thickness)
+        set_stored(self.gamma, t.gamma)
+        set_stored(self.tau, t.tau)
         i = self.mesh.findData(t.mesh)
         self.mesh.setCurrentIndex(i if i >= 0 else self.mesh.findData("Custom"))
-        self.mesh_as.setValue(t.mesh_as)
-        self.mesh_fy.setValue(t.mesh_fy)
+        set_stored(self.mesh_as, t.mesh_as)
+        set_stored(self.mesh_fy, t.mesh_fy)
         (self.r_passive if t.application == "passive" else self.r_active).setChecked(True)
         self._loading = False
         self._mesh_changed(store=False)
@@ -215,12 +216,12 @@ class FacingTypesDialog(QDialog):
         if self._loading or self.cur < 0:
             return
         t = self.types[self.cur]
-        t.thickness = self.thickness.value()
-        t.gamma = self.gamma.value()
-        t.tau = self.tau.value()
+        t.thickness = V(self.thickness)
+        t.gamma = V(self.gamma)
+        t.tau = V(self.tau)
         t.mesh = self.mesh.currentData()
-        t.mesh_as = self.mesh_as.value()
-        t.mesh_fy = self.mesh_fy.value()
+        t.mesh_as = V(self.mesh_as)
+        t.mesh_fy = V(self.mesh_fy)
         t.application = "passive" if self.r_passive.isChecked() else "active"
         self._update_capacity()
 
@@ -301,7 +302,7 @@ class FacingEditDialog(QDialog):
         lay.addWidget(_buttons(self))
 
     def apply_to(self, f: dict, ground_y=None) -> None:
-        x1, x2 = sorted((self.x1.value(), self.x2.value()))
+        x1, x2 = sorted((V(self.x1), V(self.x2)))
         f["type"] = self.type.currentText()
         f["x1"], f["x2"] = x1, x2
         if ground_y is not None:
@@ -363,14 +364,14 @@ class PatternDialog(QDialog):
             self.count.setText("—")
 
     def apply_to(self, pt: dict, ground_y=None) -> None:
-        x1, x2 = self.x1.value(), self.x2.value()
+        x1, x2 = V(self.x1), V(self.x2)
         pt["type"] = self.type.currentText()
         pt["p1"] = [x1, float(ground_y(x1)) if ground_y else pt["p1"][1]]
         pt["p2"] = [x2, float(ground_y(x2)) if ground_y else pt["p2"][1]]
-        pt["spacing"] = self.spacing.value()
-        pt["offset"] = self.offset.value()
-        pt["angle"] = self.angle.value()
-        pt["length"] = self.length.value()
+        pt["spacing"] = V(self.spacing)
+        pt["offset"] = V(self.offset)
+        pt["angle"] = V(self.angle)
+        pt["length"] = V(self.length)
 
 
 # ============================================================ annotation

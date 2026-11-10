@@ -43,6 +43,21 @@ def format_number(value: float) -> str:
     return f"{float(value):.12g}"
 
 
+def set_stored(spin, value: float) -> None:
+    """Show `value` in a spin box and remember it at full precision."""
+    spin.setProperty("stored", float(value))
+    spin.setValue(float(value))
+
+
+def stored_value(spin) -> float:
+    """The value to save: the remembered number while the box still shows it
+    (a spin box rounds to its decimals), otherwise what the user entered."""
+    stored = spin.property("stored")
+    if stored is not None and round(float(stored), spin.decimals()) == spin.value():
+        return float(stored)
+    return spin.value()
+
+
 def parse_float(text: str, what: str) -> float:
     try:
         return float(str(text).strip().replace(",", "."))

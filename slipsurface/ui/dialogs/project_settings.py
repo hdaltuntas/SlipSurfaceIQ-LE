@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
 )
 
 from slipsurface.lem import METHODS
+from slipsurface.ui.dialogs.misc import set_stored, stored_value as V
 from slipsurface.project import (
     AdvancedSettings,
     GeneralSettings,
@@ -65,7 +66,7 @@ def _dspin(lo, hi, dec, step, val, suffix=""):
     s.setRange(lo, hi)
     s.setDecimals(dec)
     s.setSingleStep(step)
-    s.setValue(val)
+    set_stored(s, val)
     if suffix:
         s.setSuffix(suffix)
     return s
@@ -171,10 +172,17 @@ class ProjectSettingsDialog(QDialog):
         gl = QGridLayout(dirbox)
         self.rtl = QRadioButton("Right to left")
         self.ltr = QRadioButton("Left to right")
+        self.auto_dir = QRadioButton("Automatic")
+        self.auto_dir.setToolTip(
+            "Each trial surface slides the way its own weight drives it. Use slip "
+            "limits to keep the search on one face."
+        )
         self.dir_group = QButtonGroup(self)
-        self.dir_group.addButton(self.rtl)
-        self.dir_group.addButton(self.ltr)
-        (self.rtl if g.failure_direction == "right_to_left" else self.ltr).setChecked(True)
+        for rb in (self.rtl, self.ltr, self.auto_dir):
+            self.dir_group.addButton(rb)
+        {"right_to_left": self.rtl, "left_to_right": self.ltr}.get(
+            g.failure_direction, self.auto_dir
+        ).setChecked(True)
         i1, i2 = QLabel(), QLabel()
         i1.setPixmap(_direction_pixmap(True))
         i2.setPixmap(_direction_pixmap(False))
@@ -182,6 +190,7 @@ class ProjectSettingsDialog(QDialog):
         gl.addWidget(i1, 0, 1)
         gl.addWidget(self.ltr, 1, 0)
         gl.addWidget(i2, 1, 1)
+        gl.addWidget(self.auto_dir, 2, 0, 1, 2)
         out = QGroupBox("Data Output")
         ol = QVBoxLayout(out)
         self.out_std = QRadioButton("Standard")
@@ -226,14 +235,14 @@ class ProjectSettingsDialog(QDialog):
         conv = QGroupBox("Convergence Options")
         cf = QFormLayout(conv)
         self.n_slices = QSpinBox()
-        self.n_slices.setRange(5, 500)
+        self.n_slices.setRange(3, 2000)
         self.n_slices.setValue(int(m.n_slices))
-        self.tol = _dspin(1e-6, 0.1, 6, 0.001, m.tolerance)
+        self.tol = _dspin(1e-9, 1.0, 9, 0.001, m.tolerance)
         self.tol.setToolTip(
             "Relative convergence tolerance. The solver uses this number as entered."
         )
         self.max_iter = QSpinBox()
-        self.max_iter.setRange(5, 1000)
+        self.max_iter.setRange(1, 10000)
         self.max_iter.setValue(int(m.max_iter))
         cf.addRow("Number of Slices:", self.n_slices)
         cf.addRow("Tolerance:", self.tol)
@@ -286,7 +295,7 @@ class ProjectSettingsDialog(QDialog):
         self.gw_method.addItem("Ru Coefficient", "ru")
         self.gw_method.addItem("Dry (No Pore Water)", "none")
         self.gw_method.setCurrentIndex(["water_table", "ru", "none"].index(gw.method))
-        self.gamma_w = _dspin(1, 20, 3, 0.01, gw.gamma_w, " kN/m³")
+        self.gamma_w = _dspin(0.001, 1000, 3, 0.01, gw.gamma_w, " kN/m³")
         self.ru = _dspin(0, 1, 3, 0.05, gw.ru)
         f.addRow("Method:", self.gw_method)
         f.addRow("Water Unit Weight γw:", self.gamma_w)
@@ -338,7 +347,7 @@ class ProjectSettingsDialog(QDialog):
         s = self.p.seismic
         box = QGroupBox("Pseudo-static Seismic Coefficients")
         f = QFormLayout(box)
-        self.kh = _dspin(0, 1, 4, 0.01, max(s.kh, 0.0))
+        self.kh = _dspin(0, 10, 4, 0.01, max(s.kh, 0.0))
         self.kh.setToolTip("kh always acts in the failure direction.")
         self.kv = _dspin(-1, 1, 4, 0.01, s.kv)
         f.addRow("Horizontal Coefficient kh:", self.kh)
@@ -369,9 +378,9 @@ class ProjectSettingsDialog(QDialog):
         self.check_adm.setChecked(a.check_admissibility)
         v.addWidget(self.check_adm)
         f = QFormLayout()
-        self.m_alpha_min = _dspin(0.05, 1.0, 2, 0.05, a.m_alpha_min)
-        self.e_max_ratio = _dspin(1, 1000, 0, 5, a.e_max_ratio)
-        self.min_depth = _dspin(0, 1000, 3, 0.5, a.min_depth, " m")
+        self.m_alpha_min = _dspin(0.001, 1.0, 3, 0.05, a.m_alpha_min)
+        self.e_max_ratio = _dspin(1, 1e6, 2, 5, a.e_max_ratio)
+        self.min_depth = _dspin(0, 1e5, 3, 0.5, a.min_depth, " m")
         f.addRow("mα Threshold (Default 0.2):", self.m_alpha_min)
         f.addRow("Maximum Interslice Force Ratio (E/W):", self.e_max_ratio)
         f.addRow("Minimum Slip Depth:", self.min_depth)
@@ -394,26 +403,36 @@ class ProjectSettingsDialog(QDialog):
     def collect(self) -> Project:
         p = self.p.copy()
         p.general.units = self.units.currentData()
-        p.general.failure_direction = "right_to_left" if self.rtl.isChecked() else "left_to_right"
+        p.general.failure_direction = (
+            "right_to_left"
+            if self.rtl.isChecked()
+            else "left_to_right"
+            if self.ltr.isChecked()
+            else "auto"
+        )
         p.general.data_output = "standard" if self.out_std.isChecked() else "maximum"
-        p.methods.methods = [k for k in METHOD_ORDER if self.method_checks[k].isChecked()]
+        # keep the stored order (it is the order of the results); new ones follow
+        checked = [k for k in METHOD_ORDER if self.method_checks[k].isChecked()]
+        kept = [k for k in self.p.methods.methods if k in checked]
+        p.methods.methods = kept + [k for k in checked if k not in kept]
         p.methods.n_slices = self.n_slices.value()
-        p.methods.tolerance = self.tol.value()
+        p.methods.tolerance = V(self.tol)
         p.methods.max_iter = self.max_iter.value()
         p.methods.interslice = self.interslice.currentData()
-        p.methods.f_start = self.f_start.value()
-        p.methods.f_end = self.f_end.value()
+        p.methods.f_start = V(self.f_start)
+        p.methods.f_end = V(self.f_end)
         p.groundwater.method = self.gw_method.currentData()
-        p.groundwater.gamma_w = self.gamma_w.value()
-        p.groundwater.ru = self.ru.value()
-        p.groundwater.crack_water = self.crack_pct.value() / 100.0
-        p.seismic.kh = self.kh.value()
-        p.seismic.kv = self.kv.value()
+        p.groundwater.gamma_w = V(self.gamma_w)
+        p.groundwater.ru = V(self.ru)
+        pct, old = self.crack_pct.value(), self.p.groundwater.crack_water
+        p.groundwater.crack_water = old if round(100 * old, 1) == pct else pct / 100.0
+        p.seismic.kh = V(self.kh)
+        p.seismic.kv = V(self.kv)
         p.seismic.both_vertical = self.both_kv.isChecked()
         p.advanced.check_admissibility = self.check_adm.isChecked()
-        p.advanced.min_depth = self.min_depth.value()
-        p.advanced.m_alpha_min = self.m_alpha_min.value()
-        p.advanced.e_max_ratio = self.e_max_ratio.value()
+        p.advanced.min_depth = V(self.min_depth)
+        p.advanced.m_alpha_min = V(self.m_alpha_min)
+        p.advanced.e_max_ratio = V(self.e_max_ratio)
         return p
 
     def _accept(self) -> None:
