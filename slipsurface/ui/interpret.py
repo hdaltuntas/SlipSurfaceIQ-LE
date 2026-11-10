@@ -404,4 +404,4 @@ class InterpretWindow(QMainWindow):
     def export_image(self) -> None:
         from slipsurface.ui.export import export_image
 
-        export_image(self, self.area, "sonuc.png")
+        export_image(self, self.area, "result.png")

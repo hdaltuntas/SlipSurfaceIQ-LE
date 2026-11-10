@@ -158,6 +158,8 @@ def set_points(p: Project, key, pts) -> None:
     elif kind == "load":
         ld = p.loads[i]
         if ld["kind"] == "distributed":
+            if len(pts) < 2 or pts[0][0] == pts[1][0]:
+                raise ValueError("A distributed load needs two different x positions.")
             ld["points"] = pts[:2]
         else:
             ld["point"] = pts[0]

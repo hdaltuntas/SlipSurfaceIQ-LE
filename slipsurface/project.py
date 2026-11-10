@@ -89,8 +89,36 @@ def _today() -> str:
 
 
 def _from_dict(cls, d: dict | None):
-    known = {f.name for f in fields(cls)}
-    return cls(**{k: v for k, v in (d or {}).items() if k in known})
+    """Dataclass from stored values. A value of the wrong basic type is
+    refused here: the dialogs pass these straight to spin boxes and combos."""
+    if d is not None and not isinstance(d, dict):
+        raise ValueError(f"{cls.__name__}: an object with named values is required.")
+    stored = d or {}
+    defaults = cls()
+    values = {}
+    for key in (f.name for f in fields(cls)):
+        if stored.get(key) is None:
+            continue
+        value, default = stored[key], getattr(defaults, key)
+        number = isinstance(value, (int, float)) and not isinstance(value, bool)
+        if isinstance(default, bool):
+            ok = isinstance(value, bool)
+        elif isinstance(default, int):
+            ok = number  # 30.0 is read as 30; 3.5 is kept for validate() to name
+            if ok and float(value).is_integer():
+                value = int(value)
+        elif isinstance(default, float):
+            ok = number
+        elif isinstance(default, str):
+            ok = isinstance(value, str)
+        else:
+            ok = True  # lists and optional values are checked by validate()
+        if not ok:
+            raise ValueError(
+                f"{cls.__name__}.{key}: a value like {default!r} is required (found {value!r})."
+            )
+        values[key] = value
+    return cls(**values)
 
 
 def _finite_inputs(value, path="project") -> None:
@@ -137,6 +165,139 @@ def _validate_loads(loads) -> None:
                 raise ValueError("load values must be finite")
         except (KeyError, TypeError, ValueError) as exc:
             raise ValueError(f"{label}: invalid load data ({exc}).") from None
+
+
+ANNOTATION_KINDS = ("text", "line", "arrow", "rect", "ellipse")
+
+
+def _is_number(value) -> bool:
+    return isinstance(value, (int, float, np.integer, np.floating)) and not isinstance(value, bool)
+
+
+def _is_point(value) -> bool:
+    return (
+        isinstance(value, (list, tuple)) and len(value) == 2 and all(_is_number(c) for c in value)
+    )
+
+
+def _validate_structure(p: Project) -> None:
+    """Reject lists whose entries do not have the shape the drawing and the
+    solver read (a hand-edited or damaged file, a script). Without this the
+    first repaint fails on a missing key instead of naming the entry."""
+
+    def entry(item, label) -> dict:
+        if not isinstance(item, dict):
+            raise ValueError(f"{label}: an object with named values is required.")
+        return item
+
+    def point(item, key, label) -> None:
+        if not _is_point(item.get(key)):
+            raise ValueError(f"{label}: '{key}' must be an [x, y] pair of numbers.")
+
+    def number(item, key, label, required=True) -> None:
+        if key not in item and not required:
+            return
+        if not _is_number(item.get(key)):
+            raise ValueError(f"{label}: '{key}' must be a number.")
+
+    def name(item, key, label) -> None:
+        if not isinstance(item.get(key), str):
+            raise ValueError(f"{label}: '{key}' must be a name.")
+
+    for m in p.materials:
+        if m.model not in MODELS:
+            raise ValueError(
+                f"{m.name}: unknown material model '{m.model}' (must be {', '.join(MODELS)})."
+            )
+    for i, ld in enumerate(p.loads, 1):
+        label = f"Load {i}"
+        kind = entry(ld, label).get("kind")
+        if kind == "distributed":
+            pts, q = ld.get("points"), ld.get("q")
+            if not (
+                isinstance(pts, (list, tuple)) and len(pts) == 2 and all(_is_point(v) for v in pts)
+            ):
+                raise ValueError(f"{label}: 'points' must be two [x, y] pairs.")
+            if not _is_point(q):
+                raise ValueError(f"{label}: 'q' must be a [q1, q2] pair of numbers.")
+        elif kind == "line":
+            point(ld, "point", label)
+            number(ld, "magnitude", label)
+            number(ld, "angle", label, required=False)
+        else:
+            raise ValueError(f"{label}: unknown option '{kind}'.")
+    for i, a in enumerate(p.assignments, 1):
+        label = f"Material assignment {i}"
+        point(entry(a, label), "point", label)
+        name(a, "material", label)
+    for i, sp in enumerate(p.supports, 1):
+        label = f"Support {i}"
+        entry(sp, label)
+        point(sp, "a", label)
+        point(sp, "b", label)
+        name(sp, "type", label)
+    for i, pt in enumerate(p.support_patterns, 1):
+        label = f"Bolt pattern {i}"
+        entry(pt, label)
+        point(pt, "p1", label)
+        point(pt, "p2", label)
+        name(pt, "type", label)
+        number(pt, "spacing", label)
+        number(pt, "length", label)
+        number(pt, "offset", label, required=False)
+        number(pt, "angle", label, required=False)
+    for i, f in enumerate(p.facings, 1):
+        label = f"Facing {i}"
+        entry(f, label)
+        number(f, "x1", label)
+        number(f, "x2", label)
+        name(f, "type", label)
+        pts = f.get("points")
+        if pts is not None and not (
+            isinstance(pts, (list, tuple)) and len(pts) == 2 and all(_is_point(q) for q in pts)
+        ):
+            raise ValueError(f"{label}: 'points' must be two [x, y] pairs.")
+    for title, notes in (("Note", p.annotations), ("Result note", p.result_annotations)):
+        for i, a in enumerate(notes, 1):
+            label = f"{title} {i}"
+            kind = entry(a, label).get("kind")
+            if kind not in ANNOTATION_KINDS:
+                raise ValueError(f"{label}: unknown kind '{kind}'.")
+            pts = a.get("pts")
+            need = 1 if kind == "text" else 2
+            if not (
+                isinstance(pts, (list, tuple))
+                and len(pts) >= need
+                and all(_is_point(q) for q in pts)
+            ):
+                raise ValueError(f"{label}: 'pts' must hold at least {need} [x, y] pair(s).")
+    for label, rng in (
+        ("Left slip limit", p.surfaces.left_range),
+        ("Right slip limit", p.surfaces.right_range),
+    ):
+        if rng is not None and not _is_point(rng):
+            raise ValueError(f"{label}: a [start, end] pair of numbers is required.")
+    us = p.surfaces.user_surface
+    if us is not None and not (isinstance(us, (list, tuple)) and all(_is_point(q) for q in us)):
+        raise ValueError("User surface: a list of [x, y] pairs is required.")
+
+
+def _clean_display(display: dict) -> dict:
+    """Display options of the expected type; anything else falls back to the default."""
+    out = dict(DEFAULT_DISPLAY)
+    for key, value in display.items():
+        default = DEFAULT_DISPLAY.get(key)
+        if default is None:
+            out[key] = value  # option of another version: keep as stored
+        elif isinstance(default, bool):
+            if isinstance(value, bool):
+                out[key] = value
+        elif isinstance(default, int):
+            if _is_number(value) and float(value).is_integer() and value >= 1:
+                out[key] = int(value)
+        elif isinstance(value, str):
+            out[key] = value
+    return out
 
 
 # ------------------------------------------------------------------ parts
@@ -476,6 +637,7 @@ class Project:
 
     # ------------------------------------------------------- validation
     def validate(self) -> None:
+        _validate_structure(self)
         _finite_inputs(self.analysis_inputs())
         _choice(
             self.general.failure_direction,
@@ -748,11 +910,19 @@ class Project:
         ver = int(d.get("version", 0))
         if ver > VERSION:
             raise ValueError("The file was saved by a newer version.")
-        if ver < 2:
-            return _from_v1(d)
+        try:
+            project = _from_v1(d) if ver < 2 else cls._from_current(d)
+        except (KeyError, TypeError, AttributeError, IndexError) as exc:
+            raise ValueError(
+                f"The project file is incomplete or damaged ({type(exc).__name__}: {exc})."
+            ) from None
+        _validate_structure(project)
+        return project
+
+    @classmethod
+    def _from_current(cls, d: dict) -> Project:
         g, st = d.get("geometry", {}), d.get("settings", {})
-        disp = dict(DEFAULT_DISPLAY)
-        disp.update(d.get("display", {}))
+        disp = _clean_display(d.get("display", {}))
         return cls(
             summary=_from_dict(ProjectSummary, d.get("summary")),
             materials=[_from_dict(MaterialSpec, m) for m in d.get("materials", [])],

@@ -89,12 +89,21 @@ class DistributedLoadDialog(QDialog):
             "the ground surface between x₁ and x₂."
         )
         note.setWordWrap(True)
-        note.setStyleSheet("color:#555;")
+        note.setProperty("note", True)
+        self.error = QLabel("")
+        self.error.setStyleSheet("color:#b03a2e;")
         lay = QVBoxLayout(self)
         lay.addLayout(f)
         lay.addWidget(note)
-        lay.addWidget(_buttons(self))
+        lay.addWidget(self.error)
+        lay.addWidget(_buttons(self, self._accept))
         self._shape()
+
+    def _accept(self) -> None:
+        if self.x1.value() == self.x2.value():
+            self.error.setText("⚠ x₁ and x₂ must be different.")
+            return
+        self.accept()
 
     def _shape(self, *_):
         uni = self.r_uniform.isChecked()
@@ -129,7 +138,7 @@ class LineLoadDialog(QDialog):
             "placed on the ground surface."
         )
         note.setWordWrap(True)
-        note.setStyleSheet("color:#555;")
+        note.setProperty("note", True)
         lay = QVBoxLayout(self)
         lay.addLayout(f)
         lay.addWidget(note)
@@ -216,7 +225,7 @@ class SupportTypesDialog(QDialog):
             self.kind.addItem(v, k)
         self.kind.currentIndexChanged.connect(self._kind_changed)
         self.formula = QLabel()
-        self.formula.setStyleSheet("font-style:italic;color:#333;")
+        self.formula.setStyleSheet("font-style:italic;")
         self.formula.setWordWrap(True)
 
         self.w = {
@@ -491,7 +500,7 @@ class CrackFromDepthDialog(QDialog):
             + (f"\n{zc_note}" if zc_note else "")
         )
         note.setWordWrap(True)
-        note.setStyleSheet("color:#555;")
+        note.setProperty("note", True)
         self.error = QLabel("")
         self.error.setStyleSheet("color:#b03a2e;")
         lay = QVBoxLayout(self)

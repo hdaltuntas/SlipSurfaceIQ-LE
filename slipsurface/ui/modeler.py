@@ -812,6 +812,11 @@ class ModelerWindow(QMainWindow):
             self.status.showMessage(f"Support added ({name}).", 5000)
             self.canvas.set_tool(T.DrawTool(self.canvas, "support"))  # keep adding
             return
+        if kind == "load_distributed" and pts[0][0] == pts[1][0]:
+            self.canvas.select_tool()  # its hint must not replace the warning
+            self.t_select.setChecked(True)
+            self.status.showMessage("⚠ A distributed load needs two different x positions.", 8000)
+            return
         if kind == "load_distributed":
             ld = {
                 "kind": "distributed",
@@ -1234,7 +1239,10 @@ class ModelerWindow(QMainWindow):
 
     def _on_finished(self, results) -> None:
         self._end_compute()
-        if self._close_pending or self._cancel_requested:
+        if self._close_pending:
+            return
+        if self._cancel_requested:  # finished before the stop request was seen
+            self.status.showMessage("Computation cancelled.", 6000)
             return
         if results.project.analysis_inputs() != self.doc.project.analysis_inputs():
             self.status.showMessage("The model changed; compute again (F5).", 8000)

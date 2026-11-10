@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import importlib.util
 import os
 import sys
 from pathlib import Path
@@ -52,8 +53,14 @@ def check_environment(verbose: bool = True) -> bool:
             m = importlib.import_module(mod)
             if verbose:
                 print(f"  {mod:10s} {getattr(m, '__version__', '?')}")
-        except ImportError:
-            missing.append(pip_name)
+        except ImportError as exc:
+            if importlib.util.find_spec(mod) is None:
+                missing.append(pip_name)
+                continue
+            # Installed, but a dependency (often a system library that Qt
+            # needs, such as libEGL on Linux) could not be loaded.
+            ok = False
+            print(f"[ERROR] {pip_name} is installed but could not be loaded: {exc}")
     if missing:
         ok = False
         print("[ERROR] Missing package(s): " + ", ".join(missing))

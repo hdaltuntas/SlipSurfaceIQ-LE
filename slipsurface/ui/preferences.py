@@ -75,6 +75,7 @@ def apply_theme(dark=None):
             sel_bg="#294b76",
             sel_text="#ffffff",
             disabled="#91a2b9",
+            note="#aab8cc",
             header="#233249",
             highlight="#78adf5",
             tab_sel_bg="#1d2a3c",
@@ -91,6 +92,7 @@ def apply_theme(dark=None):
             sel_bg="#e1edff",
             sel_text="#2358a3",
             disabled="#74839a",
+            note="#555f6d",
             header="#f0f3f8",
             highlight="#3978d4",
             tab_sel_bg="#ffffff",
@@ -156,6 +158,8 @@ def apply_theme(dark=None):
             background: {c["checked"]}; border-color: {c["highlight"]}; }}
         QToolButton[railButton="true"]:focus {{ border-color: {c["highlight"]}; }}
         QToolButton[railButton="true"]:disabled {{ background: transparent; }}
+        QLabel[note="true"] {{ color: {c["note"]}; }}
+        QLabel[emphasis="true"] {{ color: {c["sel_text"]}; font-weight: 600; }}
         QLabel[sectionHeading="true"] {{
             background: {c["header"]}; color: {c["text"]};
             font-weight: 600; padding: 8px; border-radius: 4px; }}

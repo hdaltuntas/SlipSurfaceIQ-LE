@@ -184,7 +184,7 @@ class ProjectSettingsDialog(QDialog):
         gl.addWidget(i2, 1, 1)
         out = QGroupBox("Data Output")
         ol = QVBoxLayout(out)
-        self.out_std = QRadioButton("Standart")
+        self.out_std = QRadioButton("Standard")
         self.out_max = QRadioButton("Maximum (Slice Tables in Report)")
         (self.out_std if g.data_output == "standard" else self.out_max).setChecked(True)
         ol.addWidget(self.out_std)
@@ -227,14 +227,14 @@ class ProjectSettingsDialog(QDialog):
         cf = QFormLayout(conv)
         self.n_slices = QSpinBox()
         self.n_slices.setRange(5, 500)
-        self.n_slices.setValue(m.n_slices)
+        self.n_slices.setValue(int(m.n_slices))
         self.tol = _dspin(1e-6, 0.1, 6, 0.001, m.tolerance)
         self.tol.setToolTip(
             "Relative convergence tolerance. The solver uses this number as entered."
         )
         self.max_iter = QSpinBox()
         self.max_iter.setRange(5, 1000)
-        self.max_iter.setValue(m.max_iter)
+        self.max_iter.setValue(int(m.max_iter))
         cf.addRow("Number of Slices:", self.n_slices)
         cf.addRow("Tolerance:", self.tol)
         cf.addRow("Maximum iterations:", self.max_iter)
@@ -316,7 +316,7 @@ class ProjectSettingsDialog(QDialog):
             + "Ru: u = Ru · σv (total vertical stress at the slice base)."
         )
         note.setWordWrap(True)
-        note.setStyleSheet("color:#555;")
+        note.setProperty("note", True)
         lay.addWidget(note)
         self.gw_method.currentIndexChanged.connect(
             lambda: self.ru.setEnabled(self.gw_method.currentData() == "ru")
@@ -353,7 +353,7 @@ class ProjectSettingsDialog(QDialog):
         lay.addWidget(box)
         note = QLabel(SEISMIC_NOTE)
         note.setWordWrap(True)
-        note.setStyleSheet("color:#555;")
+        note.setProperty("note", True)
         lay.addWidget(note)
         lay.addStretch(1)
         return w
@@ -385,7 +385,7 @@ class ProjectSettingsDialog(QDialog):
             "solutions."
         )
         note.setWordWrap(True)
-        note.setStyleSheet("color:#555;")
+        note.setProperty("note", True)
         lay.addWidget(note)
         lay.addStretch(1)
         return w

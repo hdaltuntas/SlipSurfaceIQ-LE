@@ -120,7 +120,7 @@ class FacingTypesDialog(QDialog):
         g.addButton(self.r_passive)
         g.addButton(self.r_active)
         self.capacity = QLabel()
-        self.capacity.setStyleSheet("font-weight:bold;color:#1b3a63;")
+        self.capacity.setProperty("emphasis", True)
 
         form = QFormLayout()
         form.addRow("Name:", self.name)
@@ -145,7 +145,7 @@ class FacingTypesDialog(QDialog):
             "the safe side)."
         )
         note.setWordWrap(True)
-        note.setStyleSheet("color:#555;")
+        note.setProperty("note", True)
         right = QVBoxLayout()
         right.addWidget(self.title)
         right.addLayout(form)
@@ -325,7 +325,7 @@ class PatternDialog(QDialog):
         self.angle = _spin(-89, 89, 1, pt.get("angle", 15.0), " °")
         self.length = _spin(0.1, 200, 2, pt.get("length", 12.0), " m")
         self.count = QLabel()
-        self.count.setStyleSheet("font-weight:bold;color:#1b3a63;")
+        self.count.setProperty("emphasis", True)
         f = QFormLayout()
         f.addRow("Support type:", self.type)
         f.addRow("Start x₁:", self.x1)
@@ -341,7 +341,7 @@ class PatternDialog(QDialog):
             "is set in the support type."
         )
         note.setWordWrap(True)
-        note.setStyleSheet("color:#555;")
+        note.setProperty("note", True)
         lay = QVBoxLayout(self)
         lay.addLayout(f)
         lay.addWidget(note)
