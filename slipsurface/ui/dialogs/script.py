@@ -103,7 +103,16 @@ class ScriptDialog(QDialog):
             self.untrusted_source = None
         try:
             project, output = run_script(self.editor.toPlainText(), self.document.project)
-            self.document.edit("Python script", lambda p: p.__dict__.update(project.__dict__))
-            self.output.setPlainText(output + "\nApplied. Ctrl+Z in the modeler to undo.")
+            changed = self.document.edit(
+                "Python script", lambda p: p.__dict__.update(project.__dict__)
+            )
+            self.output.setPlainText(
+                output
+                + (
+                    "\nApplied. Ctrl+Z in the modeler to undo."
+                    if changed
+                    else "\nThe script ran; the project is unchanged."
+                )
+            )
         except (Exception, SystemExit) as exc:
             self.output.setPlainText(f"{type(exc).__name__}: {exc}\nProject unchanged.")

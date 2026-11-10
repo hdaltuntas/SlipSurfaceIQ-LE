@@ -37,6 +37,27 @@ def _ok_cancel(dlg, ok_slot=None):
     return btns
 
 
+def format_number(value: float) -> str:
+    """Shortest text that reads back as the same number to 12 significant
+    digits; ``:g`` alone keeps 6 and would round large coordinates on OK."""
+    return f"{float(value):.12g}"
+
+
+def set_stored(spin, value: float) -> None:
+    """Show `value` in a spin box and remember it at full precision."""
+    spin.setProperty("stored", float(value))
+    spin.setValue(float(value))
+
+
+def stored_value(spin) -> float:
+    """The value to save: the remembered number while the box still shows it
+    (a spin box rounds to its decimals), otherwise what the user entered."""
+    stored = spin.property("stored")
+    if stored is not None and round(float(stored), spin.decimals()) == spin.value():
+        return float(stored)
+    return spin.value()
+
+
 def parse_float(text: str, what: str) -> float:
     try:
         return float(str(text).strip().replace(",", "."))
@@ -76,8 +97,8 @@ class CoordinatesDialog(QDialog):
     def _append(self, x, y, at=None) -> None:
         r = self.table.rowCount() if at is None else at
         self.table.insertRow(r)
-        self.table.setItem(r, 0, QTableWidgetItem(f"{x:g}"))
-        self.table.setItem(r, 1, QTableWidgetItem(f"{y:g}"))
+        self.table.setItem(r, 0, QTableWidgetItem(format_number(x)))
+        self.table.setItem(r, 1, QTableWidgetItem(format_number(y)))
 
     def _add(self) -> None:
         r = self.table.currentRow()

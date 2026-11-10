@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 )
 
 from slipsurface.project import EFFORT, Project, SurfaceSettings
+from slipsurface.ui.dialogs.misc import set_stored, stored_value as V
 
 SEARCH = {
     "circular": (
@@ -74,11 +75,11 @@ class SurfaceOptionsDialog(QDialog):
             self.effort.addItem(f"{label}  (population {pop}×dimension, {it} generations)", k)
         self.effort.setCurrentIndex([k for k, _ in EFFORT_LABELS].index(s.effort))
         self.seed = QSpinBox()
-        self.seed.setRange(0, 10_000)
-        self.seed.setValue(s.seed)
+        self.seed.setRange(0, 2_147_483_647)
+        self.seed.setValue(int(s.seed))
         self.n_ctrl = QSpinBox()
-        self.n_ctrl.setRange(2, 10)
-        self.n_ctrl.setValue(s.n_ctrl)
+        self.n_ctrl.setRange(2, 30)
+        self.n_ctrl.setValue(int(s.n_ctrl))
         self.shape = QComboBox()
         self.shape.addItem("Polygonal — Straight Segments", "polyline")
         self.shape.addItem("Smooth Curve (B-spline)", "spline")
@@ -86,7 +87,7 @@ class SurfaceOptionsDialog(QDialog):
         self.convex = QCheckBox("Convex Surfaces Only")
         self.convex.setChecked(s.convex_only)
         f.addRow("Search Effort:", self.effort)
-        f.addRow("Rastgele tohum:", self.seed)
+        f.addRow("Random Seed:", self.seed)
         f.addRow("Noncircular Surface Shape:", self.shape)
         f.addRow("Intermediate Vertices / Control Points:", self.n_ctrl)
         f.addRow(self.convex)
@@ -104,7 +105,7 @@ class SurfaceOptionsDialog(QDialog):
             spin = QDoubleSpinBox()
             spin.setDecimals(3)
             spin.setRange(0.001 if label.startswith("R") else -1e6, 1e6)
-            spin.setValue(value)
+            set_stored(spin, value)
             circle_form.addRow(label, spin)
             self.circle_fields.append(spin)
         self.use_circle.toggled.connect(self._update_search)
@@ -180,7 +181,7 @@ class SurfaceOptionsDialog(QDialog):
         sp = QDoubleSpinBox()
         sp.setRange(lo - 1e4, hi + 1e4)
         sp.setDecimals(3)
-        sp.setValue(v)
+        set_stored(sp, v)
         return sp
 
     def _limits_enabled(self, on: bool) -> None:
@@ -259,12 +260,10 @@ class SurfaceOptionsDialog(QDialog):
         s.convex_only = self.convex.isChecked()
         if self._type() == "user":
             s.user_circle = (
-                [field.value() for field in self.circle_fields]
-                if self.use_circle.isChecked()
-                else None
+                [V(field) for field in self.circle_fields] if self.use_circle.isChecked() else None
             )
         if self.use_limits.isChecked():
-            s.left_range = [self.l0.value(), self.l1.value()]
-            s.right_range = [self.r0.value(), self.r1.value()]
+            s.left_range = [V(self.l0), V(self.l1)]
+            s.right_range = [V(self.r0), V(self.r1)]
         else:
             s.left_range = s.right_range = None

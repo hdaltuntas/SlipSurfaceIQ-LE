@@ -812,6 +812,11 @@ class ModelerWindow(QMainWindow):
             self.status.showMessage(f"Support added ({name}).", 5000)
             self.canvas.set_tool(T.DrawTool(self.canvas, "support"))  # keep adding
             return
+        if kind == "load_distributed" and pts[0][0] == pts[1][0]:
+            self.canvas.select_tool()  # its hint must not replace the warning
+            self.t_select.setChecked(True)
+            self.status.showMessage("⚠ A distributed load needs two different x positions.", 8000)
+            return
         if kind == "load_distributed":
             ld = {
                 "kind": "distributed",
@@ -1234,7 +1239,10 @@ class ModelerWindow(QMainWindow):
 
     def _on_finished(self, results) -> None:
         self._end_compute()
-        if self._close_pending or self._cancel_requested:
+        if self._close_pending:
+            return
+        if self._cancel_requested:  # finished before the stop request was seen
+            self.status.showMessage("Computation cancelled.", 6000)
             return
         if results.project.analysis_inputs() != self.doc.project.analysis_inputs():
             self.status.showMessage("The model changed; compute again (F5).", 8000)
@@ -1355,8 +1363,10 @@ class ModelerWindow(QMainWindow):
     def script_editor(self):
         from slipsurface.ui.dialogs.script import ScriptDialog
 
+        before = self.doc.undo_stack.index()
         ScriptDialog(self.doc, self).exec()
-        self.canvas.zoom_extents()
+        if self.doc.undo_stack.index() != before:  # the view is kept otherwise
+            self.canvas.zoom_extents()
 
     def import_dxf(self):
         from slipsurface.exchange import import_dxf
@@ -1364,6 +1374,17 @@ class ModelerWindow(QMainWindow):
         path, _ = QFileDialog.getOpenFileName(self, "Import DXF", "", "DXF (*.dxf)")
         if not path:
             return
+        p = self.doc.project
+        if p.has_geometry or p.loads or p.supports or p.support_patterns or p.facings:
+            ans = QMessageBox.question(
+                self,
+                "Import DXF",
+                "Importing replaces the whole model: geometry, materials, loads, supports "
+                "and settings are reset and only the DXF geometry is kept.\n\n"
+                "Replace the current model? (Edit → Undo restores it.)",
+            )
+            if ans != QMessageBox.Yes:
+                return
         try:
             project, warnings = import_dxf(path)
             self.doc.edit("Import DXF", lambda p: p.__dict__.update(project.__dict__))

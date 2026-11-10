@@ -35,6 +35,7 @@ from PySide6.QtWidgets import (
 from slipsurface.materials import HoekBrown
 from slipsurface.materials.catalog import MODELS
 from slipsurface.project import PALETTE, MaterialSpec
+from slipsurface.ui.dialogs.misc import format_number
 from slipsurface.ui.icons import color_icon, icon
 
 TITLE_CSS = "color:#2a7ad0;font-size:16px;"
@@ -249,7 +250,7 @@ class MaterialsDialog(QDialog):
             it = QTableWidgetItem(label)
             it.setFlags(Qt.ItemIsEnabled)
             self.table.setItem(r, 0, it)
-            v = QTableWidgetItem(f"{getattr(m, attr):g}")
+            v = QTableWidgetItem(format_number(getattr(m, attr)))
             v.setData(Qt.UserRole, (attr, lo, hi))
             self.table.setItem(r, 1, v)
         self.table.blockSignals(False)
@@ -393,6 +394,10 @@ class MaterialsDialog(QDialog):
         if len(set(names)) != len(names):
             self.error.setText("⚠ Material names must be unique.")
             return
+        # Re-read the table: the label may still hold a message that no longer
+        # applies (a refused delete, a value corrected on another material).
+        self.error.setText("")
+        self._store()
         if self.error.text():
             return
         self.accept()

@@ -23,6 +23,7 @@ import subprocess
 import sys
 import tempfile
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -403,7 +404,7 @@ def download_file(
     """Fetch one file of a release into dest."""
     last_err: UpdateCheckError | None = None
     for ref in _candidate_refs(version):
-        url = f"{RAW_BASE}/{ref}/{relpath}"
+        url = f"{RAW_BASE}/{ref}/{urllib.parse.quote(relpath)}"
         try:
             data = _fetch_bytes(url, timeout, opener)
             dest.parent.mkdir(parents=True, exist_ok=True)

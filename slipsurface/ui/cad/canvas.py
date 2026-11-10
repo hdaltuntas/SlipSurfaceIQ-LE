@@ -148,6 +148,12 @@ class CadCanvas(QWidget):
             return self.project.display_opt(key)
         return DEFAULT_DISPLAY.get(key)
 
+    def ink(self) -> QColor:
+        """Colour for marks drawn straight on the canvas background (cursor,
+        lines to the slip centre): dark on a light canvas, light on a dark one."""
+        dark = self.palette().base().color().lightness() < 128
+        return QColor(226, 232, 240) if dark else QColor(40, 40, 40)
+
     def current_result(self):
         if self.results is None or self.result_key not in self.results.results:
             return None
@@ -1014,13 +1020,14 @@ class CadCanvas(QWidget):
         contour = self._contour() is not None
         crit = QColor("#0a8a2a")
         dark = QColor(40, 40, 40)
+        ink = self.ink()  # the lines to the centre cross the empty background
         # centre, lines to centre (under the contour map), FS text
         if hasattr(surf, "r"):
             c = self.w2s(surf.xc, surf.yc)
             anchor = c
             if self.display("show_lines_to_center"):
                 p.setPen(
-                    QPen(dark if contour else crit, 1.1, Qt.DashLine if contour else Qt.SolidLine)
+                    QPen(ink if contour else crit, 1.1, Qt.DashLine if contour else Qt.SolidLine)
                 )
                 for x in (s.x_exit, s.x_entry):
                     p.drawLine(c, self.w2s(x, float(g.ground_y(x))))
@@ -1048,7 +1055,8 @@ class CadCanvas(QWidget):
                 anchor = self.w2s(xm, float(g.ground_y(xm)))
         # critical surface
         if self.display("critical_dashed"):
-            pen = QPen(dark, 1.6, Qt.DashLine)
+            # dark on the material fill; without the fill it lies on the background
+            pen = QPen(dark if self.display("fill_materials") else ink, 1.6, Qt.DashLine)
         else:
             pen = QPen(crit, 2.4)
         p.setPen(pen)
@@ -1409,7 +1417,7 @@ class CadCanvas(QWidget):
         m = self.mouse_pos
         if self.snap_marker is not None and self.tool.uses_snap:
             m = self.w2s(*self.snap_marker[1])
-        p.setPen(QPen(QColor(20, 20, 20), 1))
+        p.setPen(QPen(self.ink(), 1))
         L = 22
         p.drawLine(QPointF(m.x() - L, m.y()), QPointF(m.x() + L, m.y()))
         p.drawLine(QPointF(m.x(), m.y() - L), QPointF(m.x(), m.y() + L))

@@ -237,7 +237,12 @@ class SelectTool(Tool):
             menu.addAction("Edit coordinates…", lambda: c.entity_double_clicked.emit(key))
             menu.addAction(
                 f"Delete {_label(key)}",
-                lambda: c.request_edit(f"Delete {_label(key)}", lambda p: delete_entity(p, key)),
+                lambda: (
+                    c.request_edit(f"Delete {_label(key)}", lambda p: delete_entity(p, key)),
+                    # indices shift: do not leave another entity selected
+                    setattr(c, "selection", None),
+                    c.selection_changed.emit(None),
+                ),
             )
 
 

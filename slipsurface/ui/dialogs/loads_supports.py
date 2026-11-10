@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
 )
 
 from slipsurface.loads import ANCHORAGES, SUPPORT_KINDS, SupportType
+from slipsurface.ui.dialogs.misc import set_stored, stored_value as V
 from slipsurface.ui.icons import color_icon
 
 TITLE_CSS = "color:#2a7ad0;font-size:16px;"
@@ -38,7 +39,7 @@ def _spin(lo, hi, dec, val, suffix=""):
     s = QDoubleSpinBox()
     s.setRange(lo, hi)
     s.setDecimals(dec)
-    s.setValue(val)
+    set_stored(s, val)
     if suffix:
         s.setSuffix(suffix)
     return s
@@ -89,12 +90,21 @@ class DistributedLoadDialog(QDialog):
             "the ground surface between x₁ and x₂."
         )
         note.setWordWrap(True)
-        note.setStyleSheet("color:#555;")
+        note.setProperty("note", True)
+        self.error = QLabel("")
+        self.error.setStyleSheet("color:#b03a2e;")
         lay = QVBoxLayout(self)
         lay.addLayout(f)
         lay.addWidget(note)
-        lay.addWidget(_buttons(self))
+        lay.addWidget(self.error)
+        lay.addWidget(_buttons(self, self._accept))
         self._shape()
+
+    def _accept(self) -> None:
+        if self.x1.value() == self.x2.value():
+            self.error.setText("⚠ x₁ and x₂ must be different.")
+            return
+        self.accept()
 
     def _shape(self, *_):
         uni = self.r_uniform.isChecked()
@@ -103,11 +113,12 @@ class DistributedLoadDialog(QDialog):
             self.q2.setValue(self.q1.value())
 
     def apply_to(self, load: dict, ground_y=None) -> None:
-        x1, x2 = self.x1.value(), self.x2.value()
+        x1, x2 = V(self.x1), V(self.x2)
         y1 = float(ground_y(x1)) if ground_y else load["points"][0][1]
         y2 = float(ground_y(x2)) if ground_y else load["points"][1][1]
         load["points"] = [[x1, y1], [x2, y2]]
-        load["q"] = [self.q1.value(), self.q2.value()]
+        q1 = V(self.q1)
+        load["q"] = [q1, q1 if self.r_uniform.isChecked() else V(self.q2)]
         load["orientation"] = self.orient.currentData()
 
 
@@ -129,18 +140,18 @@ class LineLoadDialog(QDialog):
             "placed on the ground surface."
         )
         note.setWordWrap(True)
-        note.setStyleSheet("color:#555;")
+        note.setProperty("note", True)
         lay = QVBoxLayout(self)
         lay.addLayout(f)
         lay.addWidget(note)
         lay.addWidget(_buttons(self))
 
     def apply_to(self, load: dict, ground_y=None) -> None:
-        x = self.x.value()
+        x = V(self.x)
         y = float(ground_y(x)) if ground_y else load["point"][1]
         load["point"] = [x, y]
-        load["magnitude"] = self.mag.value()
-        load["angle"] = self.angle.value()
+        load["magnitude"] = V(self.mag)
+        load["angle"] = V(self.angle)
 
 
 # ============================================================== supports
@@ -216,7 +227,7 @@ class SupportTypesDialog(QDialog):
             self.kind.addItem(v, k)
         self.kind.currentIndexChanged.connect(self._kind_changed)
         self.formula = QLabel()
-        self.formula.setStyleSheet("font-style:italic;color:#333;")
+        self.formula.setStyleSheet("font-style:italic;")
         self.formula.setWordWrap(True)
 
         self.w = {
@@ -332,7 +343,7 @@ class SupportTypesDialog(QDialog):
         self.color.setIcon(color_icon(t.color, 18))
         self.kind.setCurrentIndex(list(SUPPORT_KINDS).index(t.kind))
         for k, sp in self.w.items():
-            sp.setValue(getattr(t, k))
+            set_stored(sp, getattr(t, k))
         (self.r_active if t.application == "active" else self.r_passive).setChecked(True)
         self.orient.setCurrentIndex(max(self.orient.findData(t.orientation), 0))
         self.anchorage.setCurrentIndex(max(self.anchorage.findData(t.anchorage), 0))
@@ -369,7 +380,7 @@ class SupportTypesDialog(QDialog):
         t = self.types[self.cur]
         t.kind = self.kind.currentData()
         for k, sp in self.w.items():
-            setattr(t, k, sp.value())
+            setattr(t, k, V(sp))
         if t.kind in ("geotextile", "geosynthetic"):
             t.spacing = 1.0
         t.anchorage = self.anchorage.currentData()
@@ -460,8 +471,8 @@ class SupportEditDialog(QDialog):
 
     def apply_to(self, sp: dict) -> None:
         sp["type"] = self.type.currentText()
-        sp["a"] = [self.ax.value(), self.ay.value()]
-        sp["b"] = [self.bx.value(), self.by.value()]
+        sp["a"] = [V(self.ax), V(self.ay)]
+        sp["b"] = [V(self.bx), V(self.by)]
 
 
 # ========================================================= tension crack
@@ -491,7 +502,7 @@ class CrackFromDepthDialog(QDialog):
             + (f"\n{zc_note}" if zc_note else "")
         )
         note.setWordWrap(True)
-        note.setStyleSheet("color:#555;")
+        note.setProperty("note", True)
         self.error = QLabel("")
         self.error.setStyleSheet("color:#b03a2e;")
         lay = QVBoxLayout(self)
