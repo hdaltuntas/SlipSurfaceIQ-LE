@@ -368,6 +368,7 @@ MANAGED_FILES = (
     "RELEASE_NOTES.md",
     "LICENSE",
     "requirements.txt",
+    "requirements.lock",
     "requirements-dev.txt",
     "pyproject.toml",
 )
@@ -513,17 +514,24 @@ def apply_update(
 
 
 REQUIREMENTS = "requirements.txt"
+REQUIREMENTS_LOCK = "requirements.lock"  # exact versions with hashes
 
 
 def requirements_changed(plan: UpdatePlan) -> bool:
     """Whether the update brings a different runtime requirements file."""
-    return any(d.relpath == REQUIREMENTS for d in [*plan.changed, *plan.new])
+    return any(d.relpath in (REQUIREMENTS, REQUIREMENTS_LOCK) for d in [*plan.changed, *plan.new])
 
 
 def pip_command(root: Path | None = None) -> list[str]:
-    """The command that installs the runtime requirements into this Python."""
+    """The command that installs the runtime requirements into this Python.
+
+    With requirements.lock present, pip installs exactly the listed versions
+    and refuses any file whose hash differs (--require-hashes)."""
     root = root or application_root()
-    return [sys.executable, "-m", "pip", "install", "-r", str(root / REQUIREMENTS)]
+    pip = [sys.executable, "-m", "pip", "install"]
+    if (root / REQUIREMENTS_LOCK).is_file():
+        return [*pip, "--require-hashes", "-r", str(root / REQUIREMENTS_LOCK)]
+    return [*pip, "-r", str(root / REQUIREMENTS)]
 
 
 def install_requirements(

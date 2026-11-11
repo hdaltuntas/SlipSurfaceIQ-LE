@@ -98,6 +98,39 @@ def governing_kv_lines(p: Project, results: dict) -> list[str]:
     return lines
 
 
+def is_convex_surface(res: SearchResult, tol_deg: float = 0.5) -> bool:
+    """Whether the base slope never decreases from left to right, i.e. the
+    surface hangs below its chord without an upward hump (either direction)."""
+    if hasattr(res.surface, "r"):
+        return True
+    s = res.slices
+    pts = s.base_points()
+    slope = np.degrees(np.arctan2(np.diff(pts[:, 1]), np.diff(pts[:, 0])))
+    slope = slope[np.diff(pts[:, 0]) > 1e-9]
+    return bool(np.all(np.diff(slope) >= -tol_deg))
+
+
+def method_notes(r: AnalysisResults) -> list[str]:
+    """Engineering cautions about the results (Interpret, Info Viewer, PDF)."""
+    notes = []
+    p = r.project
+    reinforced = bool(p.supports or p.support_patterns or p.facings)
+    if "janbu_corrected" in r.results and reinforced:
+        notes.append(
+            f"{method_name('janbu_corrected')}: the correction factor f0 is empirical and "
+            "was derived for unreinforced slopes. With supports or facing, treat this "
+            "value as indicative and rely on Spencer or GLE/Morgenstern-Price."
+        )
+    bent = [method_name(k) for k, res in r.results.items() if not is_convex_surface(res)]
+    if bent:
+        notes.append(
+            f"{', '.join(bent)}: the slip surface is not convex (its base turns upward "
+            "somewhere along the slide). Check that this mechanism can move "
+            "kinematically; searches can be limited with 'Convex Surfaces Only'."
+        )
+    return notes
+
+
 def search_settings(p: Project, method: str) -> SearchSettings:
     s = p.surfaces
     pop, it = EFFORT.get(s.effort, EFFORT["normal"])
@@ -407,4 +440,7 @@ def report_text(r: AnalysisResults) -> str:
     gm = r.global_minimum()
     if gm:
         L += ["", f"Global minimum: {method_name(gm[0])} FS = {gm[1].fos:.3f}"]
+    notes = method_notes(r)
+    if notes:
+        L += ["", "Notes", "-" * 60] + [f"- {n}" for n in notes]
     return "\n".join(L)

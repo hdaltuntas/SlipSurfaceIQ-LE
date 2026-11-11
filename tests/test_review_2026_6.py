@@ -391,3 +391,137 @@ def test_report_accepts_markup_characters_in_user_text(tmp_path):
     p.summary.comments[0] = "<font>&"
     opts = ReportOptions(title="T <&>", checker="<c>", author="<x&>", coordinates=True)
     assert build_pdf(run_analysis(p), tmp_path / "r.pdf", opts) >= 5
+
+
+# ------------------------------------------------------------------ 2026.6.1
+@pytest.mark.parametrize(
+    "source",
+    [
+        "import os",
+        "import math, subprocess",
+        "from slipsurface.project import os",
+        "from slipsurface.exchange import export_dxf",
+        "from slipsurface.project import *",
+        "open('x', 'w')",
+        "eval('1')",
+        "project.save('x.json')",
+        "x = project.__class__",
+        "x = ().__class__.__bases__",
+        "__import__('os')",
+        "getattr(project, 'save')('x')",
+        "class A: pass",
+    ],
+)
+def test_restricted_scripts_refuse_escape_routes(source, tmp_path, monkeypatch):
+    from slipsurface.scripting import run_script
+
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises((ValueError, NameError, ImportError)):
+        run_script(source, acads_1a_project())
+    assert not list(tmp_path.iterdir())
+
+
+def test_restricted_script_changes_the_model_and_trusted_mode_is_python():
+    from slipsurface.scripting import run_script
+
+    source = (
+        "import math\n"
+        "from slipsurface.project import MaterialSpec\n"
+        "project.materials.append(MaterialSpec('Fill', c=round(math.sqrt(16), 1)))\n"
+        "if __name__ == '__main__':\n    print(len(project.materials))\n"
+    )
+    project, out = run_script(source, acads_1a_project())
+    assert project.materials[-1].c == 4.0 and out.strip() == "2"
+    project, out = run_script("import os\nprint(os.sep)", acads_1a_project(), trusted=True)
+    assert out.strip() == os.sep
+
+
+def test_full_access_needs_one_confirmation(app):
+    from slipsurface.ui.dialogs.script import ScriptDialog
+    from slipsurface.ui.document import Document
+
+    dlg = ScriptDialog(Document(acads_1a_project()))
+    try:
+        dlg.editor.setPlainText("import os\nproject.summary.title = os.sep")
+        dlg.run()
+        assert "restricted mode" in dlg.output.toPlainText()
+        asked = []
+        dlg.confirm_full = lambda: asked.append(1) or len(asked) > 1
+        dlg.full_access.setChecked(True)
+        dlg.run()  # declined
+        assert "Not run" in dlg.output.toPlainText()
+        dlg.run()  # accepted
+        dlg.run()  # no further question
+        assert len(asked) == 2 and dlg.document.project.summary.title == os.sep
+    finally:
+        dlg.close()
+
+
+def test_lock_file_pins_every_runtime_requirement_with_hashes():
+    import re
+    from pathlib import Path
+
+    from slipsurface.patch import core
+
+    root = Path(__file__).resolve().parents[1]
+    lock = (root / "requirements.lock").read_text(encoding="utf-8")
+    pinned = {m.lower() for m in re.findall(r"^([A-Za-z0-9_.-]+)==", lock, re.M)}
+    for line in (root / "requirements.txt").read_text(encoding="utf-8").splitlines():
+        name = re.match(r"[A-Za-z0-9_.-]+", line.strip())
+        if name and not line.startswith("#"):
+            assert name[0].lower() in pinned, name[0]
+    blocks = re.split(r"\n(?=[A-Za-z0-9_.-]+==)", lock[lock.index("charset-normalizer==") :])
+    assert all("--hash=sha256:" in block for block in blocks)
+    assert core.pip_command(root)[3:5] == ["install", "--require-hashes"]
+    assert core.is_managed("requirements.lock")
+    plan = core.UpdatePlan("a", "b", changed=[core.FileDelta("requirements.lock", "changed")])
+    assert core.requirements_changed(plan)
+
+
+def test_pip_command_without_a_lock_uses_requirements_txt(tmp_path):
+    from slipsurface.patch import core
+
+    assert core.pip_command(tmp_path)[-2:] == ["-r", str(tmp_path / "requirements.txt")]
+
+
+def test_result_cautions_for_reinforced_janbu_and_humped_surfaces(tmp_path):
+    from slipsurface.analysis import method_notes, report_text, run_analysis
+    from slipsurface.loads import SupportType
+    from slipsurface.project import acads_3b_project
+    from slipsurface.report import ReportOptions, build_pdf
+
+    p = acads_3b_project()
+    p.methods.methods = ["spencer", "janbu_corrected"]
+    assert method_notes(run_analysis(p)) == []  # convex, unreinforced: nothing to say
+
+    p.surfaces.user_surface = [[41.85, 27.75], [48, 26.2], [55, 27.5], [63.5, 27], [73.31, 40]]
+    p.support_types.append(SupportType())
+    p.supports.append({"a": [50.0, 31.25], "b": [60.0, 26.0], "type": "Anchor 1"})
+    r = run_analysis(p)
+    notes = " ".join(method_notes(r))
+    assert "f0 is empirical" in notes and "not convex" in notes
+    assert "f0 is empirical" in report_text(r)
+    path = tmp_path / "r.pdf"
+    build_pdf(r, path, ReportOptions())
+    assert "derived for unreinforced slopes" in " ".join(_pdf_text(path).split())
+
+
+def test_seismic_key_is_drawn_only_with_seismic_coefficients(app):
+    from slipsurface.project import acads_1d_project
+
+    def key_pixels(project):
+        canvas = CadCanvas()
+        canvas.resize(600, 400)
+        canvas.set_scene(project, project.build_geometry(), fit=True)
+        image = canvas.grab().toImage()
+        red = 0
+        for x in range(10, 70):
+            for y in range(330, 392):
+                c = image.pixelColor(x, y)
+                red += c.red() > 150 and c.green() < 90 and c.blue() < 90
+        return red
+
+    quiet = acads_1a_project()
+    shaken = acads_1d_project()
+    shaken.seismic.kv = 0.05
+    assert key_pixels(quiet) == 0 and key_pixels(shaken) > 20

@@ -51,7 +51,7 @@ from reportlab.platypus import (
 from reportlab.platypus.tableofcontents import TableOfContents
 
 from slipsurface import __version__
-from slipsurface.analysis import direction_label, governing_kv_lines
+from slipsurface.analysis import direction_label, governing_kv_lines, method_notes
 from slipsurface.lem import method_name
 
 # ------------------------------------------------------------------ fonts
@@ -811,6 +811,8 @@ class _Builder:
         self.table(header, rows, widths, caption, align, row_colors=rc, bold_rows=bold)
         for k, e in r.errors.items():  # the table cell is too narrow for the reason
             self.para(f"<b>{_e(method_name(k))}</b> — no result: {_e(e)}", "small")
+        for note in method_notes(r):
+            self.para(f"<b>Note.</b> {_e(note)}", "small")
         if gm:
             self.para(
                 (

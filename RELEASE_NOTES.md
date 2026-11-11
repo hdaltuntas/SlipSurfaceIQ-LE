@@ -1,3 +1,57 @@
+# SlipSurfaceIQ LE 2026.6.1
+
+Hardening: restricted scripts, update and dependency checks, result cautions
+
+Numerical results are unchanged: no solver, slicing or search code was modified.
+
+**Python scripting**
+
+- Scripts now run in a **restricted mode** by default. Only `import math` and
+  `from slipsurface.project / loads / materials / geometry / lem / analysis import …`
+  are accepted; files, `exec`/`eval`, names starting with an underscore and
+  `project.save()`/`load()` are refused before anything runs. All tutorial examples run
+  unchanged.
+- **Full Python access** is a tick box in the scripting window; the first run asks for
+  confirmation. Scripts opened from a file still ask before their first run.
+- Restricted mode guards against scripts received from others. It is not a security
+  boundary against a determined attacker: read a script before you run it.
+- For code that calls `slipsurface.scripting.run_script` directly: pass `trusted=True`
+  to keep the previous unrestricted behaviour.
+
+**Updates and dependencies**
+
+- The updater accepted any validly signed manifest for the requested release, so the
+  signed file list of an older release served in its place would have reinstalled old
+  files. The manifest must now state the requested version.
+- New `requirements.lock`: exact versions with SHA-256 hashes for Python 3.10 and later
+  on all platforms. `python -m pip install --require-hashes -r requirements.lock`
+  installs the tested set and refuses altered packages. "Install Requirements" after an
+  update uses it when present; `requirements.txt` (minimum versions) still works.
+
+**DXF import**
+
+- Files above 50 MB, drawings with more than 20,000 entities and curves that need more
+  than 20,000 vertices at 1 cm accuracy are refused with a message instead of exhausting
+  memory.
+
+**Result cautions** (Interpret window, Information Viewer and PDF report)
+
+- Janbu corrected on a model with supports or facing: the empirical factor f₀ was derived
+  for unreinforced slopes, so the value is marked as indicative.
+- A slip surface that is not convex (its base turns upward along the slide) is flagged
+  for a kinematic check. This can occur with a user-defined surface or with "Convex
+  Surfaces Only" switched off.
+
+**Interface**
+
+- With seismic coefficients set, a key at the bottom left of the drawing shows which way
+  kh·W and kv·W act, including the case where both vertical directions are solved.
+
+Not included: an OCR profile with depth, B-bar pore pressures for staged fills and
+running the analysis in a separate process are new features, not corrections.
+
+Version 2026.6.1.
+
 # SlipSurfaceIQ LE 2026.6.0
 
 Code and interface review: values kept exact, damaged files refused, dark theme and report fixes

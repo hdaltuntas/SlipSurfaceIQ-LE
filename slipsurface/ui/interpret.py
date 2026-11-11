@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from slipsurface import __version__
-from slipsurface.analysis import report_text
+from slipsurface.analysis import method_notes, report_text
 from slipsurface.lem import method_name
 from slipsurface.project import DEFAULT_DISPLAY
 from slipsurface.ui.annotations import ANNOT_TOOLS, edit_annotation, new_annotation
@@ -69,16 +69,16 @@ class InterpretWindow(QMainWindow):
             "QLabel { background: #fff4d6; color: #674900; padding: 10px; "
             "border: 1px solid #e2c36f; border-radius: 4px; }"
         )
+        warnings = []
         if results.errors:
             details = "\n".join(f"{method_name(k)}: {v}" for k, v in results.errors.items())
-            self.result_warning.setText(
-                (
-                    f"No result for {len(results.errors)} method(s). The minimum shown covers "
-                    "the completed methods only.\n"
-                )
-                + details
+            warnings.append(
+                f"No result for {len(results.errors)} method(s). The minimum shown covers "
+                "the completed methods only.\n" + details
             )
-        self.result_warning.setVisible(bool(results.errors))
+        warnings += method_notes(results)
+        self.result_warning.setText("\n".join(warnings))
+        self.result_warning.setVisible(bool(warnings))
         center = QWidget()
         layout = QVBoxLayout(center)
         layout.setContentsMargins(0, 0, 0, 0)
