@@ -156,6 +156,24 @@ class MaterialsDialog(QDialog):
         )
         hint.setWordWrap(True)
         wl.addRow(hint)
+        self.bbar = _spin(0, 1, 3, 0.0)
+        self.bbar.setButtonSymbols(QDoubleSpinBox.UpDownArrows)
+        self.bbar.setSingleStep(0.1)
+        self.excess_load = QCheckBox(
+            "Weight of This Material Creates Excess Pore Pressure (Fill Placed Quickly)"
+        )
+        wl.addRow("B-bar (Excess Pore Pressure Coefficient):", self.bbar)
+        wl.addRow(self.excess_load)
+        hint2 = QLabel(
+            "Undrained loading (staged fills): at a slice base in a material with "
+            "B-bar > 0, Δu = B-bar · (weight per unit area of the overlying materials "
+            "ticked above) is added to the pore pressure. Give the soft foundation soil "
+            "a B-bar and tick the box for the fill. B-bar = 0 switches it off. For "
+            "SHANSEP soils the excess pressure lowers σ′v; B-bar = 1 gives the "
+            "pre-loading effective stress."
+        )
+        hint2.setWordWrap(True)
+        wl.addRow(hint2)
 
         self.tabs = QTabWidget()
         self.tabs.addTab(strength, "Strength")
@@ -192,10 +210,11 @@ class MaterialsDialog(QDialog):
         lay.addWidget(self.error)
         lay.addWidget(btns)
 
-        for w in (self.gamma, self.gamma_sat, self.hu):
+        for w in (self.gamma, self.gamma_sat, self.hu, self.bbar):
             w.valueChanged.connect(self._store)
         self.use_sat.toggled.connect(self._store)
         self.use_water.toggled.connect(self._store)
+        self.excess_load.toggled.connect(self._store)
         self.table.itemChanged.connect(self._store)
 
         self._refresh_list()
@@ -237,6 +256,8 @@ class MaterialsDialog(QDialog):
         self.use_water.setEnabled(m.model != "UD")
         self.hu.setEnabled(m.model != "UD")
         self.hu.setValue(m.hu)
+        self.bbar.setValue(m.bbar)
+        self.excess_load.setChecked(m.excess_load)
         self._fill_table(m)
         self._loading = False
 
@@ -284,6 +305,8 @@ class MaterialsDialog(QDialog):
         m.gamma_sat = self.gamma_sat.value()
         m.use_water = self.use_water.isChecked()
         m.hu = self.hu.value()
+        m.bbar = self.bbar.value()
+        m.excess_load = self.excess_load.isChecked()
         self.error.setText("")
         for r in range(self.table.rowCount()):
             item = self.table.item(r, 1)

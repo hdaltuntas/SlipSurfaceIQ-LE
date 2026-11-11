@@ -1645,9 +1645,12 @@ class _Rule(Spacer):
 
 
 def _water(m) -> str:
+    extra = (f", B-bar = {m.bbar:g}" if m.bbar else "") + (
+        ", loads B-bar soils" if m.excess_load else ""
+    )
     if not m.use_water:
-        return "No water"
-    return "Water Table" + (f", H<sub>u</sub> = {m.hu:g}" if m.hu != 1 else "")
+        return "No water" + extra
+    return "Water Table" + (f", H<sub>u</sub> = {m.hu:g}" if m.hu != 1 else "") + extra
 
 
 def _nice_step(x: float) -> float:

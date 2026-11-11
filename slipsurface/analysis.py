@@ -322,6 +322,8 @@ def report_text(r: AnalysisResults) -> str:
         L.append(
             f"{m.name:18s} {model_name(m.model):26s} γ={m.gamma:g}  γsat={gs:g}  "
             f"{parameter_text(m)}"
+            + (f"  B-bar={m.bbar:g}" if m.bbar else "")
+            + ("  [loads B-bar soils]" if m.excess_load else "")
         )
     if p.tension_crack:
         xs = [q[0] for q in p.tension_crack]

@@ -23,10 +23,17 @@ class Material:
     gamma_sat: float | None = None  # below water table (defaults to gamma)
     use_water: bool = True  # pore pressure from the water table acts on this material
     hu: float = 1.0  # piezometric head factor (Slide2 "Hu")
+    # Excess pore pressure of undrained loading (staged fills): at a slice base
+    # in this material du = bbar * (weight per unit area of the overlying
+    # materials flagged `excess_load`). See lem.slicing.
+    bbar: float = 0.0
+    excess_load: bool = False  # this material's weight loads the B-bar materials
 
     def __post_init__(self) -> None:
         if self.gamma <= 0:
             raise ValueError("gamma must be positive")
+        if not 0.0 <= self.bbar <= 1.0:
+            raise ValueError("0 <= B-bar <= 1 required")
         if self.gamma_sat is None:
             self.gamma_sat = self.gamma
 
@@ -223,15 +230,26 @@ class Shansep(Material):
     It is an additive intercept, not a lower-bound clamp on the stress term.
     sigma'_v is the effective vertical stress at the slice base (overburden
     minus pore pressure), independent of the trial base normal stress.
-    The reference stress must represent the consolidation state of the soil;
-    the model does not simulate excess pore pressure or staged construction.
+    The reference stress must represent the consolidation state of the soil.
+    For a fill placed quickly on this soil, give the soil a B-bar and flag the
+    fill as loading: the excess pore pressure then removes the fill weight
+    from sigma'_v (B-bar = 1 gives the pre-loading effective stress).
+
+    OCR profile: with y_top > y_bottom the ratio varies linearly with the
+    elevation of the slice base from `ocr` at y_top to `ocr_bottom` at
+    y_bottom and keeps the end value outside; with y_top == y_bottom (the
+    default) `ocr` applies everywhere.
     """
 
     s_ratio: float = 0.22
     m_exp: float = 0.8
     ocr: float = 1.0
     su_min: float = 0.0  # A, additive minimum undrained strength [kPa]
+    ocr_bottom: float = 1.0
+    y_top: float = 0.0
+    y_bottom: float = 0.0
     uses_vertical_stress: bool = field(default=True, init=False, repr=False)
+    uses_elevation: bool = field(default=False, init=False, repr=False)
 
     def __post_init__(self):
         super().__post_init__()
@@ -243,17 +261,35 @@ class Shansep(Material):
             or self.su_min < 0
         ):
             raise ValueError("Finite S > 0, m >= 0, OCR >= 1 and A (su_min) >= 0 required")
+        if not np.isfinite([self.ocr_bottom, self.y_top, self.y_bottom]).all():
+            raise ValueError("Finite OCR profile values required")
+        if self.y_top < self.y_bottom:
+            raise ValueError("OCR profile: the top elevation must not be below the bottom")
+        self.uses_elevation = self.y_top > self.y_bottom
+        if self.uses_elevation and self.ocr_bottom < 1:
+            raise ValueError("OCR at the bottom elevation must be at least 1")
         self.total_stress = True
 
-    def su(self, sigma_v_eff):
-        sv = np.maximum(np.asarray(sigma_v_eff, dtype=float), 0.0)
-        return self.su_min + self.s_ratio * sv * self.ocr**self.m_exp
+    def ocr_at(self, y=None):
+        """OCR at elevation y (the constant value without a profile)."""
+        if not self.uses_elevation or y is None:
+            return self.ocr
+        t = np.clip(
+            (self.y_top - np.asarray(y, dtype=float)) / (self.y_top - self.y_bottom), 0.0, 1.0
+        )
+        return self.ocr + t * (self.ocr_bottom - self.ocr)
 
-    def strength(self, sigma_n, sigma_v=None):
+    def su(self, sigma_v_eff, y=None):
+        sv = np.maximum(np.asarray(sigma_v_eff, dtype=float), 0.0)
+        return self.su_min + self.s_ratio * sv * self.ocr_at(y) ** self.m_exp
+
+    def strength(self, sigma_n, sigma_v=None, y=None):
         if sigma_v is None:
             raise ValueError("SHANSEP requires effective vertical stress sigma_v; use su(sigma_v)")
+        if self.uses_elevation and y is None:
+            raise ValueError("The SHANSEP OCR profile requires the base elevation y")
         sn = np.asarray(sigma_n, dtype=float)
-        return self.su(sigma_v) * np.ones_like(sn), np.zeros_like(sn)
+        return self.su(sigma_v, y) * np.ones_like(sn), np.zeros_like(sn)
 
 
 @dataclass

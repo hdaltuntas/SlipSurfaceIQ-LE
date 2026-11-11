@@ -69,7 +69,8 @@ from slipsurface.materials import (
 from slipsurface.materials.catalog import MODELS
 
 FORMAT = "slipsurface-le"
-VERSION = 3
+VERSION = 4  # newest format this program reads
+BASE_VERSION = 3  # written unless a version-4 feature is used (see Project.file_version)
 PALETTE = [
     "#f0c800",
     "#3cb371",
@@ -326,6 +327,8 @@ class MaterialSpec:
     d: float = 0.0
     use_water: bool = True  # water table acts on this material
     hu: float = 1.0
+    bbar: float = 0.0  # excess pore pressure coefficient (undrained loading)
+    excess_load: bool = False  # its weight creates excess pore pressure in B-bar materials
     color: str = PALETTE[0]
 
     su: float = 25.0
@@ -341,6 +344,10 @@ class MaterialSpec:
     shansep_m: float = 0.8
     ocr: float = 1.0
     shansep_su_min: float = 0.0  # additive intercept A [kPa]; keep the JSON key
+    # OCR profile: `ocr` at ocr_y_top to ocr_bottom at ocr_y_bottom; equal elevations = constant
+    ocr_bottom: float = 1.0
+    ocr_y_top: float = 0.0
+    ocr_y_bottom: float = 0.0
     # Hardening Soil (failure envelope c, phi above)
     hs_psi: float = 0.0
     hs_e50: float = 30_000.0
@@ -381,7 +388,12 @@ class MaterialSpec:
     def to_material(self) -> Material:
         gs = self.gamma_sat if self.use_sat else self.gamma
         common: dict[str, Any] = dict(
-            gamma=self.gamma, gamma_sat=gs, use_water=self.use_water, hu=self.hu
+            gamma=self.gamma,
+            gamma_sat=gs,
+            use_water=self.use_water,
+            hu=self.hu,
+            bbar=self.bbar,
+            excess_load=self.excess_load,
         )
         if self.model == "UD":
             return Undrained(self.name, su=self.su, **common)
@@ -424,6 +436,9 @@ class MaterialSpec:
                 m_exp=self.shansep_m,
                 ocr=self.ocr,
                 su_min=self.shansep_su_min,
+                ocr_bottom=self.ocr_bottom,
+                y_top=self.ocr_y_top,
+                y_bottom=self.ocr_y_bottom,
                 **common,
             )
         if self.model == "HS":
@@ -703,6 +718,8 @@ class Project:
                 raise ValueError("Material name must not be empty.")
             if m.gamma <= 0 or m.gamma_sat <= 0:
                 raise ValueError(f"{m.name}: unit weights must be positive.")
+            if not 0 <= m.bbar <= 1:
+                raise ValueError(f"{m.name}: B-bar must be between 0 and 1.")
             if m.model == "MC" and (m.c < 0 or not 0 <= m.phi < 90):
                 raise ValueError(f"{m.name}: c ≥ 0 and 0 ≤ φ < 90 required.")
             if m.model == "HB" and (
@@ -871,10 +888,20 @@ class Project:
         }
 
     # ------------------------------------------------------------- JSON
+    def file_version(self) -> int:
+        """3, or 4 when the model uses B-bar excess pore pressure or a SHANSEP
+        OCR profile. A program that only knows version 3 would ignore these
+        and solve a different model, so such files must not open there."""
+        staged = any(m.bbar > 0 for m in self.materials) and any(
+            m.excess_load for m in self.materials
+        )
+        profile = any(m.model == "SH" and m.ocr_y_top != m.ocr_y_bottom for m in self.materials)
+        return VERSION if staged or profile else BASE_VERSION
+
     def to_dict(self) -> dict:
         return {
             "format": FORMAT,
-            "version": VERSION,
+            "version": self.file_version(),
             "summary": asdict(self.summary),
             "materials": [asdict(m) for m in self.materials],
             "geometry": {

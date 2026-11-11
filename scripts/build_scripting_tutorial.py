@@ -145,6 +145,11 @@ COMMON_MATERIAL = {
     "use_sat": "Use gamma_sat below the water table.",
     "use_water": "The water table acts on this material.",
     "hu": "Pore-pressure factor Hu applied to the water table head.",
+    "bbar": "B-bar: excess pore pressure = B-bar × weight of the overlying loading materials.",
+    "excess_load": "This material's weight creates excess pore pressure in B-bar materials.",
+    "ocr_bottom": "SHANSEP: OCR at ocr_y_bottom (OCR profile).",
+    "ocr_y_top": "SHANSEP: elevation where OCR = ocr; equal to ocr_y_bottom = constant OCR.",
+    "ocr_y_bottom": "SHANSEP: elevation where OCR = ocr_bottom.",
     "color": "Fill colour, e.g. '#f0c800'.",
 }
 

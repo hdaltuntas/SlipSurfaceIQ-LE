@@ -96,6 +96,7 @@ class SliceSet:
     support_forces: list = None  # type: ignore[assignment]
     crack: dict | None = None  # tension crack at the uphill end (see loads.TensionCrack)
     sigma_v_eff: np.ndarray = None  # type: ignore[assignment]  # W/b - u (before total-stress zeroing)
+    u_excess: np.ndarray = None  # type: ignore[assignment]  # B-bar part of u [kPa]
 
     def __post_init__(self) -> None:
         if self.y_cg is None:
@@ -107,6 +108,8 @@ class SliceSet:
             self.support_forces = []
         if self.sigma_v_eff is None:
             self.sigma_v_eff = np.maximum(self.W / self.b - self.u, 0.0)
+        if self.u_excess is None:
+            self.u_excess = np.zeros(len(self.b))
 
     @property
     def has_passive(self) -> bool:
@@ -308,12 +311,25 @@ def make_slices(
         u = o.ru * W / b
     else:
         u = np.zeros_like(xm)
+    # Excess pore pressure of undrained loading (B-bar, staged fills): at the
+    # base of a slice in a material with B-bar > 0,
+    #     du = B-bar * (weight per unit area of the overlying materials that
+    #                   are flagged as loading),
+    # added to the pore pressure of every groundwater mode. With B-bar = 1 the
+    # effective vertical stress below a fill equals its pre-loading value.
+    loading = np.array([bool(getattr(m, "excess_load", False)) for m in mats])
+    bbar = np.array([float(getattr(m, "bbar", 0.0)) for m in mats])[mat_idx]
+    u_excess = np.zeros_like(xm)
+    if loading.any() and np.any(bbar > 0):
+        u_excess = bbar * (h / o.n_sub) * (g * loading[col_idx]).sum(axis=1)
+        u = u + u_excess
     # Total-stress strengths (Tresca/su) use total normal forces under every
     # groundwater mode, including a global Ru coefficient.
     # SHANSEP needs the effective vertical stress, so keep it before zeroing.
     sigma_v_eff = np.maximum(W / b - u, 0.0)
     total_stress = np.array([m.total_stress for m in mats])[mat_idx]
     u = np.where(total_stress, 0.0, u)
+    u_excess = np.where(total_stress, 0.0, u_excess)  # report what the solver uses
 
     # ------------------------------------------------ failure direction
     drive = np.sum(W * np.sin(alpha))
@@ -402,5 +418,6 @@ def make_slices(
         support_forces=info,
         crack=crack,
         sigma_v_eff=sigma_v_eff,
+        u_excess=u_excess,
         **forces,
     )
