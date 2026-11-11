@@ -205,6 +205,15 @@ def fetch_manifest(
             files = data.get("files") if isinstance(data, dict) else None
             if not isinstance(files, dict):
                 raise UpdateCheckError(f"manifest of {ref} has no file table")
+            # A manifest is signed for one release. Without this check a validly
+            # signed inventory of an OLDER release, served in place of the new
+            # one, would pass the signature and reinstall the old files.
+            want = version.strip().lstrip("vV")
+            stated = str(data.get("version", "")).strip().lstrip("vV")
+            if stated != want:
+                raise UpdateCheckError(
+                    f"manifest of {ref} is for version {stated or 'unknown'}, not {want}"
+                )
             return data
         except UpdateCheckError as exc:
             last_err = exc

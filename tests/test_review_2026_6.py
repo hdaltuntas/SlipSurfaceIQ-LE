@@ -311,3 +311,83 @@ def test_dxf_import_asks_before_replacing_a_model(app, monkeypatch, tmp_path):
     finally:
         win.doc.mark_clean()
         win.close()
+
+
+# ------------------------------------------------------- updater and DXF hardening
+def test_manifest_of_another_release_is_refused():
+    import json
+
+    from slipsurface.patch.core import fetch_manifest
+    from slipsurface.updates import UpdateCheckError
+
+    class Reply:
+        def __init__(self, data):
+            self.data = data
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return self.data
+
+    def serve(version):
+        body = json.dumps({"version": version, "files": {"main.py": "0" * 64}}).encode()
+        return lambda request, timeout: Reply(body)
+
+    # the inventory of an older release, replayed under the new release's address
+    with pytest.raises(UpdateCheckError, match="is for version 2026.3.0, not 2026.6.0"):
+        fetch_manifest("2026.6.0", opener=serve("2026.3.0"), require_signature=False)
+    ok = fetch_manifest("v2026.6.0", opener=serve("2026.6.0"), require_signature=False)
+    assert ok["files"]
+
+
+def test_dxf_import_refuses_oversized_drawings(tmp_path, monkeypatch):
+    import ezdxf
+
+    from slipsurface import exchange
+
+    def drawing(name, build):
+        doc = ezdxf.new("R2010")
+        doc.units = ezdxf.units.M
+        build(doc.modelspace())
+        path = tmp_path / name
+        doc.saveas(path)
+        return path
+
+    box = [(0, 0), (10, 0), (10, 5), (0, 5)]
+    many = drawing(
+        "many.dxf",
+        lambda msp: [msp.add_line((i, 0), (i, 1), dxfattribs={"layer": "X"}) for i in range(30)],
+    )
+    monkeypatch.setattr(exchange, "MAX_DXF_ENTITIES", 20)
+    with pytest.raises(ValueError, match="entities"):
+        exchange.import_dxf(many)
+
+    def curved(msp):
+        msp.add_lwpolyline(box, close=True, dxfattribs={"layer": "SS_EXTERNAL"})
+        msp.add_arc((5, 2), 1000.0, 0, 180, dxfattribs={"layer": "SS_MATERIAL"})
+
+    monkeypatch.setattr(exchange, "MAX_DXF_VERTICES", 50)
+    with pytest.raises(ValueError, match="more than 50 vertices"):
+        exchange.import_dxf(drawing("arc.dxf", curved))
+
+    monkeypatch.setattr(exchange, "MAX_DXF_BYTES", 10)
+    with pytest.raises(ValueError, match="MB"):
+        exchange.import_dxf(many)
+
+
+def test_report_accepts_markup_characters_in_user_text(tmp_path):
+    from slipsurface.analysis import run_analysis
+    from slipsurface.report import ReportOptions, build_pdf
+
+    p = acads_1a_project()
+    p.methods.methods = ["bishop"]
+    p.surfaces.effort = "fast"
+    p.materials[0].name = "Clay <b> & 'x' </para>"
+    p.summary.title = "A & B <i>"
+    p.summary.comments[0] = "<font>&"
+    opts = ReportOptions(title="T <&>", checker="<c>", author="<x&>", coordinates=True)
+    assert build_pdf(run_analysis(p), tmp_path / "r.pdf", opts) >= 5
