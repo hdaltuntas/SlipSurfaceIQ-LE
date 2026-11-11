@@ -1,4 +1,5 @@
 from PySide6.QtWidgets import (
+    QCheckBox,
     QDialog,
     QVBoxLayout,
     QLabel,
@@ -30,8 +31,10 @@ class ScriptDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.addWidget(
             QLabel(
-                "Python scripts run with your account permissions. Run trusted code only.\n"
-                "Changes are validated and applied as one undoable operation. Units: m, kN, kPa."
+                "Scripts change a copy of the model; the result is validated and applied as "
+                "one undoable operation. Units: m, kN, kPa.\n"
+                "Restricted mode (default): no file access and no imports except math and "
+                "the slipsurface model classes."
             )
         )
         self.editor = QPlainTextEdit()
@@ -46,6 +49,17 @@ class ScriptDialog(QDialog):
         self.confirm = self._ask_trust
         self.editor.setStyleSheet("font-family: Consolas; font-size: 13px;")
         layout.addWidget(self.editor, 3)
+        self.full_access = QCheckBox(
+            "Full Python access (any import, files, network) — only for scripts you trust"
+        )
+        self.full_access.setToolTip(
+            "Off: the script is checked first and refused if it imports other modules, "
+            "opens files or uses exec/eval or names starting with an underscore.\n"
+            "On: the script runs as ordinary Python with your account permissions."
+        )
+        layout.addWidget(self.full_access)
+        self._full_access_confirmed = False
+        self.confirm_full = self._ask_full_access
         self.output = QPlainTextEdit()
         self.output.setReadOnly(True)
         layout.addWidget(self.output, 1)
@@ -70,6 +84,7 @@ class ScriptDialog(QDialog):
             try:
                 self.editor.setPlainText(Path(path).read_text(encoding="utf-8"))
                 self.untrusted_source = path
+                self._full_access_confirmed = False  # another script: ask again
             except OSError as exc:
                 self.output.setPlainText(str(exc))
 
@@ -88,8 +103,20 @@ class ScriptDialog(QDialog):
             self,
             "Run Script",
             f"This script was opened from:\n{path}\n\n"
-            "Python scripts run with full access to your files and account. "
+            "It changes the open model. With 'Full Python access' ticked it also runs "
+            "with full access to your files and account.\n"
             "Run it only if you trust its author and have read the code.",
+            QMessageBox.Yes | QMessageBox.Cancel,
+            QMessageBox.Cancel,
+        )
+        return answer == QMessageBox.Yes
+
+    def _ask_full_access(self) -> bool:
+        answer = QMessageBox.warning(
+            self,
+            "Full Python Access",
+            "The script will run as ordinary Python: it can read, change and delete your "
+            "files and use the network.\n\nRun it only if you wrote it or have read it.",
             QMessageBox.Yes | QMessageBox.Cancel,
             QMessageBox.Cancel,
         )
@@ -101,8 +128,16 @@ class ScriptDialog(QDialog):
                 self.output.setPlainText("Not run. Project unchanged.")
                 return
             self.untrusted_source = None
+        trusted = self.full_access.isChecked()
+        if trusted and not self._full_access_confirmed:
+            if not self.confirm_full():
+                self.output.setPlainText("Not run. Project unchanged.")
+                return
+            self._full_access_confirmed = True
         try:
-            project, output = run_script(self.editor.toPlainText(), self.document.project)
+            project, output = run_script(
+                self.editor.toPlainText(), self.document.project, trusted=trusted
+            )
             changed = self.document.edit(
                 "Python script", lambda p: p.__dict__.update(project.__dict__)
             )

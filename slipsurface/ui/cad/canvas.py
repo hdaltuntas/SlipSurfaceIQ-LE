@@ -561,6 +561,7 @@ class CadCanvas(QWidget):
             self._paint_legend(p, legend_top)
         if self.results is not None and self.display("show_fs_legend"):
             self._paint_fs_legend(p)
+        self._paint_seismic(p)
         self._paint_cursor(p)
         p.end()
 
@@ -1367,6 +1368,55 @@ class CadCanvas(QWidget):
                 ("● " if is_min else "   ") + name,
             )
             p.drawText(QRectF(x0 + wn, y, wv - 8, rh), Qt.AlignRight | Qt.AlignVCenter, val)
+
+    # ------------------------------------------------ seismic coefficients
+    def _paint_seismic(self, p: QPainter) -> None:
+        """Bottom-left key: which way kh·W and kv·W act in the analysis."""
+        pr = self.project
+        if pr is None or not (pr.seismic.kh or pr.seismic.kv):
+            return
+        kh, kv = float(pr.seismic.kh), float(pr.seismic.kv)
+        both = pr.seismic.both_vertical and kv != 0.0
+        col = QColor("#b03a2e")
+        f = QFont("Source Sans 3", 8)
+        fm = QFontMetrics(f)
+        lines = ["Seismic (pseudo-static)"]
+        if kh:
+            way = {"right_to_left": "to the left", "left_to_right": "to the right"}.get(
+                pr.general.failure_direction, "in the failure direction"
+            )
+            lines.append(f"kh = {kh:g}  ·  kh·W {way}")
+        if kv:
+            lines.append(
+                f"kv = ±{abs(kv):g}  ·  both directions, lower FS kept"
+                if both
+                else f"kv = {kv:g}  ·  kv·W {'upward' if kv > 0 else 'downward'}"
+            )
+        w = max(fm.horizontalAdvance(t) for t in lines) + 66
+        h = fm.height() * len(lines) + 10
+        x0, y0 = 10.0, self.height() - h - 10.0
+        p.setPen(QPen(QColor(150, 150, 150), 1))
+        p.setBrush(QColor(255, 255, 255, 235))
+        p.drawRect(QRectF(x0, y0, w, h))
+        p.setFont(f)
+        p.setPen(QColor(30, 30, 30))
+        for i, t in enumerate(lines):
+            p.drawText(
+                QRectF(x0 + 58, y0 + 5 + i * fm.height(), w - 60, fm.height()),
+                Qt.AlignLeft | Qt.AlignVCenter,
+                t,
+            )
+        c = QPointF(x0 + 29, y0 + h / 2)  # arrows start at a common origin
+        if kh:
+            d = pr.general.failure_direction
+            for sx in (-1,) if d == "right_to_left" else (1,) if d == "left_to_right" else (-1, 1):
+                self._arrow(p, QPointF(c.x() + sx * 20, c.y()), (sx, 0.0), 20, col, 1.6, 6)
+        if kv:
+            ups = (-1, 1) if both else ((-1,) if kv > 0 else (1,))  # screen y is down
+            for sy in ups:
+                self._arrow(
+                    p, QPointF(c.x(), c.y() + sy * (h / 2 - 5)), (0.0, sy), h / 2 - 5, col, 1.6, 6
+                )
 
     # ----------------------------------------------------- snap / cursor
     def _paint_snap_marker(self, p: QPainter) -> None:

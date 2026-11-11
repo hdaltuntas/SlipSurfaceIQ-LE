@@ -9,6 +9,14 @@ from ezdxf.path import make_path
 from slipsurface.project import Project, empty_project
 
 
+# Limits for imported drawings. A cross-section has a few hundred vertices; a
+# drawing far beyond these is the wrong file (a site plan, a point cloud) or a
+# damaged one, and flattening its curves would exhaust memory.
+MAX_DXF_BYTES = 50 * 1024 * 1024
+MAX_DXF_ENTITIES = 20_000
+MAX_DXF_VERTICES = 20_000  # per entity, after flattening curves
+
+
 def export_dxf(project: Project, path: str | Path) -> None:
     if not project.has_geometry:
         raise ValueError("Draw an external boundary before exporting.")
@@ -35,7 +43,19 @@ def export_dxf(project: Project, path: str | Path) -> None:
 
 def import_dxf(path: str | Path) -> tuple[Project, list[str]]:
     """Import polylines/lines; flatten arcs to 1 cm tolerance; reject ambiguity."""
+    size = Path(path).stat().st_size
+    if size > MAX_DXF_BYTES:
+        raise ValueError(
+            f"The DXF file is {size / 1e6:.0f} MB; files above "
+            f"{MAX_DXF_BYTES // (1024 * 1024)} MB are not imported. Export only the "
+            "cross-section layers."
+        )
     doc = ezdxf.readfile(path)
+    if len(doc.modelspace()) > MAX_DXF_ENTITIES:
+        raise ValueError(
+            f"The DXF has {len(doc.modelspace())} entities (limit {MAX_DXF_ENTITIES}). "
+            "Export only the cross-section layers."
+        )
     factor = units.conversion_factor(doc.units, units.M) if doc.units else 1.0
     warnings = [] if doc.units else ["DXF has no units; coordinates interpreted as metres."]
     project = empty_project()
@@ -48,7 +68,15 @@ def import_dxf(path: str | Path) -> tuple[Project, list[str]]:
             ignored.add(kind)
             continue
         path_entity = make_path(entity)
-        vertices = list(path_entity.flattening(0.01 / factor))
+        vertices = []
+        for vertex in path_entity.flattening(0.01 / factor):
+            vertices.append(vertex)
+            if len(vertices) > MAX_DXF_VERTICES:
+                raise ValueError(
+                    f"A {kind} on layer {entity.dxf.layer} needs more than "
+                    f"{MAX_DXF_VERTICES} vertices at 1 cm accuracy; check the drawing "
+                    "units and simplify the curve."
+                )
         if any(abs(v.z) > 1e-8 for v in vertices):
             raise ValueError("Only planar XY geometry at Z=0 is supported.")
         points = [[v.x * factor, v.y * factor] for v in vertices]

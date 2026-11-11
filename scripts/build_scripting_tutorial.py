@@ -270,6 +270,15 @@ def build_story() -> list:
         "If the script raises an error or the model is invalid, the open project is left "
         "unchanged and the message appears in the output pane.",
         "Anything printed with <b>print()</b> is shown in the output pane.",
+        "By default the editor runs scripts in <b>restricted mode</b>: only <b>import "
+        "math</b> and <b>from slipsurface.project / loads / materials / geometry / lem / "
+        "analysis import …</b> are accepted, and files, <b>exec</b>/<b>eval</b>, names "
+        "starting with an underscore and <b>project.save()</b>/<b>load()</b> are refused "
+        "before anything runs. Every example in this tutorial runs in restricted mode.",
+        "Tick <b>Full Python access</b> to run ordinary Python (any import, files). The "
+        "editor asks for confirmation first. Restricted mode guards against scripts "
+        "received from others; it is not a substitute for reading a script before you "
+        "run it.",
     ):
         s.append(P("•  " + text))
     s.append(
