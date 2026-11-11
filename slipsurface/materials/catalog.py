@@ -52,14 +52,20 @@ MODELS: dict[str, ModelInfo] = {
         (
             ("shansep_s", "S (normally consolidated su/σ′v)", 0.001, 5, 4),
             ("shansep_m", "m (exponent)", 0, 2, 3),
-            ("ocr", "OCR (overconsolidation ratio)", 1, 100, 3),
+            ("ocr", "OCR (constant, or at the top elevation)", 1, 100, 3),
             ("shansep_su_min", "A — minimum undrained strength (kPa)", 0, 1e6, 3),
+            ("ocr_bottom", "OCR at the bottom elevation", 1, 100, 3),
+            ("ocr_y_top", "OCR profile: top elevation (m)", -1e6, 1e6, 3),
+            ("ocr_y_bottom", "OCR profile: bottom elevation (m)", -1e6, 1e6, 3),
         ),
         total_stress=True,
         note=(
             "A is additive. σ′v = max(W/b − u, 0): effective vertical overburden "
-            "stress; m is typically 0.75–1. Short-term fill requires the pre-loading "
-            "effective stress; B-bar/staged construction is not modelled."
+            "stress; m is typically 0.75–1. OCR profile: with top elevation > bottom "
+            "elevation OCR varies linearly with the slice base elevation between them "
+            "(end values outside); equal elevations = constant OCR. Short-term fill: "
+            "give this soil a B-bar and flag the fill as loading (Water Parameters), so "
+            "σ′v excludes the fill weight."
         ),
     ),
     "HS": ModelInfo(
@@ -182,6 +188,11 @@ def parameter_text(spec) -> str:
         "SH": lambda m: (
             f"A = {m.shansep_su_min:g} kPa, S = {m.shansep_s:g}, "
             f"m = {m.shansep_m:g}, OCR = {m.ocr:g}"
+            + (
+                f"–{m.ocr_bottom:g} (y = {m.ocr_y_top:g}…{m.ocr_y_bottom:g} m)"
+                if m.ocr_y_top != m.ocr_y_bottom
+                else ""
+            )
         ),
         "HS": lambda m: f"c′ = {m.c:g} kPa, φ′ = {m.phi:g}°, ψ = {m.hs_psi:g}°",
         "SS": lambda m: f"M = {m.ss_m:g}, e = {m.ss_e:g}, ec0 = {m.ss_ec0:g}, nb = {m.ss_nb:g}",

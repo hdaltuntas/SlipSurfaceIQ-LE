@@ -1,11 +1,10 @@
 # SlipSurfaceIQ LE
 
-**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.6.1**
+**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.7.0**
 
-[2026.6.1 release notes](RELEASE_NOTES.md) — a hardening release: scripts run in a
-restricted mode by default, updates refuse a manifest of another version, a hash-checked
-`requirements.lock` is provided, and the results carry cautions for Janbu corrected with
-supports and for non-convex slip surfaces.
+[2026.7.0 release notes](RELEASE_NOTES.md) — staged-fill analysis with B-bar excess pore
+pressure, a SHANSEP OCR profile with elevation, and analyses that run in a separate
+process so the window stays responsive.
 
 SlipSurfaceIQ LE is an open-source program for checking the stability of soil and rock
 slopes, cuts and embankments with the limit equilibrium method (LEM). You draw the slope
@@ -301,7 +300,7 @@ table acts on it and the piezometric factor Hu).
 |---|---|---|
 | **Mohr-Coulomb** | τ = c′ + σ′n tan φ′ | |
 | **Undrained (Tresca)** | τ = su | total stress, pore pressure not used |
-| **SHANSEP** | τ = su = A + S · σ′v · OCR^m | A is additive; σ′v = max(W/b − u, 0) is the reference effective vertical overburden stress; total-stress analysis. [Details and limitations](docs/SHANSEP.md). |
+| **SHANSEP** | τ = su = A + S · σ′v · OCR^m | A is additive; σ′v = max(W/b − u, 0) is the reference effective vertical overburden stress; total-stress analysis. OCR is constant or varies linearly with elevation between two levels. Under a quickly placed fill, a B-bar on this soil removes the fill weight from σ′v. [Details and limitations](docs/SHANSEP.md). |
 | **Hardening Soil** | τ = c′ + σ′n tan φ′ | Mohr-Coulomb failure surface of the HS model; E50,ref, Eoed,ref, Eur,ref, m, pref, Rf and ψ are stored for reference — LEM uses only the failure envelope |
 | **SANISAND** | τ = σ′n tan φ(ψ), sin φ = 3Mb / (6 + Mb), Mb = M exp(−nb ψ) | state parameter ψ = e − ec, critical state line ec = ec0 − λc (p′/pat)^ξ (Dafalias & Manzari 2004); in LEM p′ ≈ σ′n |
 | **Power-law envelope** | τ = a · pa · (1 + σ′n/pa)^b | concave envelope for granular materials |
@@ -324,6 +323,13 @@ c and φ.
   submerged ground surface is not modelled. Where that thrust matters (a submerged toe,
   a reservoir drawdown), model it explicitly with a surface-normal distributed load.
 - **Ru coefficient:** u = Ru · σv (total vertical stress at the base).
+- **Excess pore pressure (B-bar):** for fills placed quickly on soft ground. Give the
+  foundation soil a B-bar (Material Properties → Water Parameters) and tick "Weight of
+  This Material Creates Excess Pore Pressure" for the fill. At a slice base in the B-bar
+  soil, Δu = B-bar · (weight per unit area of the overlying ticked materials) is added to
+  the pore pressure of every groundwater mode. Only material weight counts: external
+  distributed loads do not create excess pressure, and dissipation with time is not
+  modelled (lower B-bar by hand for a later stage).
 - **Pseudo-static seismic loading:** horizontal force kh·W in the failure direction at the
   slice centroid; kv positive upward gives a vertical load (1 − kv)·W.
 - **Tension crack:** a crack line is drawn (or created from a depth, with the Rankine
@@ -416,7 +422,9 @@ The sections can be switched on or off; author, checker and company are remember
 
 ### Project files
 
-Projects are saved as `.slp.json` (format version 3). Files from earlier versions (1 and 2)
+Projects are saved as `.slp.json` (format version 3; version 4 when the model uses B-bar
+or a SHANSEP OCR profile, so that older releases refuse it instead of ignoring them).
+Files from earlier versions (1 and 2)
 are converted automatically when opened. A project stores the geometry, materials,
 groundwater, loads, supports, facings, search settings, display options and the notes of
 both windows.

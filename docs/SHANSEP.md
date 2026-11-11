@@ -11,7 +11,7 @@ sigma'_v = max(W / b - u_ref, 0)
 |---|---|---|
 | A | Additive minimum undrained strength (intercept at zero effective stress) | kPa |
 | S | Normally consolidated strength ratio used in the stress-dependent term | dimensionless |
-| OCR | Overconsolidation ratio, constant per material, at least 1 | dimensionless |
+| OCR | Overconsolidation ratio, at least 1; constant per material, or linear with the slice base elevation between a top and a bottom elevation (end values outside) | dimensionless |
 | m | Stress-history exponent, commonly 0.75 to 1 | dimensionless |
 | sigma'_v | Reference effective vertical overburden stress at the slice base | kPa |
 
@@ -40,11 +40,18 @@ contribute to the overburden, including any embankment drawn as a soil region.
 For rapid fill placement on clay, the reference effective stress must represent
 the **pre-loading consolidation state**. Simply adding an embankment to the
 geometry with a hydrostatic water table can incorrectly increase the calculated
-short-term strength. The application does not currently provide B-bar excess
-pore pressures, construction stages, material exclusion factors, spatial
-strength functions or depth-dependent OCR. Consequently, that setup alone
-does not reproduce the short-term embankment analyses in the GeoStudio example.
-This correction implements the strength equation; it does not add those features.
+short-term strength.
+
+Since 2026.7.0 this case is modelled with **B-bar**: give the clay a B-bar
+(Material Properties -> Water Parameters) and tick "Weight of This Material
+Creates Excess Pore Pressure" for the fill. The excess pore pressure
+du = B-bar * (fill weight per unit area) is subtracted in sigma'_v, so B-bar = 1
+gives the stress before the fill was placed. A depth-dependent OCR is entered
+as an OCR profile (top and bottom elevation).
+
+Still not provided: construction stages with dissipation in time, material
+exclusion factors and spatial strength functions. The short-term embankment
+analyses of the GeoStudio example have not been reproduced with these inputs.
 
 The supplied GeoStudio example's hand calculations are useful reference checks
 for A = 0, S = 0.3 and OCR = 1:
@@ -57,7 +64,7 @@ search or published factors of safety.
 
 ## Existing projects and Python use
 
-The project format remains version 3. The existing JSON field `shansep_su_min`
+The project format remains version 3 (version 4 when B-bar or an OCR profile is used). The existing JSON field `shansep_su_min`
 and Python constructor argument `su_min` now represent the additive A value;
 their names remain unchanged so saved inputs and scripts still load. Missing
 values default to zero. For A > 0, rerun analyses and review the changed results:

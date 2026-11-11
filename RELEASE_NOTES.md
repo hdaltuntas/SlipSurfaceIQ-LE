@@ -1,3 +1,50 @@
+# SlipSurfaceIQ LE 2026.7.0
+
+Staged fills (B-bar), SHANSEP OCR profile, analysis in a separate process
+
+Existing models give the same results: the new inputs default to "off" (B-bar = 0, no
+OCR profile) and no existing solver equation was changed.
+
+**Excess pore pressure of undrained loading (B-bar)**
+
+- Material Properties → Water Parameters has two new inputs: **B-bar** for the soil that
+  is loaded and **Weight of This Material Creates Excess Pore Pressure** for the fill.
+- At a slice base in a B-bar soil, Δu = B-bar · (weight per unit area of the overlying
+  ticked materials) is added to the pore pressure, under a water table, an Ru coefficient
+  or a dry model alike. Slice Data shows the excess part separately.
+- For SHANSEP soils the excess pressure lowers σ′v; B-bar = 1 gives the effective stress
+  before the fill was placed, which is the short-term case.
+- Limits: only material weight creates excess pressure (not external distributed loads),
+  and dissipation with time is not modelled. For a later stage, lower B-bar by hand.
+
+**SHANSEP OCR profile**
+
+- OCR can vary linearly with the elevation of the slice base between a top and a bottom
+  elevation (for example a desiccated crust over normally consolidated clay); outside
+  them the end value is kept. Equal elevations, the default, keep a constant OCR.
+
+**Analysis in a separate process**
+
+- Compute now runs the analysis in its own process. The window stays responsive during
+  long searches, Cancel takes effect within a few seconds even inside a long solver call,
+  and a failure of the numerical code is reported instead of closing the program.
+- Results are identical to the previous in-process analysis. Starting the process adds
+  about a second to each computation.
+- If a process cannot be started, the analysis runs on a thread as before. Setting the
+  environment variable `SLIPSURFACE_COMPUTE=thread` forces that.
+
+**Project files**
+
+- A model that uses B-bar or an OCR profile is saved as format version 4. Earlier
+  releases refuse such a file ("saved by a newer version") instead of opening it and
+  silently ignoring the new inputs. All other models are still saved as version 3.
+
+Verification: the excess pressure, the SHANSEP reference stress under a fill and the OCR
+profile are checked against hand calculations in `tests/test_staged_loading.py`. No
+published benchmark for staged construction is reproduced yet.
+
+Version 2026.7.0.
+
 # SlipSurfaceIQ LE 2026.6.1
 
 Hardening: restricted scripts, update and dependency checks, result cautions

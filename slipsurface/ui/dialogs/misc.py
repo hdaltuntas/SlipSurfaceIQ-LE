@@ -195,6 +195,11 @@ def slice_rows(res, i: int) -> list[tuple[str, str]]:
         ("Base length l [m]", f"{s.l[i]:.3f}"),
         ("Weight W [kN/m]", f"{s.W[i]:.3f}"),
         ("Pore pressure u [kPa]", f"{s.u[i]:.3f}"),
+        *(
+            [("  of which excess (B-bar) [kPa]", f"{s.u_excess[i]:.3f}")]
+            if np.any(s.u_excess)
+            else []
+        ),
         ("Cohesion c [kPa] (σn ≈ W/b − u)", f"{c[0]:.3f}"),
         ("Friction angle φ [°]", f"{np.degrees(np.arctan(tp[0])):.2f}"),
     ]
