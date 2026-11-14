@@ -140,4 +140,7 @@ class ProcessAnalysis:
         if self._process.is_alive():
             self._process.terminate()
             self._process.join(2.0)
+        if self._process.is_alive():
+            self._process.kill()
+            self._process.join(1.0)
         self._parent.close()

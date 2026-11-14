@@ -149,6 +149,12 @@ def borges_cardoso_case2_project() -> Project:
     p.supports = [{"a": [0.0, 0.0], "b": [42.5, 0.0], "type": name}]
     p.surfaces.surface_type = "circular"
     p.surfaces.effort = "normal"
+    # Exit on the left berm, entry on the crest or right of it: this is the
+    # published foundation mechanism. Without the limits, Janbu and GLE lock
+    # onto the unreinforced cohesionless face (FoS ~0.90) and miss the
+    # geosynthetic.
+    p.surfaces.left_range = [-30.0, 0.0]
+    p.surfaces.right_range = [10.0, 45.0]
     # Reject degenerate tangent circles whose sliding mass is numerically thin
     # (a circle tangent to the base can carry a near-zero mass and dodge the
     # geosynthetic, producing a spurious low minimum). Slide2-style models use

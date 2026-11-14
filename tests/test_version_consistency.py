@@ -38,7 +38,7 @@ def test_main_py_is_the_only_supported_application_entrypoint():
     assert (ROOT / "main.py").is_file()
     assert (ROOT / "requirements.txt").is_file()
     ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    assert "windows-latest" not in ci
+    assert "windows-latest" in ci
     assert "test-distro" not in ci
     assert "python main.py" in ci
     for path in OBSOLETE:

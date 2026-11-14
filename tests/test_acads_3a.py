@@ -118,4 +118,23 @@ def test_acads_3a_fixed_diagnostic_surface_converges(method):
     assert np.isfinite(result.fos)
     # Diagnostic only: ACADS 3(b) uses a SPECIFIED surface, while ACADS
     # 3(a) reference FoS=1.26 is a separate OPTIMIZED non-circular search.
-    assert 0.9 < result.fos < 1.6
+    assert 1.15 < result.fos < 1.40
+
+
+@pytest.mark.slow
+def test_acads_3a_search_finds_the_seam_mechanism():
+    """Unrestricted search must stay on the weak seam, not a tensile root (~0.46)."""
+    from slipsurface.analysis import run_analysis
+
+    p = acads_3a_project()
+    p.surfaces.effort = "fast"
+    r = run_analysis(p)
+    assert not r.errors, r.errors
+    for method in ("spencer", "gle", "janbu_corrected"):
+        found = r.results[method]
+        assert found.lem.ok and found.lem.admissible, (method, found.lem.issue)
+        assert 1.15 <= found.fos <= 1.35, (method, found.fos)
+        names = [found.slices.materials[i].name for i in found.slices.mat_idx]
+        assert names.count("Soil 2") >= 5, (method, names)
+        assert 38 < found.slices.x_exit < 50
+        assert 65 < found.slices.x_entry < 80

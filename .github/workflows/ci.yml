@@ -72,3 +72,24 @@ jobs:
           python main.py --smoke 0.2
       - name: Pytest (without slow analyses)
         run: python -m pytest -q -p no:cacheprovider -m "not slow"
+
+  # Quick suite on Windows (source entry point only; no installer).
+  test-windows:
+    runs-on: windows-latest
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install (runtime from the hash-checked lock, then the test tools)
+        run: |
+          python -m pip install --require-hashes -r requirements.lock
+          python -m pip install -r requirements-dev.txt
+      - name: Entry point check (main.py)
+        run: |
+          python main.py --check
+          python main.py --smoke 0.2
+      - name: Pytest (without slow analyses)
+        run: python -m pytest -q -p no:cacheprovider -m "not slow"

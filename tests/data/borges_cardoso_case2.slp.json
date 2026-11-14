@@ -276,8 +276,14 @@
     "n_ctrl": 4,
     "convex_only": true,
     "seed": 0,
-    "left_range": null,
-    "right_range": null,
+    "left_range": [
+      -30.0,
+      0.0
+    ],
+    "right_range": [
+      10.0,
+      45.0
+    ],
     "user_surface": null,
     "noncircular_shape": "polyline",
     "user_circle": null

@@ -65,7 +65,7 @@ class Tool:
         self.c = canvas
 
     def activate(self) -> None: ...
-    def deactivate(self) -> None: ...
+    def deactivate(self) -> None: ...  # SelectTool restores live note previews
     def press(self, ev) -> None: ...
     def release(self, ev) -> None: ...
     def double_click(self, ev) -> None: ...
@@ -127,6 +127,21 @@ class SelectTool(Tool):
             return
         c.snap_marker = None
         c.hover = c.pick_vertex(ev.position()) if c.editable else None
+
+    def deactivate(self) -> None:
+        self._abandon_live_edit()
+
+    def _abandon_live_edit(self) -> None:
+        c = self.c
+        if self.translate is not None:
+            key, _, orig = self.translate
+            c.project.annotations[key[1]]["pts"] = orig
+            self.translate = None
+            self.drag_pts = None
+            c.update()
+        self.drag = None
+        self.drag_pts = None
+        c.snap_marker = None
 
     def press(self, ev) -> None:
         c = self.c
@@ -456,15 +471,17 @@ class DrawTool(Tool):
         pts = list(self.pts)
         if self.preview is not None:
             pts.append(self.preview)
+        ink = self.c.ink()
+        dark = ink.lightness() > 140
         col = {
-            "external": QColor("#303030"),
+            "external": ink,
             "material": QColor("#e07b00"),
-            "water": QColor("#1f5fd1"),
+            "water": QColor("#6ea8ff") if dark else QColor("#1f5fd1"),
             "user": QColor("#c0392b"),
             "load_distributed": QColor("#c0392b"),
             "load_line": QColor("#c0392b"),
-            "support": QColor("#1f3d7a"),
-            "crack": QColor("#8d5524"),
+            "support": QColor("#7eb6ff") if dark else QColor("#1f3d7a"),
+            "crack": QColor("#c4a574") if dark else QColor("#8d5524"),
         }.get(self.kind, QColor("#c0392b"))
         p.setPen(QPen(col, 2))
         p.setBrush(Qt.NoBrush)

@@ -1,3 +1,47 @@
+# SlipSurfaceIQ LE 2026.7.1
+
+B-bar under water, search regressions, CAD warnings
+
+**B-bar**
+
+- Fill below the water table uses the buoyant increment (γsat − γw) for Δu, so
+  B-bar = 1 restores the pre-loading effective stress when the water table
+  intersects the fill.
+- With an Ru coefficient, Ru is applied to the pre-fill overburden; B-bar is
+  applied to the fill increment. B-bar = 1 again restores the pre-fill σ′v.
+- Slice Data keeps the excess-pressure row on SHANSEP / total-stress bases
+  (the solver still uses u = 0 there) and shows σ′v.
+
+**Search**
+
+- ACADS 3(a): the unrestricted non-circular search is regression-tested on the
+  weak-seam mechanism (FoS 1.15–1.35). A tensile root around 0.46 fails the test.
+- Borges & Cardoso Case 2: slope limits put the exit on the left berm and the
+  entry on the crest, so Bishop, Janbu simplified and GLE all intersect the
+  geosynthetic (FoS 1.10–1.25). Without the limits, Janbu and GLE found the
+  unreinforced face (~0.90).
+
+**Ordinary method**
+
+- Solutions with negative mobilisable base shear are flagged inadmissible, as
+  for Bishop and GLE.
+
+**Interface**
+
+- Esc during a note move cancels the preview; the note is not left mid-drag
+  without undo.
+- Material, support and facing colours are display-only: they no longer
+  invalidate results.
+- A refused or invalid draw keeps the warning in the status bar after Select
+  becomes the tool.
+- Interpret notes are stored on the project without a second Modeler undo
+  command.
+- Dark canvas: default boundary colours and draw previews use the canvas ink
+  when the stored colour would vanish. F7 and Display Options share one grid
+  switch.
+
+Version 2026.7.1.
+
 # SlipSurfaceIQ LE 2026.7.0
 
 Staged fills (B-bar), SHANSEP OCR profile, analysis in a separate process

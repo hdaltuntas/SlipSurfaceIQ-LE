@@ -84,6 +84,7 @@ class ModelerWindow(QMainWindow):
         self._worker = None
         self._thread = None
         self.last_results = None
+        self._result_notes_dirty = False
         self._close_pending = False
         self._cancel_requested = False
 
@@ -632,6 +633,11 @@ class ModelerWindow(QMainWindow):
                 if window.results is self.last_results:
                     window.update_summary(p.summary)
         self.canvas.set_scene(p, g)
+        if "grid_on" in self.status.toggles:
+            btn = self.status.toggles["grid_on"]
+            btn.blockSignals(True)
+            btn.setChecked(self.canvas.grid_on)
+            btn.blockSignals(False)
         self.area.show_rulers(bool(p.display_opt("show_ruler")))
         names = p.material_names()
         cur = self.mat_combo.currentText()
@@ -676,7 +682,7 @@ class ModelerWindow(QMainWindow):
         if getattr(self, "_closing", False) or not shiboken6.isValid(self.doc.undo_stack):
             return  # application is shutting down
         name = self.doc.path.name if self.doc.path else "Unsaved"
-        star = " *" if self.doc.dirty else ""
+        star = " *" if self.doc.dirty or self._result_notes_dirty else ""
         self.setWindowTitle(
             f"SlipSurfaceIQ LE {__version__} — [{name}{star}] — {self.doc.project.summary.title}"
         )
@@ -792,12 +798,16 @@ class ModelerWindow(QMainWindow):
             add_entity(p, kind, pts)
 
         ok = self.canvas.request_edit(f"Add {LABELS[kind]}", fn)
-        if ok:
+        self.canvas.select_tool(announce=False)
+        self.t_select.setChecked(True)
+        if self.doc.geometry_error:
+            self.status.showMessage(f"⚠ Model: {self.doc.geometry_error}", 10000)
+        elif self.doc.geometry_warnings:
+            self.status.showMessage("⚠ " + " ".join(self.doc.geometry_warnings), 15000)
+        elif ok:
             self.status.showMessage(f"{LABELS[kind]} added ({len(pts)} points).", 5000)
             if kind == "external":
                 self.canvas.zoom_extents()
-        self.canvas.select_tool()
-        self.t_select.setChecked(True)
 
     def _ground(self):
         g = self.doc.geometry
@@ -813,7 +823,7 @@ class ModelerWindow(QMainWindow):
             self.canvas.set_tool(T.DrawTool(self.canvas, "support"))  # keep adding
             return
         if kind == "load_distributed" and pts[0][0] == pts[1][0]:
-            self.canvas.select_tool()  # its hint must not replace the warning
+            self.canvas.select_tool(announce=False)
             self.t_select.setChecked(True)
             self.status.showMessage("⚠ A distributed load needs two different x positions.", 8000)
             return
@@ -1092,7 +1102,7 @@ class ModelerWindow(QMainWindow):
 
     # ============================================================== files
     def _confirm_discard(self) -> bool:
-        if not self.doc.dirty:
+        if not self.doc.dirty and not self._result_notes_dirty:
             return True
         ans = QMessageBox.question(
             self,
@@ -1108,6 +1118,7 @@ class ModelerWindow(QMainWindow):
         self._invalidate_results()
         self.doc.set_project(p, path)
         self.last_results = None
+        self._result_notes_dirty = False
         self.canvas.select_tool()
         self.canvas.zoom_extents()
         self._update_actions()
@@ -1159,6 +1170,7 @@ class ModelerWindow(QMainWindow):
             return False
         self.doc.path = Path(path)
         self.doc.mark_clean()
+        self._result_notes_dirty = False
         self._update_title()
         self.status.showMessage(f"Saved: {path}", 5000)
         return True
@@ -1325,13 +1337,21 @@ class ModelerWindow(QMainWindow):
         export_report(self, self.last_results, disp, self.doc.path)
 
     def _result_annotations_changed(self, notes: list) -> None:
-        """Notes drawn in an Interpret window are stored in the project."""
+        """Notes drawn in an Interpret window are stored on the project.
+
+        Interpret owns undo for those notes; writing them through
+        ``Document.edit`` would stack a second command on the Modeler.
+        """
         import shiboken6
 
         if getattr(self, "_closing", False) or not shiboken6.isValid(self):
             return
         notes = copy.deepcopy(notes)
-        self.doc.edit("Result notes", lambda p: setattr(p, "result_annotations", notes))
+        if self.doc.project.result_annotations == notes:
+            return
+        self.doc.project.result_annotations = notes
+        self._result_notes_dirty = True
+        self._update_title()
 
     def _prune_interpret_windows(self) -> None:
         """Keep only Interpret windows whose C++ object still exists."""

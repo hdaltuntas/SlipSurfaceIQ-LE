@@ -14,8 +14,11 @@ point-in-polygon query per region handles any number of materials.
 
 Pore pressure at the base (per base material, Slide2-style):
   water_table : u = Hu * gamma_w * (y_wt - y_base)  (if the material uses water)
-  ru          : u = ru * sigma_v  (sigma_v = W / b, total vertical stress)
+  ru          : u = ru * sigma_v  (sigma_v = W / b of the pre-fill overburden
+                when B-bar is used)
   none        : u = 0
+  B-bar       : Δu = B-bar * Δσv of overlying excess_load materials
+                (buoyant below the water table); added to every mode.
 
 Ponded water: where the water table lies above the ground surface (ponded /
 submerged ground), the weight of the water column over the slice top is added
@@ -313,23 +316,35 @@ def make_slices(
         u = np.zeros_like(xm)
     # Excess pore pressure of undrained loading (B-bar, staged fills): at the
     # base of a slice in a material with B-bar > 0,
-    #     du = B-bar * (weight per unit area of the overlying materials that
-    #                   are flagged as loading),
-    # added to the pore pressure of every groundwater mode. With B-bar = 1 the
-    # effective vertical stress below a fill equals its pre-loading value.
+    #     du = B-bar * Δσv
+    # Δσv is the total-stress increment of the overlying materials flagged as
+    # loading. Below the water table that increment is buoyant (γsat − γw),
+    # because hydrostatic u already counts γw. With B-bar = 1 the effective
+    # vertical stress equals the pre-loading value under a water table, an Ru
+    # coefficient (Ru on the pre-fill overburden) or a dry model.
     loading = np.array([bool(getattr(m, "excess_load", False)) for m in mats])
     bbar = np.array([float(getattr(m, "bbar", 0.0)) for m in mats])[mat_idx]
     u_excess = np.zeros_like(xm)
     if loading.any() and np.any(bbar > 0):
-        u_excess = bbar * (h / o.n_sub) * (g * loading[col_idx]).sum(axis=1)
-        u = u + u_excess
+        fill_total = (h / o.n_sub) * (g * loading[col_idx]).sum(axis=1)
+        if wt is not None:
+            submerged = (py < wt[:, None]) & loading[col_idx]
+            delta = fill_total - o.gamma_w * (h / o.n_sub) * submerged.sum(axis=1)
+        else:
+            delta = fill_total
+        delta = np.maximum(delta, 0.0)
+        u_excess = bbar * delta
+        if o.pore == "ru":
+            u = o.ru * np.maximum(W / b - fill_total, 0.0) + u_excess
+        else:
+            u = u + u_excess
     # Total-stress strengths (Tresca/su) use total normal forces under every
     # groundwater mode, including a global Ru coefficient.
     # SHANSEP needs the effective vertical stress, so keep it before zeroing.
+    # Keep u_excess for Slice Data even when the solver then zeros u.
     sigma_v_eff = np.maximum(W / b - u, 0.0)
     total_stress = np.array([m.total_stress for m in mats])[mat_idx]
     u = np.where(total_stress, 0.0, u)
-    u_excess = np.where(total_stress, 0.0, u_excess)  # report what the solver uses
 
     # ------------------------------------------------ failure direction
     drive = np.sum(W * np.sin(alpha))

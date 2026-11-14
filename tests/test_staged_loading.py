@@ -85,6 +85,34 @@ def test_excess_pressure_adds_to_the_water_table_pressure():
     assert np.allclose(s.u - s.u_excess, slices(q).u)
 
 
+def test_bbar_one_under_a_submerged_fill_is_the_pre_fill_effective_stress():
+    """Fill below the water table: Δσv is buoyant, so B-bar = 1 restores σ′v."""
+    p = embankment(bbar=1.0)
+    p.groundwater.method = "water_table"
+    p.water_table = [[0, 14.0], [60, 14.0]]  # at the crest: fill is submerged
+    s = slices(p)
+    in_clay = np.array([s.materials[i].name == "Clay" for i in s.mat_idx])
+    # Pre-fill with the same WT (4 m of ponded water on the clay): σ′v in the
+    # clay is γ_clay * h_clay − γw * h_clay.
+    hydro_clay = 9.81 * np.maximum(CLAY_TOP - s.y_base, 0.0)
+    expected = np.maximum(CLAY_GAMMA * (CLAY_TOP - s.y_base) - hydro_clay, 0.0)
+    assert np.allclose(s.sigma_v_eff[in_clay], expected[in_clay], atol=FILL_GAMMA * 14 / 40)
+
+
+def test_bbar_one_with_ru_uses_pre_fill_overburden():
+    p = embankment(bbar=1.0)
+    p.groundwater.method = "ru"
+    p.groundwater.ru = 0.3
+    s = slices(p)
+    in_clay = np.array([s.materials[i].name == "Clay" for i in s.mat_idx])
+    clay_overburden = CLAY_GAMMA * np.maximum(CLAY_TOP - s.y_base, 0.0)
+    assert np.allclose(
+        s.sigma_v_eff[in_clay],
+        (1.0 - 0.3) * clay_overburden[in_clay],
+        atol=FILL_GAMMA * 14 / 40,
+    )
+
+
 def test_shansep_under_a_fill_uses_the_pre_loading_stress_with_bbar_one():
     clay = MaterialSpec("Clay", "SH", CLAY_GAMMA, CLAY_GAMMA, shansep_s=0.25, shansep_m=0.8)
     s = slices(embankment(bbar=1.0, clay=clay))
@@ -132,6 +160,25 @@ def _fixed(p: Project) -> Project:
     p.surfaces.surface_type = "user"
     p.surfaces.user_circle = [CIRCLE.xc, CIRCLE.yc, CIRCLE.r]
     return p
+
+
+def test_slice_data_shows_bbar_excess_on_shansep():
+    from slipsurface.ui.dialogs.misc import slice_rows
+    from slipsurface.optimizer import SearchResult
+    from slipsurface.lem import analyze
+
+    clay = MaterialSpec("Clay", "SH", CLAY_GAMMA, CLAY_GAMMA, shansep_s=0.25, shansep_m=0.8)
+    p = embankment(bbar=1.0, clay=clay)
+    res, s = analyze(
+        p.build_geometry(), CIRCLE, p.build_materials(), method="bishop", opts=p.slice_options()
+    )
+    assert res.ok and np.any(s.u_excess)
+    i = int(np.flatnonzero([s.materials[k].name == "Clay" for k in s.mat_idx])[0])
+    found = SearchResult(CIRCLE, res.fos, res, s, 1)
+    rows = dict(slice_rows(found, i))
+    assert "  of which excess (B-bar) [kPa]" in rows
+    assert float(rows["  of which excess (B-bar) [kPa]"]) > 0
+    assert "Effective vertical stress σ′v [kPa]" in rows
 
 
 def test_file_version_marks_models_an_older_program_would_solve_differently(tmp_path):

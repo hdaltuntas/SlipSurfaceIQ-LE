@@ -1,10 +1,10 @@
 # SlipSurfaceIQ LE
 
-**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.7.0**
+**2D limit equilibrium slope stability analysis with a desktop CAD interface — version 2026.7.1**
 
-[2026.7.0 release notes](RELEASE_NOTES.md) — staged-fill analysis with B-bar excess pore
-pressure, a SHANSEP OCR profile with elevation, and analyses that run in a separate
-process so the window stays responsive.
+[2026.7.1 release notes](RELEASE_NOTES.md) — B-bar under a water table or Ru coefficient
+restores pre-fill σ′v at B-bar = 1; ACADS 3(a) and Borges Case 2 search regressions;
+CAD warning and note-edit fixes.
 
 SlipSurfaceIQ LE is an open-source program for checking the stability of soil and rock
 slopes, cuts and embankments with the limit equilibrium method (LEM). You draw the slope
@@ -17,7 +17,9 @@ Slide2: a **Modeler** window for building the model and a separate **Interpret**
 the results, which shows a slip-centre FS contour map, the critical surface, slice data and
 a professional PDF report.
 
-The interface and reports are in English. The program runs on Windows, Linux and macOS.
+The interface and reports are in English. The program starts with `python main.py` on
+Windows, Linux and macOS. GitHub Actions runs the test suite on Ubuntu (the full
+suite on Python 3.12, the quick suite on 3.10 and on Windows).
 
 > **Engineering disclaimer.** SlipSurfaceIQ LE is provided without any warranty. Results
 > depend entirely on the input geometry, strength parameters, groundwater and loads.
@@ -566,7 +568,9 @@ full critical search has been checked.
 
 The test suite checks the engine against reference solutions, among them:
 
-- **ACADS EX1(a):** Bishop 0.985, Spencer 0.984, GLE 0.984 (Slide2: 0.987 / 0.986 / 0.986).
+- **ACADS EX1(a):** on the trial circle (20, 28, 28), Bishop 0.9855 ± 0.002. A
+  circular search gives Bishop 0.987 ± 0.01 (Slide2 search 0.987 / 0.986 / 0.986).
+  Janbu Corrected on the published VP1 circle is 0.990 ± 1%.
 - **Planar block:** every force-equilibrium method reproduces the closed-form rigid-block
   solution to 10⁻⁶, with seismic loads, external loads and active and passive anchors
   (a quadratic in F).
@@ -612,7 +616,8 @@ python -m mypy                                         # computation core
 The full suite takes a few minutes because of the non-circular searches and the PDF and GUI
 tests (tests marked `slow` hold the long benchmark analyses). GitHub Actions runs the lint
 (including the 100-character line limit) and type checks, and the `python main.py` checks with
-the full suite on Python 3.12 and the quick suite on Python 3.10.
+the full suite on Python 3.12 (Ubuntu), the quick suite on Python 3.10 (Ubuntu), and the
+quick suite on Windows.
 
 ---
 

@@ -159,27 +159,33 @@ def test_case2_search_config_reproducible_and_water_free():
     assert st.slice_opts.pore == "none"
     assert st.slice_opts.n_slices == 50
     assert len(st.slice_opts.loads.supports) == 1
+    assert p.surfaces.left_range == [-30.0, 0.0]
+    assert p.surfaces.right_range == [10.0, 45.0]
 
 
 @pytest.mark.slow
 def test_case2_search_finds_reinforced_mechanism():
-    """The critical search must not stop at a degenerate tangent circle.
+    """The critical search must not stop at a degenerate tangent circle
+    or the unreinforced cohesionless face (Janbu/GLE ~0.90 without limits).
 
-    A circle tangent to the flat base slices a numerically zero-mass body,
-    dodges the geosynthetic and reports a spurious low minimum (~0.86).
-    The engine's degenerate-mass guard plus the fixture's min_depth = 1 m
-    must force the Bishop search onto the published reinforced mechanism
-    (FoS ~1.15-1.17, SLOPE/W 1.170).
+    Slope limits put the exit on the left berm and the entry on the crest,
+    so every method intersects the geosynthetic. Published Bishop 1.170 is
+    reference-only; the band catches a relapse to the face mechanism.
     """
     p = borges_cardoso_case2_project()
+    p.surfaces.effort = "fast"
     assert p.advanced.min_depth == 1.0
     st = search_settings(p, "bishop")
     assert st.slice_opts.min_depth == 1.0
     r = run_analysis(p)
-    assert "bishop" in r.results
-    res = r.results["bishop"]
-    # published Bishop (moment) reference: 1.170 (reference-only, not solver)
-    assert 1.10 <= res.fos <= 1.25, res.fos
+    assert not r.errors, r.errors
+    for method in ("bishop", "janbu_simplified", "gle"):
+        res = r.results[method]
+        assert res.lem.ok and res.lem.admissible, (method, res.lem.issue)
+        assert 1.10 <= res.fos <= 1.25, (method, res.fos)
+        assert res.slices.support_forces, method
+        names = [res.slices.materials[i].name for i in res.slices.mat_idx]
+        assert any(n.startswith("Clay") for n in names), (method, names)
 
 
 def test_degenerate_tangent_circle_rejected_without_min_depth():

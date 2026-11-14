@@ -44,10 +44,12 @@ short-term strength.
 
 Since 2026.7.0 this case is modelled with **B-bar**: give the clay a B-bar
 (Material Properties -> Water Parameters) and tick "Weight of This Material
-Creates Excess Pore Pressure" for the fill. The excess pore pressure
-du = B-bar * (fill weight per unit area) is subtracted in sigma'_v, so B-bar = 1
-gives the stress before the fill was placed. A depth-dependent OCR is entered
-as an OCR profile (top and bottom elevation).
+Creates Excess Pore Pressure" for the fill. Δu = B-bar × Δσv of the ticked
+fill. Above the water table Δσv is the bulk fill weight per unit area; below
+it, the buoyant increment (γsat − γw), because hydrostatic u already includes
+γw. With an Ru coefficient, Ru applies to the pre-fill overburden. In every
+groundwater mode B-bar = 1 restores the pre-loading σ′v. A depth-dependent OCR
+is entered as an OCR profile (top and bottom elevation).
 
 Still not provided: construction stages with dissipation in time, material
 exclusion factors and spatial strength functions. The short-term embankment

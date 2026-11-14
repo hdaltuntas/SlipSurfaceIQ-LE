@@ -635,7 +635,13 @@ class Project:
         """Comparable solver inputs, excluding presentation-only edits."""
         d = self.to_dict()
         for key in ("summary", "display", "annotations", "result_annotations"):
-            d.pop(key)
+            d.pop(key, None)
+        for m in d.get("materials", []):
+            m.pop("color", None)
+        for t in d.get("support_types", []):
+            t.pop("color", None)
+        for t in d.get("facing_types", []):
+            t.pop("color", None)
         return d
 
     def material_names(self) -> list[str]:

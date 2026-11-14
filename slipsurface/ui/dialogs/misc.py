@@ -200,6 +200,11 @@ def slice_rows(res, i: int) -> list[tuple[str, str]]:
             if np.any(s.u_excess)
             else []
         ),
+        *(
+            [("Effective vertical stress σ′v [kPa]", f"{s.sigma_v_eff[i]:.3f}")]
+            if getattr(mat, "uses_vertical_stress", False)
+            else []
+        ),
         ("Cohesion c [kPa] (σn ≈ W/b − u)", f"{c[0]:.3f}"),
         ("Friction angle φ [°]", f"{np.degrees(np.arctan(tp[0])):.2f}"),
     ]

@@ -141,6 +141,8 @@ class CadCanvas(QWidget):
                 self.selection_changed.emit(None)
         if fit:
             self.zoom_extents()
+        if project is not None:
+            self.grid_on = bool(project.display_opt("show_grid"))
         self.update()
 
     def display(self, key):
@@ -153,6 +155,13 @@ class CadCanvas(QWidget):
         lines to the slip centre): dark on a light canvas, light on a dark one."""
         dark = self.palette().base().color().lightness() < 128
         return QColor(226, 232, 240) if dark else QColor(40, 40, 40)
+
+    def stroke_color(self, stored: str) -> QColor:
+        """Entity colour, replaced by ink() when it would vanish on the canvas."""
+        col = QColor(stored)
+        if abs(col.lightness() - self.palette().base().color().lightness()) < 80:
+            return self.ink()
+        return col
 
     def current_result(self):
         if self.results is None or self.result_key not in self.results.results:
@@ -245,20 +254,21 @@ class CadCanvas(QWidget):
         self.view_changed.emit()
 
     # ============================================================== tools
-    def set_tool(self, tool) -> None:
+    def set_tool(self, tool, *, announce: bool = True) -> None:
         if self.tool is not None:
             self.tool.deactivate()
         self.tool = tool
         tool.activate()
-        self.status.emit(tool.hint)
+        if announce:
+            self.status.emit(tool.hint)
         self.tool_changed.emit(tool.name)
         self._hide_material_tooltip()
         self.update()
 
-    def select_tool(self) -> None:
+    def select_tool(self, *, announce: bool = True) -> None:
         from slipsurface.ui.cad.tools import SelectTool
 
-        self.set_tool(SelectTool(self))
+        self.set_tool(SelectTool(self), announce=announce)
 
     def request_edit(self, text: str, fn) -> bool:
         if self.doc is None or not self.editable:
@@ -543,7 +553,7 @@ class CadCanvas(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
         p.fillRect(self.rect(), self.palette().base())
-        if self.grid_on and self.display("show_grid"):
+        if self.grid_on:
             self._paint_grid(p)
         self._paint_model(p)
         self._paint_results(p)
@@ -608,8 +618,8 @@ class CadCanvas(QWidget):
                 p.setBrush(col)
                 p.drawPolygon(self._poly_screen(np.asarray(r.polygon.exterior.coords)))
         # entities
-        ext_col = QColor(self.display("external_color"))
-        mat_col = QColor(self.display("material_boundary_color"))
+        ext_col = self.stroke_color(self.display("external_color") or "#606060")
+        mat_col = self.stroke_color(self.display("material_boundary_color") or "#808080")
         wt_col = QColor(self.display("water_table_color"))
         for e in entities(self.project):
             kind = e.key[0]

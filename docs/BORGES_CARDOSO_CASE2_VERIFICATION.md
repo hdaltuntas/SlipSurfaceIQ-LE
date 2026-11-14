@@ -97,10 +97,9 @@ python -m pytest tests/test_borges_cardoso_case2.py -q
 python -c "from slipsurface.project import borges_cardoso_case2_project; from slipsurface.analysis import run_analysis; r=run_analysis(borges_cardoso_case2_project()); print({k: v.fos for k, v in r.results.items()}, r.errors)"
 ```
 
-The accompanying regression checks test the geometry, depth-gradient
-material model, dry pore-pressure state, unanchored geosynthetic support
-parameters and the actual slice-strength/force mechanics on one
-reproducible diagnostic circle. They **do not substitute for**:
-a global critical-circle search, alternate seeds and slice refinements,
-comparison of force/moment residuals, and independent verification against
-the reference 1.15/1.17 results.
+Slope limits (exit on the left berm x ∈ [−30, 0], entry on the crest or
+right of it x ∈ [10, 45]) keep Bishop, Janbu simplified and GLE on the
+foundation mechanism that intersects the geosynthetic. Without them Janbu
+and GLE find the unreinforced cohesionless face (FoS ~0.90). The slow
+search test requires FoS 1.10–1.25 and a non-empty support force for every
+method. Published 1.15/1.17 remain reference-only.

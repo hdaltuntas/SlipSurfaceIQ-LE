@@ -55,6 +55,8 @@ class CadStatusBar(QStatusBar):
 
     def _toggle(self, attr: str, on: bool) -> None:
         setattr(self.c, attr, on)
+        if attr == "grid_on" and self.c.project is not None:
+            self.c.project.display["show_grid"] = on
         self.c.update()
 
     def _coords(self, x: float, y: float) -> None:

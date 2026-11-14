@@ -175,6 +175,8 @@ def test_model_edits_invalidate_results_but_display_edits_do_not(win):
     old_window = win.interpret_windows[-1]
     win.doc.edit("display", lambda p: p.display.update(show_grid=False))
     assert win.last_results is results and win.a_report.isEnabled()
+    win.doc.edit("colour", lambda p: setattr(p.materials[0], "color", "#112233"))
+    assert win.last_results is results and win.a_report.isEnabled()
     win.doc.edit("material", lambda p: setattr(p.materials[0], "c", 123))
     assert win.last_results is None
     assert not old_window.isVisible()
@@ -730,11 +732,13 @@ def test_interpret_fs_legend_and_notes(app, win, monkeypatch):
     c = iw.canvas
     assert c.edit_kinds == {"annot"}
     c.set_tool(T.DrawTool(c, "annot_text"))
+    n_undo = win.doc.undo_stack.count()
     c.command("30,15")
     assert iw.project.annotations[0]["text"] == "FS notu"
     # passed back to the modeler project (saved with the file)
     assert win.doc.project.result_annotations[0]["text"] == "FS notu"
     assert win.doc.project.annotations == []
+    assert win.doc.undo_stack.count() == n_undo
     iw.doc.undo_stack.undo()
     assert win.doc.project.result_annotations == []
     # model entities are not editable in Interpret
@@ -871,6 +875,33 @@ def test_modeler_has_no_left_dock(app, win):
     it.setCheckState(1, Qt.Unchecked)
     assert win.doc.project.display["show_ruler"] is False
     dlg.close()
+
+
+def test_escape_abandons_a_live_note_move(win):
+    win.doc.edit(
+        "note",
+        lambda p: p.annotations.append(
+            {"kind": "text", "pts": [[10.0, 10.0], [20.0, 12.0]], "text": "A"}
+        ),
+    )
+    c = win.canvas
+    c.select_tool()
+    orig = [list(q) for q in win.doc.project.annotations[0]["pts"]]
+    c.tool.translate = (("annot", 0), (10.0, 10.0), orig)
+    c.tool.drag_pts = [[15.0, 15.0], [25.0, 17.0]]
+    c.project.annotations[0]["pts"] = c.tool.drag_pts
+    c.select_tool()  # Esc → set_tool(Select) → deactivate
+    assert win.doc.project.annotations[0]["pts"] == orig
+
+
+def test_invalid_external_keeps_the_warning_after_select(win):
+    win._on_drawn(
+        "external",
+        [[0, -10], [40, -10], [40, 10], [20, 10], [20, 0], [0, 0]],
+    )
+    msg = win.status.currentMessage() or ""
+    assert "⚠" in msg
+    assert "Vertical" in msg or "profile" in msg.lower()
 
 
 def test_loose_material_boundary_shows_a_status_warning(win):

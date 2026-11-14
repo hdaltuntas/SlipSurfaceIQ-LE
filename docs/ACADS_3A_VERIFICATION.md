@@ -1,10 +1,11 @@
 # ACADS 3(a) — water table with weak seam (VS_7)
 
-**Status:** benchmark model and geometry/solver regression checks added; a
-numerical match of the optimized critical surface and factor of safety is
-**not asserted** until the full non-circular search has been executed and
-its output independently reviewed. This benchmark is **ACADS 3(a)**, not the
-separately prescribed ACADS 3(b) failure path.
+**Status:** the unrestricted non-circular search is regression-tested
+(`tests/test_acads_3a.py`) on the weak-seam mechanism: Spencer / GLE /
+Janbu Corrected must stay in FoS 1.15–1.35 with Soil 2 on the base. That
+locks out the tensile root (~0.46). Agreement with a named published
+minimum (RS2 Spencer 1.258, GLE 1.246) is **not** claimed. This benchmark
+is **ACADS 3(a)**, not the separately prescribed ACADS 3(b) failure path.
 
 ## Original references
 

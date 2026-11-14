@@ -247,7 +247,15 @@ def ordinary(s: SliceSet, tol: float = 1e-9, max_iter: int = 50) -> LEMResult:
             return LEMResult(np.nan, "Ordinary", False, it, message="did not converge")
     else:
         F, it = resistance / driving, 1
-    return LEMResult(F, "Ordinary", True, it, float(np.min(cos_a)))
+    qx, qy, _m = frame_ext(s, F)
+    Hx = -s.Fh + qx
+    V = s.Wv - qy
+    pore_force = s.u * s.l * (cos_a**2 if s.is_circular else 1.0)
+    n_eff = np.maximum(V * cos_a + Hx * sin_a - pore_force, 0.0)
+    c, tp = _strength(s, n_eff / s.l)
+    res = LEMResult(F, "Ordinary", True, it, float(np.min(cos_a)))
+    # Ordinary has no mα; pass ones so only negative base shear is flagged.
+    return check_admissibility(res, np.ones_like(cos_a), c * s.l + n_eff * tp, s.W)
 
 
 def bishop_simplified(
@@ -318,7 +326,15 @@ def bishop_simplified(
             m_a = cos_a + sin_a * tp / f_new
             _, n_eff = bishop_base_normal_forces(s, f_new, c, tp)
             res = LEMResult(float(f_new), "Bishop", True, it, float(m_a.min()))
-            return check_admissibility(res, m_a, c * s.l + n_eff * tp, s.W, m_alpha_min)
+            return check_admissibility(
+                res,
+                m_a,
+                c * s.l + n_eff * tp,
+                s.W,
+                m_alpha_min,
+                base_normal_eff=n_eff,
+                cohesion_force=c * s.l,
+            )
         f = f_new
 
     return LEMResult(float(f), "Bishop", False, max_iter, message="did not converge")

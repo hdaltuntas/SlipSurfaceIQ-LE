@@ -1,3 +1,3 @@
 """SlipSurfaceIQ LE — 2D limit equilibrium slope stability engine and desktop GUI."""
 
-__version__ = "2026.7.0"
+__version__ = "2026.7.1"

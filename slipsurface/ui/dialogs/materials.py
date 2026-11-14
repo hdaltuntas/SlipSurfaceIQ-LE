@@ -165,12 +165,10 @@ class MaterialsDialog(QDialog):
         wl.addRow("B-bar (Excess Pore Pressure Coefficient):", self.bbar)
         wl.addRow(self.excess_load)
         hint2 = QLabel(
-            "Undrained loading (staged fills): at a slice base in a material with "
-            "B-bar > 0, Δu = B-bar · (weight per unit area of the overlying materials "
-            "ticked above) is added to the pore pressure. Give the soft foundation soil "
-            "a B-bar and tick the box for the fill. B-bar = 0 switches it off. For "
-            "SHANSEP soils the excess pressure lowers σ′v; B-bar = 1 gives the "
-            "pre-loading effective stress."
+            "Undrained loading (staged fills): Δu = B-bar · Δσv of the overlying "
+            "ticked materials (buoyant below the water table). Give the foundation a "
+            "B-bar and tick the box for the fill. B-bar = 1 restores the pre-loading "
+            "σ′v under a water table, an Ru coefficient or a dry model."
         )
         hint2.setWordWrap(True)
         wl.addRow(hint2)

@@ -1,6 +1,6 @@
 # SlipSurfaceIQ LE — Independent Development Plan
 
-Status: planned development work based on the `main` baseline at **2026.1.3**.
+Status: planned development work based on the `main` baseline at **2026.7.1**.
 This document does not itself change a solver, a project format, or a release.
 
 ## Product boundary
@@ -98,7 +98,7 @@ force/moment checks. No silent fallback to unconverged FS values.
 
 ## Versioning
 
-- Baseline: **2026.1.3** (LE only).
+- Baseline: **2026.7.1** (LE only).
 - An accepted bug fix may warrant an LE patch number; a substantial new
   capability requires its own release decision.
 - `slipsurface/project.py` project format v3 is not tied to marketing version.
