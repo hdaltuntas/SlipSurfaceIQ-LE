@@ -63,7 +63,7 @@ from slipsurface.ui.dialogs.project_settings import ProjectSettingsDialog
 from slipsurface.ui.dialogs.summary import ProjectSummaryDialog
 from slipsurface.ui.dialogs.surface_options import SurfaceOptionsDialog
 from slipsurface.ui.document import Document
-from slipsurface.ui.icons import color_icon, icon
+from slipsurface.ui.icons import QTA_NAMES, color_icon, icon
 from slipsurface.ui.statusbar import CadStatusBar
 from slipsurface.ui.toolrail import ActionRail, ToolStrip
 from slipsurface.ui.updates import UpdateChecker, auto_enabled, set_auto_enabled
@@ -84,9 +84,11 @@ class ModelerWindow(QMainWindow):
         self._worker = None
         self._thread = None
         self.last_results = None
+        self._saved_result_notes = copy.deepcopy(self.doc.project.result_annotations)
         self._result_notes_dirty = False
         self._close_pending = False
         self._cancel_requested = False
+        self._themed_actions: list[tuple[QAction, str]] = []
 
         # ------------------------------------------------------ central
         self.area = CadArea(editable=True)
@@ -148,10 +150,16 @@ class ModelerWindow(QMainWindow):
             QTimer.singleShot(0, self.canvas.zoom_extents)
 
     # ============================================================ actions
+    def _refresh_theme_icons(self, dark: bool) -> None:
+        for act, ic_name in self._themed_actions:
+            act.setIcon(icon(ic_name, dark))
+
     def _act(self, text, slot, ic=None, shortcut=None, tip=None, checkable=False):
         a = QAction(text, self)
         if ic:
             a.setIcon(icon(ic))
+            if ic not in QTA_NAMES:
+                self._themed_actions.append((a, ic))
         if shortcut:
             a.setShortcut(QKeySequence(shortcut))
         a.setToolTip(tip or text.replace("&", "").replace("…", ""))
@@ -615,8 +623,12 @@ class ModelerWindow(QMainWindow):
     def _step_changed(self, i: int) -> None:
         self.context_stack.setCurrentIndex(i)
         if STEPS[i] == "Properties":
-            self.canvas.set_tool(T.AssignTool(self.canvas))
-            self.t_assign.setChecked(True)
+            if self.canvas.tool.name == "select":
+                self.canvas.set_tool(T.AssignTool(self.canvas))
+                self.t_assign.setChecked(True)
+        elif self.canvas.tool.name == "assign":
+            self.canvas.select_tool()
+            self.t_select.setChecked(True)
 
     # ============================================================ document
     def _on_doc_changed(self) -> None:
@@ -793,8 +805,6 @@ class ModelerWindow(QMainWindow):
         def fn(p):
             if kind == "external":
                 p.external = []
-                p.material_boundaries = []
-                p.assignments = []
             add_entity(p, kind, pts)
 
         ok = self.canvas.request_edit(f"Add {LABELS[kind]}", fn)
@@ -928,7 +938,8 @@ class ModelerWindow(QMainWindow):
         self._add_facing(*rng)
 
     def define_facings(self) -> None:
-        dlg = FacingTypesDialog(self.doc.project.facing_types, self)
+        used = {f["type"] for f in self.doc.project.facings}
+        dlg = FacingTypesDialog(self.doc.project.facing_types, self, in_use=used)
         if dlg.exec():
             types, ren = dlg.types, dlg.renames
             names = {t.name for t in types}
@@ -977,7 +988,8 @@ class ModelerWindow(QMainWindow):
             self.doc.edit("Tension crack", fn)
 
     def define_supports(self, select: str | None = None) -> None:
-        dlg = SupportTypesDialog(self.doc.project.support_types, self, select)
+        used = {sp["type"] for sp in self.doc.project.supports + self.doc.project.support_patterns}
+        dlg = SupportTypesDialog(self.doc.project.support_types, self, select, in_use=used)
         if dlg.exec():
             types, ren = dlg.types, dlg.renames
             names = {t.name for t in types}
@@ -1032,22 +1044,25 @@ class ModelerWindow(QMainWindow):
         if key[0] == "annot":
             edit_annotation(self.doc, key[1], self)
             return
-        pts = get_points(self.doc.project, key)
+        pts = get_points(self.doc.project, key, self.doc.geometry)
         title = LABELS[key[0]] + (f" {key[1] + 1}" if key[0] == "material" else "")
         dlg = CoordinatesDialog(title, pts, self, MIN_POINTS[key[0]])
         if dlg.exec():
             new = dlg.points()
+            geom = self.doc.geometry
             try:
-                self.doc.edit(f"{title}: coordinates", lambda p: set_points(p, key, new))
+                self.doc.edit(f"{title}: coordinates", lambda p: set_points(p, key, new, geom))
             except ValueError as exc:
                 QMessageBox.warning(self, "Coordinates", str(exc))
 
     def delete_selection(self) -> None:
+        if not isinstance(self.canvas.tool, T.SelectTool):
+            return
         from PySide6.QtCore import QEvent
         from PySide6.QtGui import QKeyEvent
 
         ev = QKeyEvent(QEvent.KeyPress, Qt.Key_Delete, Qt.NoModifier)
-        T.SelectTool(self.canvas).key(ev)
+        self.canvas.tool.key(ev)
 
     def clear_slope_limits(self) -> None:
         def fn(p):
@@ -1097,7 +1112,9 @@ class ModelerWindow(QMainWindow):
     def grid_settings(self) -> None:
         dlg = GridSettingsDialog(self.canvas.grid_spacing, self)
         if dlg.exec():
-            self.canvas.grid_spacing = dlg.spacing.value()
+            val = float(dlg.spacing.value())
+            self._display_option("grid_spacing", val)
+            self.canvas.grid_spacing = val
             self.canvas.update()
 
     # ============================================================== files
@@ -1118,6 +1135,7 @@ class ModelerWindow(QMainWindow):
         self._invalidate_results()
         self.doc.set_project(p, path)
         self.last_results = None
+        self._saved_result_notes = copy.deepcopy(p.result_annotations)
         self._result_notes_dirty = False
         self.canvas.select_tool()
         self.canvas.zoom_extents()
@@ -1170,6 +1188,7 @@ class ModelerWindow(QMainWindow):
             return False
         self.doc.path = Path(path)
         self.doc.mark_clean()
+        self._saved_result_notes = copy.deepcopy(self.doc.project.result_annotations)
         self._result_notes_dirty = False
         self._update_title()
         self.status.showMessage(f"Saved: {path}", 5000)
@@ -1350,7 +1369,7 @@ class ModelerWindow(QMainWindow):
         if self.doc.project.result_annotations == notes:
             return
         self.doc.project.result_annotations = notes
-        self._result_notes_dirty = True
+        self._result_notes_dirty = notes != self._saved_result_notes
         self._update_title()
 
     def _prune_interpret_windows(self) -> None:
@@ -1466,6 +1485,7 @@ class ModelerWindow(QMainWindow):
             ev.ignore()
             return
         self._closing = True
+        self._themed_actions.clear()
         try:
             self.doc.undo_stack.cleanChanged.disconnect()
         except (RuntimeError, TypeError):

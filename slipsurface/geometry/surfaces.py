@@ -36,6 +36,10 @@ class CircularSurface:
     yc: float
     r: float
 
+    def __post_init__(self) -> None:
+        if not np.isfinite([self.xc, self.yc, self.r]).all() or self.r <= 0:
+            raise ValueError("circular surface requires finite xc, yc and r > 0")
+
     def y(self, x):
         """Lower arc elevation; NaN outside [xc-r, xc+r]."""
         x = np.asarray(x, dtype=float)

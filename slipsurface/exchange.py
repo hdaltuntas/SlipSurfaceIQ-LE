@@ -56,8 +56,21 @@ def import_dxf(path: str | Path) -> tuple[Project, list[str]]:
             f"The DXF has {len(doc.modelspace())} entities (limit {MAX_DXF_ENTITIES}). "
             "Export only the cross-section layers."
         )
-    factor = units.conversion_factor(doc.units, units.M) if doc.units else 1.0
-    warnings = [] if doc.units else ["DXF has no units; coordinates interpreted as metres."]
+    raw_units = int(doc.units or 0)
+    warnings: list[str] = []
+    if not raw_units:
+        factor = 1.0
+        warnings.append("DXF has no units; coordinates interpreted as metres.")
+    elif raw_units == 21:  # US Survey Feet (not in ezdxf METER_FACTOR table)
+        factor = 1200.0 / 3937.0
+    else:
+        try:
+            factor = float(units.conversion_factor(raw_units, units.M))
+        except (KeyError, TypeError, ValueError):
+            factor = 1.0
+            warnings.append(
+                f"DXF has unsupported unit code ({raw_units}); coordinates interpreted as metres."
+            )
     project = empty_project()
     project.summary.title = Path(path).stem
     external = []
@@ -77,11 +90,25 @@ def import_dxf(path: str | Path) -> tuple[Project, list[str]]:
                     f"{MAX_DXF_VERTICES} vertices at 1 cm accuracy; check the drawing "
                     "units and simplify the curve."
                 )
-        if any(abs(v.z) > 1e-8 for v in vertices):
+        if any(abs(v.z * factor) > 1e-6 for v in vertices):
             raise ValueError("Only planar XY geometry at Z=0 is supported.")
-        points = [[v.x * factor, v.y * factor] for v in vertices]
+        raw_points = [[v.x * factor, v.y * factor] for v in vertices]
+        points: list[list[float]] = []
+        for pt in raw_points:
+            if not points or ((pt[0] - points[-1][0]) ** 2 + (pt[1] - points[-1][1]) ** 2 > 1e-18):
+                points.append(pt)
         closed = path_entity.is_closed
-        if closed and points and points[0] == points[-1]:
+        if (
+            not closed
+            and len(points) >= 4
+            and (points[0][0] - points[-1][0]) ** 2 + (points[0][1] - points[-1][1]) ** 2 <= 1e-12
+        ):
+            closed = True
+        if (
+            closed
+            and len(points) >= 2
+            and (points[0][0] - points[-1][0]) ** 2 + (points[0][1] - points[-1][1]) ** 2 <= 1e-12
+        ):
             points.pop()
         layer = entity.dxf.layer.upper()
         if layer == "SS_EXTERNAL" or (closed and layer == "0"):
@@ -99,6 +126,16 @@ def import_dxf(path: str | Path) -> tuple[Project, list[str]]:
             owner = project.surfaces if layer == "SS_SURFACE" else project
             if getattr(owner, target):
                 raise ValueError(f"Multiple entities on {layer}; join them before importing.")
+            if (
+                len(points) >= 2
+                and points[0][0] > points[-1][0]
+                and all(
+                    b[0] > a[0]
+                    for a, b in zip(reversed(points), list(reversed(points))[1:], strict=False)
+                )
+            ):
+                points = list(reversed(points))
+                warnings.append(f"{layer} polyline was reversed to left-to-right order.")
             setattr(owner, target, points)
         else:
             ignored.add(f"{kind} / {layer}")

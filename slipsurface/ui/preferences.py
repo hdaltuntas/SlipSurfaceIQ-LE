@@ -209,6 +209,8 @@ def apply_theme(dark=None):
         QToolTip {{ background: {c["text"]}; color: {c["bg"]}; border: 0; padding: 5px; }}
     """)
     for widget in app.topLevelWidgets():
+        if widget.isVisible() and hasattr(widget, "_refresh_theme_icons"):
+            widget._refresh_theme_icons(bool(dark))
         widget.update()
 
 

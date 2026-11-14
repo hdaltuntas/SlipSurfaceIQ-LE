@@ -662,7 +662,7 @@ class _Builder:
             )
         )
         self.story += [top, Spacer(1, 9 * mm)]
-        if self.figs.global_min:
+        if o.global_figure and self.figs.global_min:
             img = ImageReader(io.BytesIO(self.figs.global_min))
             iw, ih = img.getSize()
             h = min(FRAME_W * ih / iw, 92 * mm)
@@ -1091,7 +1091,10 @@ class _Builder:
         inter = {
             "half-sine": "half-sine",
             "constant": "constant",
-            "clipped-sine": "clipped sine",
+            "clipped-sine": (
+                f"clipped sine (f<sub>start</sub> = {p.methods.f_start:g}, "
+                f"f<sub>end</sub> = {p.methods.f_end:g})"
+            ),
             "trapezoidal": "trapezoidal",
         }.get(p.methods.interslice, p.methods.interslice)
         rows = [
@@ -1382,6 +1385,36 @@ class _Builder:
             )
 
     # ------------------------------------------------------------ results
+    def convergence_table(self) -> None:
+        rows = []
+        for k, res in self.r.results.items():
+            lem = res.lem
+            rows.append(
+                [
+                    _e(method_name(k)),
+                    str(lem.iterations),
+                    _f(lem.m_alpha_min, 3),
+                    _f(lem.janbu_f0, 3),
+                    f"{lem.force_residual:.2e}" if np.isfinite(lem.force_residual) else "—",
+                    f"{lem.moment_residual:.2e}" if np.isfinite(lem.moment_residual) else "—",
+                ]
+            )
+        if rows:
+            self.table(
+                [
+                    "Method",
+                    "Iterations",
+                    "m<sub>α,min</sub>",
+                    "f<sub>0</sub>",
+                    "|ΔF| / ΣW",
+                    "|ΔM| / (ΣW·L)",
+                ],
+                rows,
+                [0.28, 0.12, 0.13, 0.11, 0.18, 0.18],
+                "Solver convergence and equilibrium residuals",
+                ["l", "r", "r", "r", "r", "r"],
+            )
+
     def results(self) -> None:
         r, o = self.r, self.o
         self.h1("Analysis Results")
@@ -1390,6 +1423,7 @@ class _Builder:
             self.para("No method produced a valid solution.")
             return
         self.results_table(caption="Critical slip surfaces and factors of safety")
+        self.convergence_table()
         if o.global_figure and gm:
             self.h2("Critical slip surface (global minimum)")
             k, res = gm
@@ -1479,19 +1513,16 @@ class _Builder:
             )
 
     # --------------------------------------------------------- appendices
-    def slice_table(self, letter: str) -> None:
-        gm = self.r.global_minimum()
-        if not gm:
-            return
-        k, res = gm
+    def _one_slice_table(self, k: str, res, is_global: bool) -> None:
         s = res.slices
-        self.appendix(letter, f"Slice Data — {method_name(k)}")
+        lem = res.lem
+        role = "global minimum slip surface" if is_global else "critical slip surface"
         self.para(
             (
-                f"Data of the {s.n} slices of the global minimum slip surface ("
-                f"{method_name(k)}, FS = {res.fos:.3f}). α: base angle (positive in the "
-                "failure direction), c, φ: strength used on the base (instantaneous "
-                "values at σ<sub>n</sub>' ≈ W/b − u for non-linear models)."
+                f"Data of the {s.n} slices of the {role} ("
+                f"{_e(method_name(k))}, FS = {res.fos:.3f}). α: base angle (positive in the "
+                "failure direction), c, φ: strength used on the base, N': solved effective "
+                "base normal force, S<sub>mob</sub>: mobilised base shear force."
             ),
             "small",
             keep_next=True,
@@ -1500,6 +1531,16 @@ class _Builder:
         for i in range(s.n):
             mat = s.materials[s.mat_idx[i]]
             c, tp = (np.array([v]) for v in slice_strength(s, i))
+            n_eff = (
+                _f(lem.base_normal_eff[i], 2)
+                if lem.base_normal_eff is not None and i < lem.base_normal_eff.size
+                else "—"
+            )
+            s_mob = (
+                _f(lem.base_shear_mob[i], 2)
+                if lem.base_shear_mob is not None and i < lem.base_shear_mob.size
+                else "—"
+            )
             rows.append(
                 [
                     str(i + 1),
@@ -1513,6 +1554,8 @@ class _Builder:
                     f"{s.u[i]:.2f}",
                     f"{c[0]:.2f}",
                     f"{np.degrees(np.arctan(tp[0])):.1f}",
+                    n_eff,
+                    s_mob,
                     _e(mat.name),
                 ]
             )
@@ -1529,14 +1572,29 @@ class _Builder:
                 "u [kPa]",
                 "c [kPa]",
                 "φ [°]",
+                "N' [kN/m]",
+                "S<sub>mob</sub> [kN/m]",
                 "Material",
             ],
             rows,
-            [0.05, 0.08, 0.07, 0.08, 0.07, 0.07, 0.07, 0.09, 0.08, 0.08, 0.07, 0.19],
+            [0.04, 0.07, 0.06, 0.07, 0.06, 0.06, 0.06, 0.08, 0.07, 0.07, 0.06, 0.08, 0.08, 0.14],
             f"Slice data ({method_name(k)})",
-            ["c", "r", "r", "r", "r", "r", "r", "r", "r", "r", "r", "l"],
+            ["c", "r", "r", "r", "r", "r", "r", "r", "r", "r", "r", "r", "r", "l"],
             compact=True,
         )
+
+    def slice_table(self, letter: str) -> None:
+        gm = self.r.global_minimum()
+        if not gm:
+            return
+        if self.p.general.data_output == "maximum" and len(self.r.results) > 1:
+            self.appendix(letter, "Slice Data (All Methods)")
+            for k, res in self.r.results.items():
+                self._one_slice_table(k, res, k == gm[0])
+        else:
+            k, res = gm
+            self.appendix(letter, f"Slice Data — {method_name(k)}")
+            self._one_slice_table(k, res, True)
 
     def coordinates(self, letter: str) -> None:
         p = self.p
@@ -1544,8 +1602,7 @@ class _Builder:
 
         def block(title, pts):
             rows = [[str(i), f"{q[0]:.3f}", f"{q[1]:.3f}"] for i, q in enumerate(pts, 1)]
-            # three side-by-side columns to save space
-            self.table(["No", "x [m]", "y [m]"], rows, [0.1, 0.2, 0.2], title, ["c", "r", "r"])
+            self.table(["No", "x [m]", "y [m]"], rows, [0.12, 0.24, 0.24], title, ["c", "r", "r"])
 
         block("External boundary", p.external)
         for i, b in enumerate(p.material_boundaries, 1):
@@ -1554,6 +1611,14 @@ class _Builder:
             block("Water table", p.water_table)
         if p.tension_crack:
             block("Tension crack boundary", p.tension_crack)
+        if p.surfaces.user_surface:
+            block("User-defined slip surface", p.surfaces.user_surface)
+        if p.surfaces.user_circle is not None:
+            xc, yc, rad = p.surfaces.user_circle
+            self.kv_table(
+                [("Centre", f"({xc:.3f}; {yc:.3f}) m"), ("Radius", f"{rad:.3f} m")],
+                "Given circle (user-defined)",
+            )
         gm = self.r.global_minimum()
         if gm:
             k, res = gm

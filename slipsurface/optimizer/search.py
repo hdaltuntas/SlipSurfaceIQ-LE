@@ -48,7 +48,7 @@ from slipsurface.geometry import (
 from slipsurface.lem import METHODS, LEMResult, SliceOptions, SliceSet, analyze
 from slipsurface.materials import Material
 
-PENALTY = 1.0e3
+PENALTY = 1.0e9
 
 
 # ------------------------------------------------------------ surfaces
@@ -471,48 +471,75 @@ def _boundary_seeds(
     if len(inc) == 0:
         return []
     x_face_lo, x_face_hi = float(gs[inc[0], 0]), float(gs[inc[-1] + 1, 0])
-    if float(geom.ground_y(x_face_hi)) < float(geom.ground_y(x_face_lo)):
-        return []
+    mirror = float(geom.ground_y(x_face_hi)) < float(geom.ground_y(x_face_lo))
+    M = float(geom.x_min + geom.x_max)
+    if mirror:
+        segs_f = [(np.array([M - p2[0], p2[1]]), np.array([M - p1[0], p1[1]])) for p1, p2 in segs]
+        x_lo_f, x_hi_f = M - x_face_hi, M - x_face_lo
+        L_f, R_f = (M - R[1], M - R[0]), (M - L[1], M - L[0])
+
+        def gy(x):
+            return geom.ground_y(M - np.asarray(x, dtype=float))
+    else:
+        segs_f = segs
+        x_lo_f, x_hi_f = x_face_lo, x_face_hi
+        L_f, R_f = L, R
+
+        def gy(x):
+            return geom.ground_y(x)
+
     seeds: list[np.ndarray] = []
-    for p1, p2 in segs:
+    for p1, p2 in segs_f:
         slope = (p2[1] - p1[1]) / (p2[0] - p1[0])
 
         def y_seg(x: float, p1=p1, slope=slope) -> float:
             return float(p1[1] + slope * (x - p1[0])) + 2e-3
 
-        h_toe = float(geom.ground_y(x_face_lo)) - y_seg(x_face_lo)
-        x_toe_ref = x_face_lo
+        h_toe = float(gy(x_lo_f)) - y_seg(x_lo_f)
+        x_toe_ref = x_lo_f
         if h_toe < 0.0:
-            xs = np.linspace(x_face_lo, x_face_hi, 80)
-            yg = np.asarray(geom.ground_y(xs), dtype=float)
+            xs = np.linspace(x_lo_f, x_hi_f, 80)
+            yg = np.asarray(gy(xs), dtype=float)
             ys = np.array([y_seg(float(x)) for x in xs])
             above = np.where(yg > ys + 0.2)[0]
             if len(above) == 0:
                 continue
             x_toe_ref = float(xs[above[0]])
             h_toe = float(yg[above[0]] - ys[above[0]])
-        x1 = float(np.clip(x_toe_ref - 1.5 * max(h_toe, 0.5), L[0], L[1]))
+        x1 = float(np.clip(x_toe_ref - 1.5 * max(h_toe, 0.5), L_f[0], L_f[1]))
         x_b1 = float(x_toe_ref + 0.5 * max(h_toe, 0.5))
         for frac in (0.7, 0.85, 1.0):
-            x_b2 = float(x_face_lo + frac * (x_face_hi - x_face_lo))
+            x_b2 = float(x_lo_f + frac * (x_hi_f - x_lo_f))
             if x_b2 <= x_b1 + 1.0 or x_b2 > p2[0]:
                 continue
             yb1, yb2 = y_seg(x_b1), y_seg(x_b2)
-            h_kink = float(geom.ground_y(x_b2)) - yb2
+            h_kink = float(gy(x_b2)) - yb2
             if h_kink <= 0.2:
                 continue
             for s_inv in (0.65, 0.9):
-                x2 = float(np.clip(x_b2 + s_inv * h_kink, R[0], R[1]))
+                x2 = float(np.clip(x_b2 + s_inv * h_kink, R_f[0], R_f[1]))
                 if x2 > x_b2 + 0.5 and x1 < x_b1 - 0.5 and x2 - x1 > st.min_chord:
-                    sf = PolylineSurface(
-                        [
-                            [x1, float(geom.ground_y(x1))],
-                            [x_b1, yb1],
-                            [x_b2, yb2],
-                            [x2, float(geom.ground_y(x2))],
-                        ]
-                    )
-                    q = spline_params_from_surface(geom, sf, x1, x2, st.n_ctrl, st.surface_type)
+                    if mirror:
+                        x1_w, x2_w = M - x2, M - x1
+                        sf = PolylineSurface(
+                            [
+                                [x1_w, float(geom.ground_y(x1_w))],
+                                [M - x_b2, yb2],
+                                [M - x_b1, yb1],
+                                [x2_w, float(geom.ground_y(x2_w))],
+                            ]
+                        )
+                    else:
+                        x1_w, x2_w = x1, x2
+                        sf = PolylineSurface(
+                            [
+                                [x1_w, float(geom.ground_y(x1_w))],
+                                [x_b1, yb1],
+                                [x_b2, yb2],
+                                [x2_w, float(geom.ground_y(x2_w))],
+                            ]
+                        )
+                    q = spline_params_from_surface(geom, sf, x1_w, x2_w, st.n_ctrl, st.surface_type)
                     seeds.append(np.clip(q, lo, hi))
     return seeds
 
@@ -536,8 +563,10 @@ def _seeded_population(
         check_admissibility=st.check_admissibility,
         left_range=st.left_range,
         right_range=st.right_range,
+        min_chord=st.min_chord,
         keep_top=1,
         slice_opts=st.slice_opts,
+        solver_kw=st.solver_kw,
     )
     dim = len(bounds)
     lo = np.array([b[0] for b in bounds])
@@ -576,8 +605,11 @@ def _seeded_population(
 
 def search_circular(geom, materials, settings=None, progress=None) -> SearchResult:
     """Backwards-compatible wrapper (circular surfaces)."""
-    st = settings or SearchSettings()
-    st.surface_type = "circular"
+    st = (
+        replace(settings, surface_type="circular")
+        if settings is not None
+        else SearchSettings(surface_type="circular")
+    )
     return search(geom, materials, st, progress)
 
 

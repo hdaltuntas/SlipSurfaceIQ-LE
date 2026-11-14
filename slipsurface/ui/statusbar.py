@@ -29,6 +29,10 @@ class CadStatusBar(QStatusBar):
             )
             self.cmd.returnPressed.connect(self._command)
             self.addPermanentWidget(self.cmd)
+            canvas.command_input.connect(self._prime_command)
+            sc_cmd = QShortcut(QKeySequence("Ctrl+L"), parent or canvas)
+            sc_cmd.setContext(Qt.WindowShortcut)
+            sc_cmd.activated.connect(self.cmd.setFocus)
         self.toggles = {}
         for name, attr, key, tip in (
             ("SNAP", "snap_on", "F9", "Snap to Grid Points"),
@@ -62,9 +66,22 @@ class CadStatusBar(QStatusBar):
     def _coords(self, x: float, y: float) -> None:
         self.coords.setText(f"x: {x:10.3f}   y: {y:10.3f}")
 
+    def _prime_command(self, ch: str) -> None:
+        if self.cmd is None:
+            return
+        self.cmd.setText(self.cmd.text() + ch)
+        self.cmd.setFocus()
+        self.cmd.setCursorPosition(len(self.cmd.text()))
+
     def _command(self) -> None:
+        if self.cmd is None:
+            return
         text = self.cmd.text()
         if self.c.command(text):
             self.cmd.clear()
+        elif text.strip():
+            tname = getattr(self.c.tool, "name", "")
+            if tname != "bolt" and not tname.startswith("draw_"):
+                self.showMessage("⚠ Coordinate entry is only active in drawing tools.", 8000)
         self.c.update()
         self.c.setFocus()

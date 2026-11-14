@@ -161,6 +161,7 @@ DISPLAY_HELP = {
     "line_width": "Boundary line width.",
     "show_ruler": "Show the rulers.",
     "show_grid": "Show the grid.",
+    "grid_spacing": "Grid and SNAP spacing (m).",
     "fill_materials": "Fill regions with material colours.",
     "show_slope_limits": "Show the slope limit markers.",
     "show_slices": "Draw the slices of the critical surface.",

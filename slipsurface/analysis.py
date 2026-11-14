@@ -30,7 +30,7 @@ class AnalysisResults:
         return list(self.results)
 
     def global_minimum(self) -> tuple[str, SearchResult] | None:
-        ok = [(k, r) for k, r in self.results.items() if np.isfinite(r.fos)]
+        ok = [(k, r) for k, r in self.results.items() if r.lem.ok and np.isfinite(r.fos)]
         return min(ok, key=lambda kr: kr[1].fos) if ok else None
 
 
@@ -306,7 +306,12 @@ def report_text(r: AnalysisResults) -> str:
         f"Failure direction  : {direction_label(g.failure_direction)}",
         f"Number of slices   : {p.methods.n_slices}",
         f"Tolerance / max it : {p.methods.tolerance} / {p.methods.max_iter}",
-        f"Interslice function: {p.methods.interslice} (GLE)",
+        (
+            f"Interslice function: {p.methods.interslice} "
+            f"(f_start = {p.methods.f_start:g}, f_end = {p.methods.f_end:g}) (GLE)"
+            if p.methods.interslice == "clipped-sine"
+            else f"Interslice function: {p.methods.interslice} (GLE)"
+        ),
         f"Groundwater        : {p.groundwater.method}, γw = {p.groundwater.gamma_w}",
         f"Seismic            : {p.seismic.clause()}",
         f"Surface type       : {p.surfaces.surface_type}",
@@ -395,6 +400,27 @@ def report_text(r: AnalysisResults) -> str:
         )
     for k, e in r.errors.items():
         L.append(f"{method_name(k):26s}   –      ({e})")
+    if r.results:
+        L += [
+            "",
+            "Solver convergence and equilibrium residuals",
+            "-" * 60,
+            (
+                f"{'Method':26s} {'it':>4s}  {'mα,min':>8s}  "
+                f"{'|ΔF|/ΣW':>10s}  {'|ΔM|/(ΣW·L)':>12s}  f0"
+            ),
+        ]
+        for k, res in r.results.items():
+            lem = res.lem
+            ma = f"{lem.m_alpha_min:8.3f}" if np.isfinite(lem.m_alpha_min) else "       –"
+            fr = f"{lem.force_residual:10.2e}" if np.isfinite(lem.force_residual) else "         –"
+            mr = (
+                f"{lem.moment_residual:12.2e}"
+                if np.isfinite(lem.moment_residual)
+                else "           –"
+            )
+            f0 = f"{lem.janbu_f0:.3f}" if np.isfinite(lem.janbu_f0) else "–"
+            L.append(f"{method_name(k):26s} {lem.iterations:4d}  {ma}  {fr}  {mr}  {f0}")
     if p.tension_crack:
         L += ["", "Tension crack on the critical surfaces", "-" * 60]
         for k, res in r.results.items():

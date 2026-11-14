@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from slipsurface.lem import method_name
+from slipsurface.ui.preferences import fit_to_screen
 
 STAGES = {
     "presearch": "Circular pre-search (Bishop, population seed)",
@@ -53,7 +54,7 @@ class ComputeDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Compute")
         self.setWindowModality(Qt.WindowModal)
-        self.setMinimumWidth(780)
+        fit_to_screen(self, 780, 560)
         self.n = max(n_methods, 1)
         self.t0 = time.monotonic()
         self._stage_key = None

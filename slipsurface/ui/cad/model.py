@@ -62,7 +62,13 @@ class Entity:
             yield k, self.pts[k], self.pts[(k + 1) % n]
 
 
-def entities(p: Project | None) -> list[Entity]:
+def _project_ground(pts, geom) -> list[list[float]]:
+    if geom is None:
+        return [list(map(float, q)) for q in pts]
+    return [[float(q[0]), float(geom.ground_y(float(q[0])))] for q in pts]
+
+
+def entities(p: Project | None, geom=None) -> list[Entity]:
     if p is None:
         return []
     out = []
@@ -80,13 +86,15 @@ def entities(p: Project | None) -> list[Entity]:
         out.append(Entity(("user", 0), np.asarray(us, float), False))
     for i, ld in enumerate(p.loads):
         pts = ld["points"] if ld["kind"] == "distributed" else [ld["point"]]
-        out.append(Entity(("load", i), np.asarray(pts, float), False))
+        out.append(Entity(("load", i), np.asarray(_project_ground(pts, geom), float), False))
     for i, sp in enumerate(p.supports):
         out.append(Entity(("support", i), np.asarray([sp["a"], sp["b"]], float), False))
     for i, pt in enumerate(p.support_patterns):
-        out.append(Entity(("pattern", i), np.asarray([pt["p1"], pt["p2"]], float), False))
+        ppts = _project_ground([pt["p1"], pt["p2"]], geom)
+        out.append(Entity(("pattern", i), np.asarray(ppts, float), False))
     for i, f in enumerate(p.facings):
-        out.append(Entity(("facing", i), np.asarray(facing_points(f), float), False))
+        fpts = _project_ground(facing_points(f), geom)
+        out.append(Entity(("facing", i), np.asarray(fpts, float), False))
     for i, a in enumerate(p.annotations):
         out.append(Entity(("annot", i), np.asarray(a["pts"], float), False))
     return out
@@ -96,11 +104,11 @@ def facing_points(f: dict) -> list:
     return f.get("points") or [[f["x1"], 0.0], [f["x2"], 0.0]]
 
 
-def entity_kinds(p: Project | None, kinds) -> list[Entity]:
-    return [e for e in entities(p) if kinds is None or e.key[0] in kinds]
+def entity_kinds(p: Project | None, kinds, geom=None) -> list[Entity]:
+    return [e for e in entities(p, geom) if kinds is None or e.key[0] in kinds]
 
 
-def get_points(p: Project, key) -> list[list[float]]:
+def get_points(p: Project, key, geom=None) -> list[list[float]]:
     kind, i = key
     if kind == "external":
         return [list(q) for q in p.external]
@@ -114,13 +122,14 @@ def get_points(p: Project, key) -> list[list[float]]:
         return [list(q) for q in (p.tension_crack or [])]
     if kind == "load":
         ld = p.loads[i]
-        return [list(q) for q in (ld["points"] if ld["kind"] == "distributed" else [ld["point"]])]
+        raw = ld["points"] if ld["kind"] == "distributed" else [ld["point"]]
+        return _project_ground(raw, geom)
     if kind == "support":
         return [list(p.supports[i]["a"]), list(p.supports[i]["b"])]
     if kind == "pattern":
-        return [list(p.support_patterns[i]["p1"]), list(p.support_patterns[i]["p2"])]
+        return _project_ground([p.support_patterns[i]["p1"], p.support_patterns[i]["p2"]], geom)
     if kind == "facing":
-        return [list(q) for q in facing_points(p.facings[i])]
+        return _project_ground(facing_points(p.facings[i]), geom)
     if kind == "annot":
         return [list(q) for q in p.annotations[i]["pts"]]
     raise KeyError(key)
@@ -139,11 +148,13 @@ def _check_x_increasing(kind: str, pts) -> list[list[float]]:
     return pts
 
 
-def set_points(p: Project, key, pts) -> None:
+def set_points(p: Project, key, pts, geom=None) -> None:
     kind, i = key
     if len(pts) < MIN_POINTS[kind]:
         raise ValueError(f"{LABELS[kind]} must contain at least {MIN_POINTS[kind]} points.")
     pts = _check_x_increasing(kind, pts)
+    if kind in ("load", "pattern", "facing") and geom is not None:
+        pts = _project_ground(pts, geom)
     if kind == "external":
         p.external = pts
     elif kind == "material":
@@ -203,8 +214,6 @@ def delete_entity(p: Project, key) -> None:
     kind, i = key
     if kind == "external":
         p.external = []
-        p.material_boundaries = []
-        p.assignments = []
     elif kind == "material":
         del p.material_boundaries[i]
     elif kind == "water":
