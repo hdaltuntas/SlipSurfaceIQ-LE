@@ -205,6 +205,21 @@ def _validate_structure(p: Project) -> None:
         if not isinstance(item.get(key), str):
             raise ValueError(f"{label}: '{key}' must be a name.")
 
+    if not (isinstance(p.external, (list, tuple)) and all(_is_point(q) for q in p.external)):
+        raise ValueError("External boundary: a list of [x, y] pairs is required.")
+    if not isinstance(p.material_boundaries, (list, tuple)):
+        raise ValueError("Material boundaries: a list of polylines is required.")
+    for i, b in enumerate(p.material_boundaries, 1):
+        if not (isinstance(b, (list, tuple)) and all(_is_point(q) for q in b)):
+            raise ValueError(f"Material boundary {i}: a list of [x, y] pairs is required.")
+    for label, line in (
+        ("Water table", p.water_table),
+        ("Tension crack", p.tension_crack),
+    ):
+        if line is not None and not (
+            isinstance(line, (list, tuple)) and all(_is_point(q) for q in line)
+        ):
+            raise ValueError(f"{label}: a list of [x, y] pairs is required.")
     for m in p.materials:
         if m.model not in MODELS:
             raise ValueError(
@@ -296,6 +311,9 @@ def _clean_display(display: dict) -> dict:
         elif isinstance(default, int):
             if _is_number(value) and float(value).is_integer() and value >= 1:
                 out[key] = int(value)
+        elif isinstance(default, float):
+            if _is_number(value) and np.isfinite(value) and float(value) > 0:
+                out[key] = float(value)
         elif isinstance(value, str):
             out[key] = value
     return out
@@ -581,6 +599,7 @@ DEFAULT_DISPLAY = {
     "line_width": 2,
     "show_ruler": True,
     "show_grid": True,
+    "grid_spacing": 1.0,
     "fill_materials": True,
     "show_slope_limits": True,
     "show_slices": False,
@@ -681,6 +700,13 @@ class Project:
             or circle[2] <= 0
         ):
             raise ValueError("Fixed circle [Xc, Yc, R] must be finite with R > 0.")
+        if self.surfaces.surface_type == "user" and self.surfaces.user_circle is None:
+            us = self.surfaces.user_surface
+            if not us or len(us) < 2:
+                raise ValueError("User surface: at least 2 [x, y] points are required.")
+            uxs = [float(q[0]) for q in us]
+            if len(set(uxs)) != len(uxs):
+                raise ValueError("User surface: points must have strictly increasing x values.")
         _choice(self.surfaces.noncircular_shape, ("polyline", "spline"), "Surface shape")
         _choice(self.surfaces.effort, tuple(EFFORT), "Search effort")
         if self.groundwater.gamma_w <= 0 or not 0 <= self.groundwater.ru <= 1:
@@ -758,24 +784,47 @@ class Project:
             _choice(t.anchorage, ("none", "face", "embedded", "both"), t.name)
             if t.kind not in SUPPORT_KINDS:
                 raise ValueError(f"{t.name}: unknown support type.")
-            if t.spacing <= 0 or t.tensile < 0:
-                raise ValueError(f"{t.name}: spacing > 0 and capacity ≥ 0 required.")
+            if t.spacing <= 0 or t.tensile < 0 or t.length <= 0:
+                raise ValueError(f"{t.name}: spacing > 0, length > 0 and capacity ≥ 0 required.")
+            if (
+                t.plate < 0
+                or t.bond_strength < 0
+                or (t.bond_length <= 0 if t.kind == "grouted_tieback" else t.bond_length < 0)
+                or t.pullout < 0
+                or not 0 < t.coverage <= 100
+                or t.adhesion < 0
+                or not 0 <= t.interface_friction < 90
+                or t.overburden_gamma <= 0
+                or t.pile_shear < 0
+            ):
+                raise ValueError(f"{t.name}: invalid support strength or geometry parameters.")
         for sp in self.supports + self.support_patterns:
             if sp["type"] not in snames:
                 raise ValueError(f"Support type '{sp['type']}' is not defined.")
-        for pt in self.support_patterns:
+        for i, sp in enumerate(self.supports, 1):
+            if np.hypot(sp["b"][0] - sp["a"][0], sp["b"][1] - sp["a"][1]) <= 1e-9:
+                raise ValueError(f"Support {i}: head and end points must not coincide.")
+        for i, pt in enumerate(self.support_patterns, 1):
             if pt["spacing"] <= 0 or pt["length"] <= 0:
                 raise ValueError("Bolt pattern: spacing and length must be positive.")
+            if pt.get("offset", 0.0) < 0:
+                raise ValueError(f"Bolt pattern {i}: offset must not be negative.")
+            if not -90.0 <= pt.get("angle", 0.0) <= 90.0:
+                raise ValueError(f"Bolt pattern {i}: inclination must be between -90° and 90°.")
+            if np.hypot(pt["p2"][0] - pt["p1"][0], pt["p2"][1] - pt["p1"][1]) <= 1e-9:
+                raise ValueError(f"Bolt pattern {i}: start and end points must not coincide.")
         fnames = [t.name for t in self.facing_types]
         if len(set(fnames)) != len(fnames):
             raise ValueError("Facing type names must be unique.")
         for ft in self.facing_types:
             _choice(ft.application, ("active", "passive"), ft.name)
-            if ft.thickness <= 0 or ft.gamma < 0 or ft.tau < 0 or ft.mesh_as < 0:
+            if ft.thickness <= 0 or ft.gamma < 0 or ft.tau < 0 or ft.mesh_as < 0 or ft.mesh_fy < 0:
                 raise ValueError(f"{ft.name}: thickness > 0, other values ≥ 0 required.")
-        for f in self.facings:
+        for i, f in enumerate(self.facings, 1):
             if f["type"] not in fnames:
                 raise ValueError(f"Facing type '{f['type']}' is not defined.")
+            if abs(f["x2"] - f["x1"]) <= 1e-9:
+                raise ValueError(f"Facing {i}: horizontal span must be positive.")
         for k in self.methods.methods:
             if k not in METHODS:
                 raise ValueError(f"Unknown method: {k}")
@@ -834,7 +883,9 @@ class Project:
                 continue
             if geom is None:
                 geom = self.build_geometry()
-            for k, (a, b) in enumerate(self.pattern_bolts(pt, geom)):
+            for k, (a, b) in enumerate(
+                self.pattern_bolts(pt, geom, self.general.failure_direction)
+            ):
                 ls.supports.append(Support(tuple(a), tuple(b), st, f"Pattern {j + 1}/{k + 1}"))
         for f in self.facings:
             ft = self.facing_type(f["type"])
@@ -846,10 +897,12 @@ class Project:
         return next((t for t in self.facing_types if t.name == name), None)
 
     @staticmethod
-    def pattern_bolts(pt: dict, geom) -> list:
+    def pattern_bolts(pt: dict, geom, failure_direction: str = "auto") -> list:
         """(A, B) of every bolt of a pattern, heads on the ground surface."""
         xs = pattern_positions(geom, pt["p1"][0], pt["p2"][0], pt["spacing"], pt.get("offset", 0.0))
-        return [bolt_at(geom, x, pt.get("angle", 15.0), pt["length"]) for x in xs]
+        return [
+            bolt_at(geom, x, pt.get("angle", 15.0), pt["length"], failure_direction) for x in xs
+        ]
 
     def slice_options(self) -> SliceOptions:
         gw = self.groundwater
@@ -938,9 +991,18 @@ class Project:
 
     @classmethod
     def from_dict(cls, d: dict) -> Project:
-        if d.get("format") != FORMAT:
+        if not isinstance(d, dict) or d.get("format") != FORMAT:
             raise ValueError("This file is not a SlipSurfaceIQ LE project.")
-        ver = int(d.get("version", 0))
+        raw_ver = d.get("version")
+        if (
+            isinstance(raw_ver, bool)
+            or not isinstance(raw_ver, (int, float))
+            or not float(raw_ver).is_integer()
+        ):
+            raise ValueError("The project file version is missing or invalid.")
+        ver = int(raw_ver)
+        if ver < 1:
+            raise ValueError("The project file version is missing or invalid.")
         if ver > VERSION:
             raise ValueError("The file was saved by a newer version.")
         try:
@@ -954,14 +1016,20 @@ class Project:
 
     @classmethod
     def _from_current(cls, d: dict) -> Project:
-        g, st = d.get("geometry", {}), d.get("settings", {})
-        disp = _clean_display(d.get("display", {}))
+        g = d.get("geometry") or {}
+        st = d.get("settings") or {}
+        if not isinstance(g, dict) or not isinstance(st, dict):
+            raise ValueError("The project file is incomplete or damaged.")
+        disp_raw = d.get("display") or {}
+        if not isinstance(disp_raw, dict):
+            raise ValueError("The project file is incomplete or damaged.")
+        disp = _clean_display(disp_raw)
         return cls(
             summary=_from_dict(ProjectSummary, d.get("summary")),
-            materials=[_from_dict(MaterialSpec, m) for m in d.get("materials", [])],
-            external=[list(map(float, p)) for p in g.get("external", [])],
+            materials=[_from_dict(MaterialSpec, m) for m in (d.get("materials") or [])],
+            external=[list(map(float, p)) for p in (g.get("external") or [])],
             material_boundaries=[
-                [list(map(float, p)) for p in b] for b in g.get("material_boundaries", [])
+                [list(map(float, p)) for p in b] for b in (g.get("material_boundaries") or [])
             ],
             water_table=(
                 [list(map(float, p)) for p in g["water_table"]] if g.get("water_table") else None
@@ -973,7 +1041,7 @@ class Project:
             ),
             assignments=[
                 {"point": list(map(float, a["point"])), "material": a["material"]}
-                for a in g.get("assignments", [])
+                for a in (g.get("assignments") or [])
             ],
             general=_from_dict(GeneralSettings, st.get("general")),
             methods=_from_dict(MethodSettings, st.get("methods")),
@@ -981,17 +1049,17 @@ class Project:
             seismic=_from_dict(SeismicSettings, st.get("seismic")),
             advanced=_from_dict(AdvancedSettings, st.get("advanced")),
             surfaces=_from_dict(SurfaceSettings, d.get("surfaces")),
-            loads=[dict(ld) for ld in d.get("loads", [])],
-            support_types=[_from_dict(SupportType, t) for t in d.get("support_types", [])],
+            loads=[dict(ld) for ld in (d.get("loads") or [])],
+            support_types=[_from_dict(SupportType, t) for t in (d.get("support_types") or [])],
             supports=[
                 {"a": list(map(float, sp["a"])), "b": list(map(float, sp["b"])), "type": sp["type"]}
-                for sp in d.get("supports", [])
+                for sp in (d.get("supports") or [])
             ],
-            support_patterns=[dict(p) for p in d.get("support_patterns", [])],
-            facing_types=[_from_dict(FacingType, t) for t in d.get("facing_types", [])],
-            facings=[dict(f) for f in d.get("facings", [])],
-            annotations=[dict(a) for a in d.get("annotations", [])],
-            result_annotations=[dict(a) for a in d.get("result_annotations", [])],
+            support_patterns=[dict(p) for p in (d.get("support_patterns") or [])],
+            facing_types=[_from_dict(FacingType, t) for t in (d.get("facing_types") or [])],
+            facings=[dict(f) for f in (d.get("facings") or [])],
+            annotations=[dict(a) for a in (d.get("annotations") or [])],
+            result_annotations=[dict(a) for a in (d.get("result_annotations") or [])],
             display=disp,
         )
 
@@ -1054,20 +1122,42 @@ def _from_v1(d: dict) -> Project:
         spec = _from_dict(MaterialSpec, m)
         spec.use_sat = m.get("gamma_sat", spec.gamma) != m.get("gamma", spec.gamma)
         mats.append(spec)
-    w = d.get("water", {})
-    a = d.get("analysis", {})
+    w = d.get("water") or {}
+    a = d.get("analysis") or {}
+    wt_pts = (
+        [list(map(float, p)) for p in w["points"]] if w.get("enabled") and w.get("points") else None
+    )
     p = Project(
         summary=ProjectSummary(title=d.get("name", "Model")),
         materials=mats,
         external=ext,
         material_boundaries=bounds,
-        water_table=w.get("points") if w.get("enabled") else None,
+        water_table=wt_pts,
         assignments=assigns,
     )
     p.groundwater.gamma_w = float(w.get("gamma_w", 9.81))
+    if "enabled" in w and not w.get("enabled"):
+        p.groundwater.method = "none"
     if a.get("method") in METHODS:
         p.methods.methods = [a["method"]]
-    p.methods.n_slices = int(a.get("n_slices", p.methods.n_slices))
+    raw_ns = a.get("n_slices", p.methods.n_slices)
+    if isinstance(raw_ns, bool):
+        raise ValueError("n_slices must be an integer.")
+    p.methods.n_slices = int(raw_ns)
+    if a.get("surface_type") in ("circular", "noncircular", "user"):
+        p.surfaces.surface_type = a["surface_type"]
+    raw_nc = a.get("n_ctrl")
+    if raw_nc is not None and not isinstance(raw_nc, bool):
+        p.surfaces.n_ctrl = int(raw_nc)
+    raw_seed = a.get("seed")
+    if raw_seed is not None and not isinstance(raw_seed, bool):
+        p.surfaces.seed = int(raw_seed)
+    if a.get("exit_range") is not None:
+        p.surfaces.left_range = [float(x) for x in a["exit_range"]]
+    if a.get("entry_range") is not None:
+        p.surfaces.right_range = [float(x) for x in a["entry_range"]]
+    if "show_top" in a:
+        p.display["show_all_surfaces"] = bool(a["show_top"])
     return p
 
 

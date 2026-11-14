@@ -209,7 +209,7 @@ def make_slices(
     x_exit, x_entry = ext
     crack_cut = None
     if o.crack is not None:
-        crack_cut = o.crack.cut(geom, surf, x_exit, x_entry)
+        crack_cut = o.crack.cut(geom, surf, x_exit, x_entry, o.direction)
         if crack_cut is not None:
             x_exit, x_entry = crack_cut[0], crack_cut[1]
     if x_entry - x_exit < 1e-6:
@@ -237,6 +237,8 @@ def make_slices(
     l = b / np.cos(alpha)
 
     h = y_top - y_base
+    if np.any(h < -1e-9):
+        raise SlicingError("slip surface rises above the ground surface inside the sliding mass")
     if o.min_depth > 0 and h.max() < o.min_depth:
         raise SlicingError("sliding mass shallower than the minimum depth")
     # Degenerate-mass guard: a surface hugging the ground line (e.g. a circle
@@ -302,8 +304,11 @@ def make_slices(
     if wt is not None and np.any(np.asarray(wt) - y_top > 0.0):
         water_weight = o.gamma_w * np.maximum(wt - y_top, 0.0) * b
         water_cg = 0.5 * (wt + y_top)
-        y_cg = (W * y_cg + water_weight * water_cg) / (W + water_weight)
-        W = W + water_weight
+        tot_w = W + water_weight
+        y_cg = np.where(
+            tot_w > 0, (W * y_cg + water_weight * water_cg) / np.where(tot_w > 0, tot_w, 1.0), y_cg
+        )
+        W = tot_w
 
     # ------------------------------------------------ pore pressure
     if o.pore == "water_table" and wt is not None:
@@ -347,19 +352,43 @@ def make_slices(
     u = np.where(total_stress, 0.0, u)
 
     # ------------------------------------------------ failure direction
-    drive = np.sum(W * np.sin(alpha))
+    drive = float(np.sum(W * np.sin(alpha)))
+    ext_drive = 0.0
+    if o.loads is not None and (o.loads.line or o.loads.distributed):
+        for ln in o.loads.line:
+            if x_exit <= ln.x <= x_entry:
+                fx, fy = ln.force
+                a_ln = float(np.interp(ln.x, xm, alpha))
+                ext_drive += (-fy) * float(np.sin(a_ln)) - fx * float(np.cos(a_ln))
+        for dl in o.loads.distributed:
+            lo_d, hi_d = max(x_exit, min(dl.x1, dl.x2)), min(x_entry, max(dl.x1, dl.x2))
+            if hi_d - lo_d > 1e-12:
+                xs_d = np.linspace(lo_d, hi_d, 9)
+                dx_d = (hi_d - lo_d) / 8.0
+                xm_d = 0.5 * (xs_d[:-1] + xs_d[1:])
+                q_d = dl.q_at(xm_d)
+                fy_d = -q_d * dx_d
+                if dl.orientation == "normal":
+                    from slipsurface.loads import _ground_slope
+
+                    fx_d = q_d * _ground_slope(geom, xm_d) * dx_d
+                else:
+                    fx_d = np.zeros_like(fy_d)
+                a_d = np.interp(xm_d, xm, alpha)
+                ext_drive += float(np.sum((-fy_d) * np.sin(a_d) - fx_d * np.cos(a_d)))
     if o.direction == "right_to_left":
         direction = -1
-        if drive <= 0:
+        if drive <= 0 and (drive + ext_drive) <= 0:
             raise SlicingError("surface opposes the specified failure direction")
     elif o.direction == "left_to_right":
         direction = +1
         alpha = -alpha
-        if -drive <= 0:
+        if -drive <= 0 and -(drive + ext_drive) <= 0:
             raise SlicingError("surface opposes the specified failure direction")
     else:
         direction = -1
-        if drive < 0:  # left-to-right failure: mirror
+        eff_drive = drive + ext_drive if abs(drive) <= 1e-2 * max(1.0, float(np.sum(W))) else drive
+        if eff_drive < 0:  # left-to-right failure: mirror
             alpha = -alpha
             direction = +1
 

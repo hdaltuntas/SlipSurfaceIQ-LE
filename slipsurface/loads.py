@@ -206,30 +206,33 @@ def support_intersection(sup: Support, surf, x_exit: float, x_entry: float):
     A, B = np.asarray(sup.a, float), np.asarray(sup.b, float)
     delta = B - A
     # quick reject: support entirely outside the sliding mass in x
-    if max(A[0], B[0]) < x_exit - 1e-9 or min(A[0], B[0]) > x_entry + 1e-9:
+    if max(A[0], B[0]) < x_exit - 1e-6 or min(A[0], B[0]) > x_entry + 1e-6:
         return None
     # Include the finite surface domain and every polyline corner. A uniform
     # scan alone can jump over the entire domain (long supports), or over a
     # short segment that crosses the support and returns between samples.
-    lo, hi = surf.x_range()
-    lo, hi = max(lo, x_exit), min(hi, x_entry)
-    if hi < lo or not np.any(delta):
+    lo_s, hi_s = surf.x_range()
+    lo, hi = max(lo_s, x_exit - 1e-8), min(hi_s, x_entry + 1e-8)
+    if hi < lo - 1e-8 or not np.any(delta):
         return None
     t0, t1 = 0.0, 1.0
     extra = []
     if delta[0] != 0:
         ta, tb = sorted(((lo - A[0]) / delta[0], (hi - A[0]) / delta[0]))
         t0, t1 = max(t0, ta), min(t1, tb)
-        if t1 <= t0:
+        if t1 < t0 - 1e-12:
             return None
+        t1 = max(t0, t1)
         if hasattr(surf, "pts"):
             extra.extend((surf.pts[:, 0] - A[0]) / delta[0])
+        elif hasattr(surf, "_bs"):
+            extra.extend((np.unique(surf._bs.t) - A[0]) / delta[0])
         elif hasattr(surf, "r"):
             # line minus the lower circle is concave. Include its maximum
             # so even a very short positive interval brackets the exit root.
             x_peak = surf.xc + np.sign(delta[0]) * delta[1] * surf.r / np.hypot(*delta)
             extra.append((x_peak - A[0]) / delta[0])
-    elif not lo <= A[0] <= hi:
+    elif not (lo - 1e-8 <= A[0] <= hi + 1e-8):
         return None
     ts = np.unique(np.concatenate([np.linspace(t0, t1, 241), extra]))
     ts = ts[(ts >= t0) & (ts <= t1)]
@@ -237,7 +240,7 @@ def support_intersection(sup: Support, surf, x_exit: float, x_entry: float):
     with np.errstate(invalid="ignore"):
         vals = P[:, 1] - surf.y(P[:, 0])  # vectorized
     ok = np.isfinite(vals[:-1]) & np.isfinite(vals[1:])
-    idx = np.flatnonzero(ok & (vals[:-1] > 0) & (vals[1:] <= 0))
+    idx = np.flatnonzero(ok & (vals[:-1] >= 0) & (vals[1:] <= 0) & (vals[:-1] > vals[1:]))
     if idx.size == 0:
         return None
     k = int(idx[0])
@@ -246,9 +249,14 @@ def support_intersection(sup: Support, surf, x_exit: float, x_entry: float):
         p = A + t * (B - A)
         return float(p[1] - surf.y(p[0]))
 
-    t = brentq(g, ts[k], ts[k + 1], xtol=1e-10) if vals[k + 1] < 0 else ts[k + 1]
+    if vals[k] == 0:
+        t = ts[k]
+    elif vals[k + 1] == 0:
+        t = ts[k + 1]
+    else:
+        t = brentq(g, ts[k], ts[k + 1], xtol=1e-10)
     p = A + t * (B - A)
-    if x_exit - 1e-9 <= p[0] <= x_entry + 1e-9:
+    if x_exit - 1e-6 <= p[0] <= x_entry + 1e-6:
         return p
     return None
 
@@ -434,12 +442,15 @@ def slice_forces(
                 u = -u
         elif sup.stype.orientation == "tangent":
             h = 1e-5
-            slope = (surf.y(p[0] + h) - surf.y(p[0] - h)) / (2 * h)
+            lo_s, hi_s = surf.x_range()
+            xa = max(float(lo_s), float(p[0]) - h)
+            xb = min(float(hi_s), float(p[0]) + h)
+            slope = float(surf.y(xb) - surf.y(xa)) / (xb - xa) if xb - xa > 1e-12 else 0.0
             t = np.array([1.0, slope]) / np.hypot(1.0, slope)
             u = -direction * t  # opposes the sliding direction
         else:
             u = (B - A) / np.hypot(*(B - A))
-        i = slice_of(p[0])
+        i = slice_of(float(np.clip(p[0], x_exit, x_entry)))
         if i is None:
             continue
         passive = sup.stype.application == "passive"
@@ -515,21 +526,34 @@ def slice_forces(
 
 
 # --------------------------------------------------- automatic bolts
-def into_slope_direction(geom, x: float, angle_deg: float) -> np.ndarray:
+def into_slope_direction(
+    geom, x: float, angle_deg: float, failure_direction: str = "auto"
+) -> np.ndarray:
     """Unit vector into the slope at surface point x, inclined `angle_deg` below
     the horizontal (towards the uphill side)."""
     sl = float(_ground_slope(geom, x))
     if abs(sl) < 1e-9:
-        sl = float(geom.surface[-1, 1] - geom.surface[0, 1])
+        end_diff = float(geom.surface[-1, 1] - geom.surface[0, 1])
+        if abs(end_diff) > 1e-9:
+            sl = end_diff
+        elif failure_direction == "right_to_left":
+            sl = 1.0
+        elif failure_direction == "left_to_right":
+            sl = -1.0
+        else:
+            ymax = float(geom.surface[:, 1].max())
+            crest_xs = geom.surface[geom.surface[:, 1] >= ymax - 1e-9, 0]
+            x_mid = 0.5 * float(crest_xs.min() + crest_xs.max())
+            sl = 1.0 if x <= x_mid else -1.0
     s = 1.0 if sl > 0 else -1.0
     a = np.radians(angle_deg)
     return np.array([s * np.cos(a), -np.sin(a)])
 
 
-def bolt_at(geom, x: float, angle_deg: float, length: float):
+def bolt_at(geom, x: float, angle_deg: float, length: float, failure_direction: str = "auto"):
     """(A, B) of a bolt with its head on the ground at x."""
     A = np.array([x, float(geom.ground_y(x))])
-    return A, A + length * into_slope_direction(geom, x, angle_deg)
+    return A, A + length * into_slope_direction(geom, x, angle_deg, failure_direction)
 
 
 def pattern_positions(geom, x1: float, x2: float, spacing: float, offset: float = 0.0):
@@ -540,6 +564,8 @@ def pattern_positions(geom, x1: float, x2: float, spacing: float, offset: float 
     s = np.concatenate([[0.0], np.cumsum(np.hypot(np.diff(xs), np.diff(ys)))])
     if spacing <= 0:
         raise ValueError("spacing must be positive")
+    if offset < 0:
+        raise ValueError("offset must not be negative")
     targets = np.arange(offset, s[-1] + 1e-9, spacing)
     return list(np.interp(targets, s, xs))
 
@@ -570,14 +596,19 @@ class TensionCrack:
     def y(self, x):
         return np.interp(x, self.line[:, 0], self.line[:, 1])
 
-    def cut(self, geom, surf, x_exit: float, x_entry: float):
+    def cut(self, geom, surf, x_exit: float, x_entry: float, direction: str = "auto"):
         """New (x_exit, x_entry, x_crack, uphill_is_right) or None."""
         lo, hi = max(x_exit, self.line[0, 0]), min(x_entry, self.line[-1, 0])
         if hi - lo <= 1e-9:
             return None
         xs = np.linspace(lo, hi, 401)
         h = surf.y(xs) - self.y(xs)  # > 0: slip surface inside the cracked zone
-        right = float(geom.ground_y(x_entry)) >= float(geom.ground_y(x_exit))
+        if direction == "right_to_left":
+            right = True
+        elif direction == "left_to_right":
+            right = False
+        else:
+            right = float(geom.ground_y(x_entry)) >= float(geom.ground_y(x_exit))
         ks = []
         for k in range(len(xs) - 1):
             a, b = h[k], h[k + 1]

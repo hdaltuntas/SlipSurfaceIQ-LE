@@ -185,7 +185,13 @@ FIELDS = {  # which inputs apply to which kind
 class SupportTypesDialog(QDialog):
     """Define Support Properties (list of support types, Slide2 style)."""
 
-    def __init__(self, types: list[SupportType], parent=None, select: str | None = None) -> None:
+    def __init__(
+        self,
+        types: list[SupportType],
+        parent=None,
+        select: str | None = None,
+        in_use: set[str] | None = None,
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Define Support Properties")
         fit_to_screen(self, 820, 560)
@@ -193,7 +199,9 @@ class SupportTypesDialog(QDialog):
         if not self.types:
             self.types = [SupportType()]
         self.renames: dict[str, str] = {}
+        self.in_use: set[str] = set(in_use or ())
         self._orig = [t.name for t in self.types]
+        self._entry_orig: list[str | None] = [t.name for t in self.types]
         self.cur = -1
         self._loading = False
 
@@ -420,6 +428,7 @@ class SupportTypesDialog(QDialog):
 
     def _add(self):
         self.types.append(SupportType(self._unique("Support")))
+        self._entry_orig.append(None)
         self._refresh()
         self.list.setCurrentRow(len(self.types) - 1)
 
@@ -427,6 +436,7 @@ class SupportTypesDialog(QDialog):
         t = copy.deepcopy(self.types[self.cur])
         t.name = self._unique(t.name + " copy")
         self.types.insert(self.cur + 1, t)
+        self._entry_orig.insert(self.cur + 1, None)
         self._refresh()
         self.list.setCurrentRow(self.cur + 1)
 
@@ -436,7 +446,16 @@ class SupportTypesDialog(QDialog):
                 "⚠ At least one support type must remain (delete supports from the drawing)."
             )
             return
+        orig_name = self._entry_orig[self.cur]
+        cur_name = self.types[self.cur].name
+        if (orig_name and orig_name in self.in_use) or cur_name in self.in_use:
+            self.error.setText(
+                f"⚠ '{cur_name}' is assigned in the model; reassign or delete those supports first."
+            )
+            return
+        self.error.setText("")
         del self.types[self.cur]
+        del self._entry_orig[self.cur]
         self._refresh()
         self.list.setCurrentRow(min(self.cur, len(self.types) - 1))
 

@@ -73,7 +73,12 @@ def _dspin(lo, hi, dec, step, val, suffix=""):
 
 
 def _direction_pixmap(left: bool) -> QPixmap:
-    pm = QPixmap(46, 30)
+    from PySide6.QtGui import QGuiApplication
+
+    app = QGuiApplication.instance()
+    dpr = max(1.0, float(app.devicePixelRatio())) if app is not None else 1.0
+    pm = QPixmap(int(round(46 * dpr)), int(round(30 * dpr)))
+    pm.setDevicePixelRatio(dpr)
     pm.fill(Qt.transparent)
     p = QPainter(pm)
     p.setRenderHint(QPainter.Antialiasing)

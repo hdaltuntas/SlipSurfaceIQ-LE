@@ -374,7 +374,7 @@ def _solve_gle(
         if done:
             break
     else:
-        return LEMResult(float(F), name, False, it, message="did not converge")
+        return LEMResult(np.nan, name, False, it, message="did not converge")
 
     E, Np, ma = _state(F, lam * fint, fr, c, tp)
     lam_rep = -lam  # usual sign convention (Slide2 / GeoStudio)
@@ -392,7 +392,28 @@ def _solve_gle(
             "m_alpha <= 0 (steep negative base angle)",
             lam=lam_rep,
         )
-    res = LEMResult(F, name, True, it, float(ma.min()), lam=lam_rep)
+    r_f, r_m, _ = _residuals(F, lam, fr, c, tp, fint)
+    s_mob = (c * fr.l + Np * tp) / F
+    x_conv = (-lam * fint) * E
+    flip = s.direction == +1
+    np_w = Np[::-1].copy() if flip else Np.copy()
+    sm_w = s_mob[::-1].copy() if flip else s_mob.copy()
+    e_w = E[::-1].copy() if flip else E.copy()
+    x_w = x_conv[::-1].copy() if flip else x_conv.copy()
+    res = LEMResult(
+        F,
+        name,
+        True,
+        it,
+        float(ma.min()),
+        lam=lam_rep,
+        force_residual=float(abs(r_f)),
+        moment_residual=float(abs(r_m)),
+        base_normal_eff=np_w,
+        base_shear_mob=sm_w,
+        interslice_E=e_w,
+        interslice_X=x_w,
+    )
     return check_admissibility(
         res,
         ma,
@@ -463,7 +484,7 @@ def _force_method(
                 if done:
                     break
             else:
-                return LEMResult(float(F), name, False, it, message="did not converge")
+                return LEMResult(np.nan, name, False, it, message="did not converge")
             E, Np, ma = _state(F, A, fr, c, tp)
             if _singular(E, fr, e_max_ratio):
                 return LEMResult(np.nan, name, False, it, message="singular interslice forces")
@@ -476,7 +497,28 @@ def _force_method(
                     float(ma.min()),
                     "m_alpha <= 0 (steep negative base angle)",
                 )
-            res = LEMResult(float(F), name, True, it, float(ma.min()))
+            f_res = float(abs(E[-1] / fr.scale_f))
+            m_res = float(abs(_moment(F, Np, fr, c, tp) / fr.scale_m))
+            s_mob = (c * fr.l + Np * tp) / F
+            x_conv = -A * E
+            flip = s.direction == +1
+            np_w = Np[::-1].copy() if flip else Np.copy()
+            sm_w = s_mob[::-1].copy() if flip else s_mob.copy()
+            e_w = E[::-1].copy() if flip else E.copy()
+            x_w = x_conv[::-1].copy() if flip else x_conv.copy()
+            res = LEMResult(
+                float(F),
+                name,
+                True,
+                it,
+                float(ma.min()),
+                force_residual=f_res,
+                moment_residual=m_res,
+                base_normal_eff=np_w,
+                base_shear_mob=sm_w,
+                interslice_E=e_w,
+                interslice_X=x_w,
+            )
             return check_admissibility(
                 res,
                 ma,
@@ -526,7 +568,11 @@ def janbu_correction_factor(s: SliceSet) -> float:
 def janbu_corrected(s: SliceSet, **kw) -> LEMResult:
     res = janbu_simplified(s, **kw)
     if res.ok:
-        res.fos *= janbu_correction_factor(s)
+        f0 = janbu_correction_factor(s)
+        res.fos *= f0
+        res.janbu_f0 = f0
+        if res.base_shear_mob is not None:
+            res.base_shear_mob = res.base_shear_mob / f0
     res.method = "Janbu corrected"
     return res
 

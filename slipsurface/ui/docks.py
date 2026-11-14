@@ -315,9 +315,6 @@ class PropertyGrid(QTreeWidget):
         for cat, rows in spec:
             top = QTreeWidgetItem([cat])
             top.setFont(0, bold)
-            top.setBackground(0, QColor("#eef1f5"))
-            top.setBackground(1, QColor("#eef1f5"))
-            top.setForeground(0, QColor("#1b2a3a"))
             self.addTopLevelItem(top)
             for key, label, typ in rows:
                 it = QTreeWidgetItem([label, ""])
@@ -348,8 +345,30 @@ class PropertyGrid(QTreeWidget):
                     sp.valueChanged.connect(lambda v, k=key: self._emit(k, v))
                     self.setItemWidget(it, 1, sp)
                     self._items[key] = (it, typ, sp)
+        self._apply_header_colors()
         self.itemChanged.connect(self._on_item_changed)
         self.expandAll()
+
+    def _apply_header_colors(self) -> None:
+        from PySide6.QtGui import QGuiApplication, QPalette
+
+        app = QGuiApplication.instance()
+        dark = app is not None and app.palette().color(QPalette.Window).lightness() < 128
+        bg = QColor("#233249" if dark else "#eef1f5")
+        fg = QColor("#e5edf8" if dark else "#1b2a3a")
+        for i in range(self.topLevelItemCount()):
+            top = self.topLevelItem(i)
+            if top is not None:
+                top.setBackground(0, bg)
+                top.setBackground(1, bg)
+                top.setForeground(0, fg)
+
+    def changeEvent(self, ev) -> None:
+        from PySide6.QtCore import QEvent
+
+        super().changeEvent(ev)
+        if ev.type() in (QEvent.PaletteChange, QEvent.StyleChange):
+            self._apply_header_colors()
 
     def set_values(self, display: dict) -> None:
         self._loading = True

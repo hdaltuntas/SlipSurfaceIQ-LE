@@ -210,31 +210,94 @@ def slice_rows(res, i: int) -> list[tuple[str, str]]:
     ]
     if s.kh:
         rows.append(("Seismic horizontal force kh·W [kN/m]", f"{s.Fh[i]:.3f}"))
+    lem = getattr(res, "lem", None)
+    if lem is not None:
+        if (
+            lem.base_normal_eff is not None
+            and i < lem.base_normal_eff.size
+            and np.isfinite(lem.base_normal_eff[i])
+        ):
+            n_eff = float(lem.base_normal_eff[i])
+            rows.append(("Effective base normal N′ [kN/m]", f"{n_eff:.3f}"))
+            rows.append(
+                ("Effective normal stress σ′n [kPa]", f"{n_eff / max(float(s.l[i]), 1e-12):.3f}")
+            )
+        if (
+            lem.base_shear_mob is not None
+            and i < lem.base_shear_mob.size
+            and np.isfinite(lem.base_shear_mob[i])
+        ):
+            rows.append(("Mobilised base shear Smob [kN/m]", f"{float(lem.base_shear_mob[i]):.3f}"))
+        if lem.interslice_E is not None and lem.interslice_E.size == s.n + 1:
+            rows.append(
+                (
+                    "Interslice normal EL / ER [kN/m]",
+                    f"{lem.interslice_E[i]:.3f} / {lem.interslice_E[i + 1]:.3f}",
+                )
+            )
+        if lem.interslice_X is not None and lem.interslice_X.size == s.n + 1:
+            rows.append(
+                (
+                    "Interslice shear XL / XR [kN/m]",
+                    f"{lem.interslice_X[i]:.3f} / {lem.interslice_X[i + 1]:.3f}",
+                )
+            )
     return rows
 
 
 class SliceDataDialog(QDialog):
     def __init__(self, res, i: int, method: str, parent=None) -> None:
         super().__init__(parent)
+        self.res = res
+        self.index = int(i)
+        self.method = method
+        self._parent = parent
         self.setWindowTitle(f"Slice Data — {method}")
-        fit_to_screen(self, 430, 420)
-        rows = slice_rows(res, i)
-        t = QTableWidget(len(rows), 2)
-        t.setHorizontalHeaderLabels(["Quantity", "Value"])
-        t.verticalHeader().setVisible(False)
-        t.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        t.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        fit_to_screen(self, 460, 480)
+        self.table = QTableWidget(0, 2)
+        self.table.setHorizontalHeaderLabels(["Quantity", "Value"])
+        self.table.verticalHeader().setVisible(False)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+        self.prev_btn = QPushButton("< Previous")
+        self.next_btn = QPushButton("Next >")
+        close_btn = QPushButton("Close")
+        self.prev_btn.clicked.connect(lambda: self._step(-1))
+        self.next_btn.clicked.connect(lambda: self._step(1))
+        close_btn.clicked.connect(self.accept)
+        nav = QHBoxLayout()
+        nav.addWidget(self.prev_btn)
+        nav.addWidget(self.next_btn)
+        nav.addStretch(1)
+        nav.addWidget(close_btn)
+
+        lay = QVBoxLayout(self)
+        lay.addWidget(self.table, 1)
+        lay.addLayout(nav)
+        self._populate()
+
+    def _step(self, delta: int) -> None:
+        nxt = self.index + delta
+        if 0 <= nxt < self.res.slices.n:
+            self.index = nxt
+            self._populate()
+
+    def _populate(self) -> None:
+        rows = slice_rows(self.res, self.index)
+        self.table.setRowCount(len(rows))
         for r, (k, v) in enumerate(rows):
-            t.setItem(r, 0, QTableWidgetItem(k))
+            self.table.setItem(r, 0, QTableWidgetItem(k))
             it = QTableWidgetItem(v)
             it.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            t.setItem(r, 1, it)
-        t.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        b = QPushButton("Close")
-        b.clicked.connect(self.accept)
-        lay = QVBoxLayout(self)
-        lay.addWidget(t, 1)
-        lay.addWidget(b)
+            self.table.setItem(r, 1, it)
+        self.prev_btn.setEnabled(self.index > 0)
+        self.next_btn.setEnabled(self.index < self.res.slices.n - 1)
+        c = getattr(self._parent, "canvas", None)
+        if c is not None:
+            c.highlight_slice = self.index
+            c.update()
 
 
 class GridSettingsDialog(QDialog):

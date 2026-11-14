@@ -152,7 +152,7 @@ class SelectTool(Tool):
             key, k = hit
             c.selection, c.sel_vertex = key, k
             c.selection_changed.emit(key)
-            pts = get_points(c.project, key)
+            pts = get_points(c.project, key, c.geometry)
             self.drag = (key, k, [list(q) for q in pts])
             self.drag_pts = [list(q) for q in pts]
             return
@@ -162,8 +162,17 @@ class SelectTool(Tool):
         c.selection = ann if ann is not None else (seg[0] if seg else None)
         c.sel_vertex = None
         c.selection_changed.emit(c.selection)
+        if c.selection is None and c.results is not None:
+            cand = c.pick_candidate_surface(ev.position())
+            c.highlight_candidate = cand[0] if cand is not None else None
+            if cand is not None:
+                res = c.current_result()
+                crit_txt = f" (critical FS = {res.fos:.3f})" if res is not None else ""
+                c.status.emit(f"Candidate surface #{cand[0]}: FS = {cand[1]:.3f}{crit_txt}")
+        else:
+            c.highlight_candidate = None
         if c.selection is not None and c.selection[0] == "annot" and c.editable:
-            orig = [list(q) for q in get_points(c.project, c.selection)]
+            orig = [list(q) for q in get_points(c.project, c.selection, c.geometry)]
             self.translate = (c.selection, c.s2w(ev.position()), orig)
 
     def release(self, ev) -> None:
@@ -175,7 +184,7 @@ class SelectTool(Tool):
             self.drag_pts = None
             c.project.annotations[key[1]]["pts"] = orig  # undo live preview
             if new is not None and new != orig:
-                c.request_edit("Move note", lambda p: set_points(p, key, new))
+                c.request_edit("Move note", lambda p: set_points(p, key, new, c.geometry))
             c.update()
             return
         if self.drag is None:
@@ -186,7 +195,8 @@ class SelectTool(Tool):
         self.drag_pts = None
         c.snap_marker = None
         if new[k] != orig[k]:
-            c.request_edit(f"{_label(key)}: move vertex", lambda p: set_points(p, key, new))
+            geom = c.geometry
+            c.request_edit(f"{_label(key)}: move vertex", lambda p: set_points(p, key, new, geom))
 
     def paint(self, p) -> None:
         if self.drag is None:
@@ -276,22 +286,24 @@ def _delete_vertex(c, key, k) -> None:
             f"⚠ A vertex of {_label(key)} cannot be deleted; press Delete to remove it entirely."
         )
         return
-    pts = get_points(c.project, key)
+    pts = get_points(c.project, key, c.geometry)
     if len(pts) <= MIN_POINTS[key[0]]:
         c.status.emit(f"⚠ {_label(key)} must contain at least {MIN_POINTS[key[0]]} vertices.")
         return
     del pts[k]
     c.sel_vertex = None
-    c.request_edit(f"{_label(key)}: delete vertex", lambda p: set_points(p, key, pts))
+    geom = c.geometry
+    c.request_edit(f"{_label(key)}: delete vertex", lambda p: set_points(p, key, pts, geom))
 
 
 def _insert_vertex(c, key, seg_index, pt) -> None:
     if key[0] in FIXED_POINTS:
         c.status.emit(f"⚠ A vertex cannot be added to {_label(key)}.")
         return
-    pts = get_points(c.project, key)
+    pts = get_points(c.project, key, c.geometry)
     pts.insert(seg_index + 1, [float(pt[0]), float(pt[1])])
-    c.request_edit(f"{_label(key)}: add vertex", lambda p: set_points(p, key, pts))
+    geom = c.geometry
+    c.request_edit(f"{_label(key)}: add vertex", lambda p: set_points(p, key, pts, geom))
 
 
 # ================================================================ drawing
@@ -365,6 +377,12 @@ class DrawTool(Tool):
             "Esc = cancel"
         )
 
+    def activate(self) -> None:
+        if self.c.selection is not None:
+            self.c.selection = None
+            self.c.sel_vertex = None
+            self.c.selection_changed.emit(None)
+
     def ref_point(self):
         return self.pts[-1] if self.pts else None
 
@@ -426,6 +444,14 @@ class DrawTool(Tool):
             return True
         if k == Qt.Key_Backspace and self.pts:
             self.pts.pop()
+            if not self.pts:
+                self.preview = None
+                self.c.status.emit(self.hint)
+            else:
+                self.c.status.emit(
+                    f"{self.TITLES[self.kind]}: {len(self.pts)} point(s) — "
+                    "click next or Enter to finish."
+                )
             return True
         if k == Qt.Key_C and self.kind == "external":
             self.finish()
@@ -438,17 +464,35 @@ class DrawTool(Tool):
             self.finish()
             return True
         if t in ("c", "close"):
+            if self.kind != "external":
+                self.c.status.emit(
+                    "⚠ Only the external boundary can be closed; press Enter to finish."
+                )
+                return False
             self.finish()
             return True
         if t in ("u", "undo"):
             if self.pts:
                 self.pts.pop()
+                if not self.pts:
+                    self.preview = None
                 self.c.update()
             return True
         pt = parse_coordinate(text, self.pts[-1] if self.pts else None)
+        if (
+            pt is None
+            and self.pts
+            and self.preview is not None
+            and re.fullmatch(_NUM, text.strip())
+        ):
+            dist = float(text.strip().replace(",", "."))
+            dx, dy = self.preview[0] - self.pts[-1][0], self.preview[1] - self.pts[-1][1]
+            L = math.hypot(dx, dy)
+            if math.isfinite(dist) and dist > 0 and L > 1e-9:
+                pt = (self.pts[-1][0] + dist * dx / L, self.pts[-1][1] + dist * dy / L)
         if pt is None:
             self.c.status.emit(
-                f"⚠ Coordinate not understood: '{text}' (examples: 10,5  @5,0  @10<30)"
+                f"⚠ Coordinate not understood: '{text}' (examples: 10,5  @5,0  @10<30  5)"
             )
             return False
         self.add_point(pt)
@@ -774,7 +818,8 @@ class BoltTool(Tool):
         g = self.c.geometry
         if g is None or not (g.x_min <= x <= g.x_max):
             return None
-        return bolt_at(g, x, self.angle_getter(), self.length_getter())
+        fdir = self.c.project.general.failure_direction if self.c.project is not None else "auto"
+        return bolt_at(g, x, self.angle_getter(), self.length_getter(), fdir)
 
     def move(self, ev) -> None:
         super().move(ev)

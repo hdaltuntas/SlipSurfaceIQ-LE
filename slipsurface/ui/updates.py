@@ -15,8 +15,13 @@ from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QMessageBox, QWidget
 
 from slipsurface import __version__
-from slipsurface.ui.preferences import settings
+from slipsurface.ui import preferences
 from slipsurface.updates import ReleaseInfo, UpdateCheckError, fetch_latest, is_newer
+
+
+def _settings():
+    return preferences.settings()
+
 
 AUTO_KEY = "updates/auto"
 LAST_KEY = "updates/last_check"
@@ -26,17 +31,17 @@ NOTES_LINES = 8  # release-note lines shown in the dialog; the rest is on the re
 
 
 def auto_enabled() -> bool:
-    return settings().value(AUTO_KEY, True, type=bool)
+    return _settings().value(AUTO_KEY, True, type=bool)
 
 
 def set_auto_enabled(on: bool) -> None:
-    settings().setValue(AUTO_KEY, bool(on))
+    _settings().setValue(AUTO_KEY, bool(on))
 
 
 def auto_check_due(now: float | None = None) -> bool:
     if not auto_enabled():
         return False
-    last = settings().value(LAST_KEY, 0.0, type=float)
+    last = _settings().value(LAST_KEY, 0.0, type=float)
     return (time.time() if now is None else now) - last >= AUTO_INTERVAL
 
 
@@ -99,7 +104,7 @@ class UpdateChecker(QObject):
     # ---------------------------------------------------------- results
     def _on_found(self, info: ReleaseInfo, manual: bool) -> None:
         self._busy = False
-        settings().setValue(LAST_KEY, time.time())
+        _settings().setValue(LAST_KEY, time.time())
         if not is_newer(info.version):
             self._status(f"SlipSurfaceIQ LE is up to date (version {__version__}).")
             if manual:
@@ -109,7 +114,7 @@ class UpdateChecker(QObject):
                     f"You are using the latest version ({__version__}).",
                 )
             return
-        if not manual and settings().value(SKIP_KEY, "") == info.version:
+        if not manual and _settings().value(SKIP_KEY, "") == info.version:
             return
         self._status(f"New version available: {info.version}")
         self._offer(info)
@@ -218,7 +223,7 @@ class UpdateChecker(QObject):
             elif button is download:
                 QDesktopServices.openUrl(QUrl(info.url))
             elif button is skip:
-                settings().setValue(SKIP_KEY, info.version)
+                _settings().setValue(SKIP_KEY, info.version)
 
         box.buttonClicked.connect(clicked)
         box.open()

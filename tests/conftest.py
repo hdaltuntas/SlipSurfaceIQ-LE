@@ -26,12 +26,71 @@ def pytest_sessionfinish(session, exitstatus):
     _exit_status = int(exitstatus)
 
 
+def _cleanup_qt_before_shutdown() -> None:
+    """Destroy lingering top-level widgets and module-cached Qt GUI resources
+    while QApplication is still alive so Windows Qt DLL teardown cannot fault
+    on QPixmap / QRawFont / QIconEngine / open QDialog destructors."""
+    import gc
+
+    from PySide6.QtCore import QEvent
+    from PySide6.QtWidgets import QApplication, QDialog
+
+    app = QApplication.instance()
+    if app is None:
+        return
+    # Close open dialogs (e.g. non-blocking QMessageBox.open()) before parent windows
+    for w in list(app.topLevelWidgets()):
+        if isinstance(w, QDialog):
+            try:
+                w.done(0)
+                w.close()
+                w.deleteLater()
+            except RuntimeError:
+                pass
+    app.sendPostedEvents(None, QEvent.DeferredDelete)
+    app.processEvents()
+
+    for w in list(app.topLevelWidgets()):
+        try:
+            if w.isVisible():
+                if hasattr(w, "doc") and hasattr(w.doc, "mark_clean"):
+                    w.doc.mark_clean()
+                if hasattr(w, "_result_notes_dirty"):
+                    w._result_notes_dirty = False
+                w.close()
+            w.deleteLater()
+        except RuntimeError:
+            pass
+    app.sendPostedEvents(None, QEvent.DeferredDelete)
+    app.processEvents()
+
+    try:
+        from slipsurface.ui import icons, preferences
+
+        icons._qta_icon.cache_clear()
+        icons._custom_icon.cache_clear()
+        preferences.interface_font.cache_clear()
+    except Exception:
+        pass
+    try:
+        import qtawesome as qta
+
+        inst = qta._resource.get("iconic")
+        if inst is not None:
+            inst.icon_cache.clear()
+            inst.rawfont_cache.clear()
+            qta._resource["iconic"] = None
+    except Exception:
+        pass
+    gc.collect()
+    app.sendPostedEvents(None, QEvent.DeferredDelete)
+    app.processEvents()
+
+
 def pytest_unconfigure(config):
-    if (
-        _exit_status is not None
-        and sys.platform.startswith("linux")
-        and "PySide6.QtWidgets" in sys.modules
-    ):
-        sys.stdout.flush()
-        sys.stderr.flush()
-        os._exit(_exit_status)
+    sys.stdout.flush()
+    sys.stderr.flush()
+    if _exit_status is not None and "PySide6.QtWidgets" in sys.modules:
+        if sys.platform.startswith("linux"):
+            os._exit(_exit_status)
+        _cleanup_qt_before_shutdown()

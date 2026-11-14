@@ -15,16 +15,20 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
+    QFrame,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QMessageBox,
+    QScrollArea,
     QVBoxLayout,
+    QWidget,
 )
 
 from slipsurface.report import ReportOptions
+from slipsurface.ui.preferences import fit_to_screen
 
 SECTIONS = [  # (option attribute, label, default)
     ("toc", "Table of contents", True),
@@ -50,7 +54,7 @@ class ReportDialog(QDialog):
     def __init__(self, project, parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle("PDF Report")
-        self.setMinimumWidth(620)
+        fit_to_screen(self, 640, 680)
         st = _settings()
         sm = project.summary
         title = QLabel("Analysis Report (PDF)")
@@ -104,6 +108,19 @@ class ReportDialog(QDialog):
         self.open_after = QCheckBox("Open the PDF when created")
         self.open_after.setChecked(st.value("report/open_after", True, bool))
 
+        body = QWidget()
+        blay = QVBoxLayout(body)
+        blay.setContentsMargins(0, 0, 4, 0)
+        blay.addWidget(info)
+        blay.addWidget(ev)
+        blay.addWidget(sec)
+        blay.addWidget(self.open_after)
+        blay.addStretch(1)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setWidget(body)
+
         b = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         b.button(QDialogButtonBox.Ok).setText("Create Report…")
         b.button(QDialogButtonBox.Cancel).setText("Cancel")
@@ -111,10 +128,7 @@ class ReportDialog(QDialog):
         b.rejected.connect(self.reject)
         lay = QVBoxLayout(self)
         lay.addWidget(title)
-        lay.addWidget(info)
-        lay.addWidget(ev)
-        lay.addWidget(sec)
-        lay.addWidget(self.open_after)
+        lay.addWidget(scroll, 1)
         lay.addWidget(b)
 
     def options(self) -> ReportOptions:
@@ -156,7 +170,7 @@ def make_report(results, path, opts: ReportOptions, display_project=None) -> int
         display_project,
         method_figures=opts.method_figures,
         model_figure=opts.model,
-        global_figure=True,
+        global_figure=opts.global_figure,
     )
     return build_pdf(results, path, opts, figs)
 

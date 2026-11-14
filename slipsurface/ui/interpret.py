@@ -7,8 +7,8 @@ import copy
 from slipsurface.ui.preferences import fit_to_screen
 
 
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QAction, QActionGroup, QKeySequence
+from PySide6.QtCore import QEvent, QSize, Qt
+from PySide6.QtGui import QAction, QActionGroup, QGuiApplication, QKeySequence, QPalette
 from PySide6.QtWidgets import (
     QComboBox,
     QDockWidget,
@@ -30,7 +30,7 @@ from slipsurface.ui.cad import tools as T
 from slipsurface.ui.dialogs.misc import InfoViewer, SliceDataDialog, slice_rows
 from slipsurface.ui.docks import DisplayOptions, DocumentViewer
 from slipsurface.ui.document import Document
-from slipsurface.ui.icons import icon
+from slipsurface.ui.icons import QTA_NAMES, icon
 from slipsurface.ui.statusbar import CadStatusBar
 
 
@@ -44,6 +44,7 @@ class InterpretWindow(QMainWindow):
         self.results = results
         self.path = path
         self.on_annotations = on_annotations
+        self._themed_actions: list[tuple[QAction, str]] = []
         # local copy of the analysed project: display options + result notes.
         # Only the notes are editable here (own undo stack); they are passed
         # back to the Modeler through `on_annotations`.
@@ -65,10 +66,7 @@ class InterpretWindow(QMainWindow):
         self.result_warning.setTextFormat(Qt.PlainText)
         self.result_warning.setWordWrap(True)
         self.result_warning.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.result_warning.setStyleSheet(
-            "QLabel { background: #fff4d6; color: #674900; padding: 10px; "
-            "border: 1px solid #e2c36f; border-radius: 4px; }"
-        )
+        self._style_warning()
         warnings = []
         if results.errors:
             details = "\n".join(f"{method_name(k)}: {v}" for k, v in results.errors.items())
@@ -125,11 +123,38 @@ class InterpretWindow(QMainWindow):
 
             QTimer.singleShot(0, self.canvas.zoom_extents)
 
+    def _style_warning(self) -> None:
+        app = QGuiApplication.instance()
+        dark = app is not None and app.palette().color(QPalette.Window).lightness() < 128
+        if dark:
+            self.result_warning.setStyleSheet(
+                "QLabel { background: #3a2e14; color: #ffd98a; padding: 10px; "
+                "border: 1px solid #8a6d2b; border-radius: 4px; }"
+            )
+        else:
+            self.result_warning.setStyleSheet(
+                "QLabel { background: #fff4d6; color: #674900; padding: 10px; "
+                "border: 1px solid #e2c36f; border-radius: 4px; }"
+            )
+
+    def changeEvent(self, ev) -> None:
+        super().changeEvent(ev)
+        if ev.type() in (QEvent.PaletteChange, QEvent.StyleChange) and hasattr(
+            self, "result_warning"
+        ):
+            self._style_warning()
+
     # ------------------------------------------------------------ build
+    def _refresh_theme_icons(self, dark: bool) -> None:
+        for act, ic_name in self._themed_actions:
+            act.setIcon(icon(ic_name, dark))
+
     def _act(self, text, slot, ic=None, shortcut=None, checkable=False):
         a = QAction(text, self)
         if ic:
             a.setIcon(icon(ic))
+            if ic not in QTA_NAMES:
+                self._themed_actions.append((a, ic))
         if shortcut:
             a.setShortcut(QKeySequence(shortcut))
         a.setToolTip(text)
@@ -154,12 +179,15 @@ class InterpretWindow(QMainWindow):
         self.a_legend = A("Legend", self._toggle_legend, "legend", None, True)
         self.a_legend.setChecked(bool(self.project.display_opt("show_legend")))
         self.a_zoom_all = A("Zoom Extents", c.zoom_extents, "zoom_all", "F2")
-        self.a_zoom_in = A("Zoom In", lambda: c.zoom(1.25), "zoom_in")
-        self.a_zoom_out = A("Zoom Out", lambda: c.zoom(0.8), "zoom_out")
-        self.a_zoom_win = A("Zoom Window", lambda: c.set_tool(T.ZoomWindowTool(c)), "zoom_window")
-        self.a_pan = A("Pan", lambda: c.set_tool(T.PanTool(c)), "pan")
-        self.a_select = A("Select", c.select_tool, "select", "Esc")
-        self.a_measure = A("Measure", lambda: c.set_tool(T.MeasureTool(c)), "measure")
+        self.a_zoom_in = A("Zoom In", lambda: c.zoom(1.25), "zoom_in", "Ctrl++")
+        self.a_zoom_out = A("Zoom Out", lambda: c.zoom(0.8), "zoom_out", "Ctrl+-")
+        self.a_zoom_win = A(
+            "Zoom Window", lambda: c.set_tool(T.ZoomWindowTool(c)), "zoom_window", None, True
+        )
+        self.a_pan = A("Pan", lambda: c.set_tool(T.PanTool(c)), "pan", None, True)
+        self.a_select = A("Select", c.select_tool, "select", "Esc", True)
+        self.a_select.setChecked(True)
+        self.a_measure = A("Measure", lambda: c.set_tool(T.MeasureTool(c)), "measure", None, True)
         self.a_export = A("Export Image…", self.export_image, "export")
         self.a_report = A("PDF Report…", self.pdf_report, "report", "Ctrl+P")
         self.a_report.setToolTip("Create a professional PDF analysis report")
@@ -218,6 +246,7 @@ class InterpretWindow(QMainWindow):
         ):
             tb.addSeparator() if a is None else tb.addAction(a)
         self.addToolBar(Qt.TopToolBarArea, tb)
+        self.addToolBarBreak(Qt.TopToolBarArea)
         nb = QToolBar("Notes")
         nb.setIconSize(QSize(24, 24))
         for a in (*self.t_annots.values(), None, self.a_undo, self.a_redo, self.a_delete):
@@ -235,6 +264,13 @@ class InterpretWindow(QMainWindow):
         for a in (self.a_undo, self.a_redo, None, self.a_delete):
             m.addSeparator() if a is None else m.addAction(a)
         m = mb.addMenu("&View")
+        from slipsurface.ui.preferences import apply_theme, settings
+
+        dark = m.addAction("Dark mode")
+        dark.setCheckable(True)
+        dark.setChecked(settings().value("dark", False, type=bool))
+        dark.toggled.connect(apply_theme)
+        m.addSeparator()
         for a in (
             self.a_zoom_all,
             self.a_zoom_in,
@@ -249,7 +285,6 @@ class InterpretWindow(QMainWindow):
             m.addSeparator() if a is None else m.addAction(a)
         m = mb.addMenu("&Data")
         m.addAction(self.a_info)
-        m.addAction(self.a_slice)
         m.addAction(self.a_global)
         m = mb.addMenu("&Query")
         m.addAction(self.a_slice)
@@ -272,11 +307,22 @@ class InterpretWindow(QMainWindow):
         )
         r = self.results.results.get(self.key)
         if r is not None:
-            lam = f", λ = {r.lem.lam:.3f}" if r.lem.lam == r.lem.lam else ""
+            import numpy as np
+
+            lem = r.lem
+            lam = f", λ = {lem.lam:.3f}" if np.isfinite(lem.lam) else ""
+            f0 = f", f0 = {lem.janbu_f0:.3f}" if np.isfinite(lem.janbu_f0) else ""
+            ma = f", mα,min = {lem.m_alpha_min:.3f}" if np.isfinite(lem.m_alpha_min) else ""
+            res_txt = ""
+            if np.isfinite(lem.force_residual):
+                res_txt += f", |ΔF|/ΣW = {lem.force_residual:.1e}"
+            if np.isfinite(lem.moment_residual):
+                res_txt += f", |ΔM|/(ΣW·L) = {lem.moment_residual:.1e}"
             self.status.showMessage(
                 (
-                    f"{mname}: FS = {r.fos:.3f}{lam} — exit x = {r.slices.x_exit:.2f}, entry "
-                    f"x = {r.slices.x_entry:.2f} — {r.message}"
+                    f"{mname}: FS = {r.fos:.3f}{lam}{f0} (it = {lem.iterations}{ma}{res_txt}) — "
+                    f"exit x = {r.slices.x_exit:.2f}, entry x = {r.slices.x_entry:.2f} — "
+                    f"{r.message}"
                 ),
                 0,
             )
@@ -286,6 +332,7 @@ class InterpretWindow(QMainWindow):
             return
         self.key = key
         self.canvas.highlight_slice = None
+        self.canvas.highlight_candidate = None
         self.method_combo.blockSignals(True)
         self.method_combo.setCurrentIndex(self.method_combo.findData(key))
         self.method_combo.blockSignals(False)
@@ -373,6 +420,10 @@ class InterpretWindow(QMainWindow):
         for k, a in self.t_annots.items():
             a.setChecked(name == f"draw_{k}" and k == kind)
         self.a_slice.setChecked(name == "slice_query")
+        self.a_select.setChecked(name == "select")
+        self.a_pan.setChecked(name == "pan")
+        self.a_zoom_win.setChecked(name == "zoom_window")
+        self.a_measure.setChecked(name == "measure")
 
     # ----------------------------------------------------------- tools
     def slice_data(self, i: int) -> None:
@@ -388,7 +439,7 @@ class InterpretWindow(QMainWindow):
                 txt += f"\n\nSlice data — {method_name(k)}\n" + "-" * 60 + "\n"
                 for i in range(r.slices.n):
                     rows = slice_rows(r, i)
-                    txt += "  ".join(f"{a}: {b}" for a, b in rows[:1] + rows[2:10]) + "\n"
+                    txt += "  ".join(f"{a}: {b}" for a, b in rows[:1] + rows[2:]) + "\n"
         InfoViewer(txt, self).exec()
 
     def update_summary(self, summary) -> None:
@@ -405,3 +456,7 @@ class InterpretWindow(QMainWindow):
         from slipsurface.ui.export import export_image
 
         export_image(self, self.area, "result.png")
+
+    def closeEvent(self, ev) -> None:
+        self._themed_actions.clear()
+        super().closeEvent(ev)

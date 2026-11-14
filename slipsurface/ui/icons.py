@@ -10,9 +10,21 @@ import math
 from functools import cache
 
 from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QColor, QFont, QIcon, QPainter, QPainterPath, QPen, QPixmap, QPolygonF
+from PySide6.QtGui import (
+    QColor,
+    QFont,
+    QGuiApplication,
+    QIcon,
+    QPainter,
+    QPainterPath,
+    QPalette,
+    QPen,
+    QPixmap,
+    QPolygonF,
+)
 
 INK = QColor("#2d3a4a")
+INK_DARK = QColor("#d8e2f0")
 BLUE = QColor("#2f6fd6")
 GREEN = QColor("#2e9d4f")
 RED = QColor("#d23b2f")
@@ -33,11 +45,11 @@ def _poly(*pts):
     return QPolygonF([QPointF(x, y) for x, y in pts])
 
 
-def _magnifier(p: QPainter, sign: str | None = None, rect=False):
-    p.setPen(_pen(INK, 5))
+def _magnifier(p: QPainter, sign: str | None = None, rect=False, ink: QColor = INK):
+    p.setPen(_pen(ink, 5))
     p.setBrush(QColor(255, 255, 255, 230))
     p.drawEllipse(QPointF(26, 26), 16, 16)
-    p.setPen(_pen(INK, 8))
+    p.setPen(_pen(ink, 8))
     p.drawLine(QPointF(38, 38), QPointF(56, 56))
     p.setPen(_pen(BLUE, 4.5))
     if sign in ("+", "-"):
@@ -55,11 +67,12 @@ def _vertex(p, x, y, c=INK):
     p.drawRect(QRectF(x - 4.5, y - 4.5, 9, 9))
 
 
-def _draw(name: str, p: QPainter) -> None:
+def _draw(name: str, p: QPainter, ink: QColor = INK) -> None:
     if name == "new":
-        p.setPen(_pen(INK, 3.5))
+        p.setPen(_pen(ink, 3.5))
         p.setBrush(QColor("white"))
         p.drawPolygon(_poly((14, 6), (40, 6), (52, 18), (52, 58), (14, 58)))
+        p.setPen(_pen(INK, 3.5))
         p.drawPolyline(_poly((40, 6), (40, 18), (52, 18)))
     elif name == "open":
         p.setPen(_pen(BROWN, 3))
@@ -90,7 +103,7 @@ def _draw(name: str, p: QPainter) -> None:
         p.drawPolygon(_poly((8, 22), (24, 10), (24, 34)))
         p.restore()
     elif name == "settings":
-        p.setPen(_pen(INK, 3))
+        p.setPen(_pen(ink, 3))
         p.setBrush(GREY)
         path = QPainterPath()
         for k in range(16):
@@ -103,7 +116,7 @@ def _draw(name: str, p: QPainter) -> None:
         p.setBrush(QColor("white"))
         p.drawEllipse(QPointF(32, 32), 8, 8)
     elif name == "summary":
-        p.setPen(_pen(INK, 3))
+        p.setPen(_pen(ink, 3))
         p.setBrush(QColor("white"))
         p.drawRect(QRectF(12, 6, 40, 52))
         p.setPen(_pen(GREY, 3))
@@ -111,18 +124,18 @@ def _draw(name: str, p: QPainter) -> None:
             p.drawLine(QPointF(19, y), QPointF(45, y))
     elif name == "materials":
         for i, c in enumerate([YELLOW, GREEN, ORANGE, QColor("#8080d0")]):
-            p.setPen(_pen(INK, 2))
+            p.setPen(_pen(ink, 2))
             p.setBrush(c)
             p.drawRect(QRectF(8 + (i % 2) * 26, 8 + (i // 2) * 26, 22, 22))
     elif name == "compute":
-        p.setPen(_pen(INK, 3))
+        p.setPen(_pen(ink, 3))
         p.setBrush(QColor("#d8dde4"))
         p.drawRoundedRect(QRectF(6, 10, 52, 44), 6, 6)
         p.setPen(Qt.NoPen)
         p.setBrush(GREEN)
         p.drawPolygon(_poly((24, 20), (46, 32), (24, 44)))
     elif name == "interpret":
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         p.setBrush(YELLOW)
         p.drawPolygon(_poly((4, 56), (4, 40), (24, 40), (42, 24), (60, 24), (60, 56)))
         path = QPainterPath(QPointF(20, 40))
@@ -134,23 +147,23 @@ def _draw(name: str, p: QPainter) -> None:
         p.drawLine(QPointF(30, 6), QPointF(20, 40))
         p.drawLine(QPointF(30, 6), QPointF(48, 24))
     elif name == "zoom_all":
-        p.setPen(_pen(INK, 5))
+        p.setPen(_pen(ink, 5))
         for sx, sy in ((1, 1), (-1, 1), (1, -1), (-1, -1)):
             cx, cy = 32 - sx * 22, 32 - sy * 22
             p.drawLine(QPointF(cx, cy), QPointF(cx + sx * 12, cy))
             p.drawLine(QPointF(cx, cy), QPointF(cx, cy + sy * 12))
             p.drawLine(QPointF(cx, cy), QPointF(cx + sx * 10, cy + sy * 10))
     elif name == "zoom_in":
-        _magnifier(p, "+")
+        _magnifier(p, "+", ink=ink)
     elif name == "zoom_out":
-        _magnifier(p, "-")
+        _magnifier(p, "-", ink=ink)
     elif name == "zoom_window":
-        _magnifier(p, None, rect=True)
+        _magnifier(p, None, rect=True, ink=ink)
     elif name == "pan":
-        p.setPen(_pen(INK, 4))
+        p.setPen(_pen(ink, 4))
         p.drawLine(QPointF(32, 6), QPointF(32, 58))
         p.drawLine(QPointF(6, 32), QPointF(58, 32))
-        p.setBrush(INK)
+        p.setBrush(ink)
         for poly in (
             _poly((32, 2), (24, 12), (40, 12)),
             _poly((32, 62), (24, 52), (40, 52)),
@@ -159,7 +172,7 @@ def _draw(name: str, p: QPainter) -> None:
         ):
             p.drawPolygon(poly)
     elif name == "select":
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         p.setBrush(QColor("white"))
         p.drawPolygon(_poly((16, 6), (16, 52), (27, 41), (35, 58), (42, 55), (34, 38), (49, 38)))
     elif name == "measure":
@@ -174,11 +187,11 @@ def _draw(name: str, p: QPainter) -> None:
         p.restore()
     elif name == "external":
         pts = [(6, 52), (6, 34), (24, 34), (40, 18), (58, 18), (58, 52)]
-        p.setPen(_pen(INK, 3.5))
+        p.setPen(_pen(ink, 3.5))
         p.setBrush(QColor(240, 200, 0, 120))
         p.drawPolygon(_poly(*pts))
         for x, y in pts:
-            _vertex(p, x, y)
+            _vertex(p, x, y, ink)
     elif name == "material_boundary":
         p.setPen(_pen(GREY, 2.5))
         p.setBrush(Qt.NoBrush)
@@ -198,7 +211,7 @@ def _draw(name: str, p: QPainter) -> None:
         p.drawLine(QPointF(38, 50), QPointF(54, 50))
         p.drawLine(QPointF(42, 56), QPointF(50, 56))
     elif name in ("add_vertex", "delete_vertex"):
-        p.setPen(_pen(INK, 3.5))
+        p.setPen(_pen(ink, 3.5))
         p.drawPolyline(_poly((6, 48), (32, 24), (58, 40)))
         _vertex(p, 32, 24, RED if name == "delete_vertex" else GREEN)
         p.setPen(_pen(GREEN if name == "add_vertex" else RED, 5))
@@ -206,7 +219,7 @@ def _draw(name: str, p: QPainter) -> None:
         if name == "add_vertex":
             p.drawLine(QPointF(50, 2), QPointF(50, 18))
     elif name == "assign":
-        p.setPen(_pen(INK, 3))
+        p.setPen(_pen(ink, 3))
         p.setBrush(YELLOW)
         p.drawPolygon(_poly((6, 56), (6, 34), (58, 26), (58, 56)))
         p.setBrush(GREEN)
@@ -215,7 +228,7 @@ def _draw(name: str, p: QPainter) -> None:
         p.setBrush(QColor("white"))
         p.drawPolygon(_poly((30, 38), (30, 58), (36, 52), (41, 62), (45, 60), (40, 50), (48, 50)))
     elif name == "coords":
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         p.setBrush(QColor("white"))
         p.drawRect(QRectF(6, 8, 52, 48))
         p.setPen(_pen(GREY, 2))
@@ -227,7 +240,7 @@ def _draw(name: str, p: QPainter) -> None:
         p.drawText(QRectF(6, 8, 26, 12), Qt.AlignCenter, "x")
         p.drawText(QRectF(32, 8, 26, 12), Qt.AlignCenter, "y")
     elif name == "surface_options":
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         p.setBrush(YELLOW)
         p.drawPolygon(_poly((4, 58), (4, 42), (22, 42), (40, 24), (60, 24), (60, 58)))
         path = QPainterPath(QPointF(18, 42))
@@ -235,18 +248,18 @@ def _draw(name: str, p: QPainter) -> None:
         p.setPen(_pen(RED, 4))
         p.setBrush(Qt.NoBrush)
         p.drawPath(path)
-        p.setPen(_pen(INK, 2))
+        p.setPen(_pen(ink, 2))
         p.setBrush(GREY)
         p.drawEllipse(QPointF(14, 14), 9, 9)
     elif name == "slope_limits":
-        p.setPen(_pen(INK, 3))
+        p.setPen(_pen(ink, 3))
         p.drawPolyline(_poly((4, 44), (22, 44), (40, 26), (60, 26)))
         p.setPen(Qt.NoPen)
         p.setBrush(BLUE)
         p.drawPolygon(_poly((10, 26), (10, 40), (20, 33)))
         p.drawPolygon(_poly((54, 8), (54, 22), (44, 15)))
     elif name == "user_surface":
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         p.setBrush(QColor(240, 200, 0, 140))
         p.drawPolygon(_poly((4, 58), (4, 40), (22, 40), (40, 22), (60, 22), (60, 58)))
         p.setPen(_pen(RED, 3.5))
@@ -265,7 +278,7 @@ def _draw(name: str, p: QPainter) -> None:
         p.setPen(Qt.NoPen)
         p.drawEllipse(QPointF(32, 18), 4, 4)
     elif name == "export":
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         p.setBrush(QColor("#cfe3ff"))
         p.drawRect(QRectF(6, 10, 52, 42))
         p.setBrush(GREEN)
@@ -273,7 +286,7 @@ def _draw(name: str, p: QPainter) -> None:
         p.setBrush(YELLOW)
         p.drawEllipse(QPointF(46, 20), 5, 5)
     elif name == "slice_query":
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         p.setBrush(YELLOW)
         p.drawPolygon(_poly((14, 10), (34, 10), (34, 54), (14, 46)))
         p.setPen(_pen(BLUE, 4))
@@ -286,7 +299,7 @@ def _draw(name: str, p: QPainter) -> None:
         p.setFont(QFont("Source Sans 3", 15, QFont.Bold))
         p.drawText(QRectF(4, 16, 56, 32), Qt.AlignCenter, "FS")
     elif name == "all_surfaces":
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         p.setBrush(YELLOW)
         p.drawPolygon(_poly((4, 58), (4, 40), (22, 40), (40, 22), (60, 22), (60, 58)))
         for i, c in enumerate([RED, ORANGE, GREEN, BLUE]):
@@ -297,7 +310,7 @@ def _draw(name: str, p: QPainter) -> None:
             p.drawPath(path)
     elif name == "legend":
         for i, c in enumerate([YELLOW, GREEN, ORANGE]):
-            p.setPen(_pen(INK, 2))
+            p.setPen(_pen(ink, 2))
             p.setBrush(c)
             p.drawRect(QRectF(6, 8 + i * 17, 14, 12))
             p.setPen(_pen(GREY, 3))
@@ -308,7 +321,7 @@ def _draw(name: str, p: QPainter) -> None:
             p.drawLine(QPointF(k, 4), QPointF(k, 60))
             p.drawLine(QPointF(4, k), QPointF(60, k))
     elif name == "load_distributed":
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         p.setBrush(YELLOW)
         p.drawRect(QRectF(4, 44, 56, 16))
         p.setPen(_pen(RED, 3))
@@ -320,7 +333,7 @@ def _draw(name: str, p: QPainter) -> None:
             p.drawPolygon(_poly((x - 4, 34), (x + 4, 34), (x, 42)))
             p.setPen(_pen(RED, 3))
     elif name == "load_line":
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         p.setBrush(YELLOW)
         p.drawRect(QRectF(4, 44, 56, 16))
         p.setPen(_pen(RED, 5))
@@ -329,7 +342,7 @@ def _draw(name: str, p: QPainter) -> None:
         p.setPen(Qt.NoPen)
         p.drawPolygon(_poly((22, 30), (42, 30), (32, 44)))
     elif name in ("support", "support_props"):
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         p.setBrush(YELLOW)
         p.drawPolygon(_poly((4, 60), (4, 44), (18, 44), (36, 12), (60, 12), (60, 60)))
         p.setPen(_pen(QColor("#1f3d7a"), 3.5))
@@ -339,11 +352,11 @@ def _draw(name: str, p: QPainter) -> None:
         p.setPen(_pen(QColor("#1f3d7a"), 4))
         p.drawLine(QPointF(23, 24), QPointF(29, 36))
         if name == "support_props":
-            p.setPen(_pen(INK, 2))
+            p.setPen(_pen(ink, 2))
             p.setBrush(GREY)
             p.drawEllipse(QPointF(14, 14), 9, 9)
     elif name == "seismic":
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         p.setBrush(YELLOW)
         p.drawRect(QRectF(4, 44, 56, 16))
         p.setPen(_pen(RED, 3))
@@ -352,7 +365,7 @@ def _draw(name: str, p: QPainter) -> None:
             _poly((4, 26), (12, 14), (20, 36), (28, 10), (36, 38), (44, 16), (52, 30), (60, 22))
         )
     elif name == "tension_crack":
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         p.setBrush(YELLOW)
         p.drawPolygon(_poly((4, 60), (4, 44), (20, 44), (36, 14), (60, 14), (60, 60)))
         p.setPen(_pen(BROWN, 3))
@@ -360,7 +373,7 @@ def _draw(name: str, p: QPainter) -> None:
         p.setPen(_pen(BROWN, 2.5, Qt.DashLine))
         p.drawLine(QPointF(38, 38), QPointF(60, 38))
     elif name in ("bolt", "bolt_pattern"):
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         p.setBrush(YELLOW)
         p.drawPolygon(_poly((4, 60), (4, 52), (14, 52), (40, 6), (60, 6), (60, 60)))
         heads = [(30, 24)] if name == "bolt" else [(36, 14), (28, 28), (20, 42)]
@@ -376,26 +389,26 @@ def _draw(name: str, p: QPainter) -> None:
             p.drawArc(QRectF(22, 16, 30, 16), -16 * 15, 16 * 15)
             p.drawLine(QPointF(30, 24), QPointF(54, 24))
     elif name in ("facing", "facing_props"):
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         p.setBrush(YELLOW)
         p.drawPolygon(_poly((4, 60), (4, 48), (18, 48), (40, 12), (60, 12), (60, 60)))
         p.setPen(_pen(QColor("#7f8c8d"), 7))
         p.drawLine(QPointF(18, 48), QPointF(40, 12))
-        p.setPen(_pen(INK, 1.5, Qt.DashLine))
+        p.setPen(_pen(ink, 1.5, Qt.DashLine))
         p.drawLine(QPointF(14, 46), QPointF(36, 10))
         if name == "facing_props":
-            p.setPen(_pen(INK, 2))
+            p.setPen(_pen(ink, 2))
             p.setBrush(GREY)
             p.drawEllipse(QPointF(14, 14), 9, 9)
     elif name == "annot_text":
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         f = QFont("Sans")
         f.setPixelSize(44)
         f.setBold(True)
         p.setFont(f)
         p.setPen(RED)
         p.drawText(QRectF(0, 4, 64, 56), Qt.AlignCenter, "A")
-        p.setPen(_pen(INK, 2.5))
+        p.setPen(_pen(ink, 2.5))
         p.drawLine(QPointF(10, 58), QPointF(54, 58))
     elif name == "annot_line":
         p.setPen(_pen(RED, 4))
@@ -415,9 +428,10 @@ def _draw(name: str, p: QPainter) -> None:
         p.setBrush(QColor(246, 214, 90, 120))
         p.drawEllipse(QRectF(6, 14, 52, 36))
     elif name == "report":
-        p.setPen(_pen(INK, 3))
+        p.setPen(_pen(ink, 3))
         p.setBrush(QColor("white"))
         p.drawPolygon(_poly((12, 4), (42, 4), (54, 16), (54, 60), (12, 60)))
+        p.setPen(_pen(INK, 3))
         p.drawPolyline(_poly((42, 4), (42, 16), (54, 16)))
         p.setPen(_pen(GREY, 2.5))
         for y in (24, 31, 38):
@@ -440,45 +454,55 @@ def _draw(name: str, p: QPainter) -> None:
         p.drawRect(QRectF(8, 8, 48, 48))
 
 
+QTA_NAMES: dict[str, str] = {
+    "new": "file-plus-outline",
+    "open": "folder-open-outline",
+    "save": "content-save-outline",
+    "undo": "undo",
+    "redo": "redo",
+    "delete": "delete-outline",
+    "copy": "content-copy",
+    "zoom_all": "fit-to-screen-outline",
+    "zoom_in": "magnify-plus-outline",
+    "zoom_out": "magnify-minus-outline",
+    "zoom_window": "selection-search",
+    "pan": "hand-back-right-outline",
+    "settings": "tune-variant",
+    "summary": "clipboard-text-outline",
+    "compute": "play-circle-outline",
+    "interpret": "chart-line",
+    "report": "file-pdf-box",
+    "export": "export-variant",
+    "materials": "layers-outline",
+    "surface_options": "vector-curve",
+    "coords": "table-edit",
+    "select": "cursor-default-outline",
+    "measure": "ruler",
+    "grid": "grid",
+    "add": "plus",
+    "up": "chevron-up",
+    "down": "chevron-down",
+    "water": "waves",
+    "support": "screw-machine-flat-top",
+    "seismic": "waveform",
+}
+
+
+def _is_dark() -> bool:
+    app = QGuiApplication.instance()
+    return bool(app is not None and app.palette().color(QPalette.Window).lightness() < 128)
+
+
 @cache
-def icon(name: str) -> QIcon:
+def _qta_icon(mdi_name: str) -> QIcon:
     import qtawesome as qta
 
-    names = {
-        "new": "file-plus-outline",
-        "open": "folder-open-outline",
-        "save": "content-save-outline",
-        "undo": "undo",
-        "redo": "redo",
-        "delete": "delete-outline",
-        "copy": "content-copy",
-        "zoom_all": "fit-to-screen-outline",
-        "zoom_in": "magnify-plus-outline",
-        "zoom_out": "magnify-minus-outline",
-        "zoom_window": "selection-search",
-        "pan": "hand-back-right-outline",
-        "settings": "tune-variant",
-        "summary": "clipboard-text-outline",
-        "compute": "play-circle-outline",
-        "interpret": "chart-line",
-        "report": "file-pdf-box",
-        "export": "export-variant",
-        "materials": "layers-outline",
-        "surface_options": "vector-curve",
-        "coords": "table-edit",
-        "select": "cursor-default-outline",
-        "measure": "ruler",
-        "grid": "grid",
-        "add": "plus",
-        "up": "chevron-up",
-        "down": "chevron-down",
-        "water": "waves",
-        "support": "screw-machine-flat-top",
-        "seismic": "waveform",
-    }
-    if name in names:
-        return qta.icon("mdi6." + names[name], color="#568cce", color_disabled="#8794a6")
+    return qta.icon("mdi6." + mdi_name, color="#568cce", color_disabled="#8794a6")
 
+
+@cache
+def _custom_icon(name: str, dark: bool) -> QIcon:
+    ink = INK_DARK if dark else INK
     ic = QIcon()
     for size in (16, 24, 32, 48):
         pm = QPixmap(size, size)
@@ -487,14 +511,26 @@ def icon(name: str) -> QIcon:
         p.setRenderHint(QPainter.Antialiasing)
         p.setRenderHint(QPainter.TextAntialiasing)
         p.scale(size / 64.0, size / 64.0)
-        _draw(name, p)
+        _draw(name, p, ink=ink)
         p.end()
         ic.addPixmap(pm)
     return ic
 
 
+def icon(name: str, dark: bool | None = None) -> QIcon:
+    if name in QTA_NAMES:
+        return _qta_icon(QTA_NAMES[name])
+    return _custom_icon(name, _is_dark() if dark is None else bool(dark))
+
+
 def color_icon(color: str, size: int = 14) -> QIcon:
-    pm = QPixmap(size, size)
+    from PySide6.QtGui import QGuiApplication
+
+    app = QGuiApplication.instance()
+    dpr = max(1.0, float(app.devicePixelRatio())) if app is not None else 1.0
+    px = max(1, int(round(size * dpr)))
+    pm = QPixmap(px, px)
+    pm.setDevicePixelRatio(dpr)
     pm.fill(QColor(color))
     p = QPainter(pm)
     p.setPen(QPen(QColor("#333"), 1))

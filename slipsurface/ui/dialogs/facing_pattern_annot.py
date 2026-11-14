@@ -76,13 +76,20 @@ def _buttons(dlg, ok=None):
 class FacingTypesDialog(QDialog):
     """Define shotcrete + wire mesh facing types."""
 
-    def __init__(self, types: list[FacingType], parent=None) -> None:
+    def __init__(
+        self,
+        types: list[FacingType],
+        parent=None,
+        in_use: set[str] | None = None,
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Define Facing Types — Shotcrete + Wire Mesh")
         fit_to_screen(self, 820, 540)
         self.types = [copy.deepcopy(t) for t in types] or [FacingType()]
         self.renames: dict[str, str] = {}
+        self.in_use: set[str] = set(in_use or ())
         self._orig = [t.name for t in self.types]
+        self._entry_orig: list[str | None] = [t.name for t in self.types]
         self.cur = -1
         self._loading = False
 
@@ -263,6 +270,7 @@ class FacingTypesDialog(QDialog):
         while f"Facing {i}" in names:
             i += 1
         self.types.append(FacingType(f"Facing {i}"))
+        self._entry_orig.append(None)
         self._refresh()
         self.list.setCurrentRow(len(self.types) - 1)
 
@@ -270,7 +278,16 @@ class FacingTypesDialog(QDialog):
         if len(self.types) <= 1:
             self.error.setText("⚠ At least one facing type must remain.")
             return
+        orig_name = self._entry_orig[self.cur]
+        cur_name = self.types[self.cur].name
+        if (orig_name and orig_name in self.in_use) or cur_name in self.in_use:
+            self.error.setText(
+                f"⚠ '{cur_name}' is assigned in the model; reassign or delete those facings first."
+            )
+            return
+        self.error.setText("")
         del self.types[self.cur]
+        del self._entry_orig[self.cur]
         self._refresh()
         self.list.setCurrentRow(min(self.cur, len(self.types) - 1))
 

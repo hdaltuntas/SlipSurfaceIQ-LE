@@ -30,12 +30,18 @@ class Material:
     excess_load: bool = False  # this material's weight loads the B-bar materials
 
     def __post_init__(self) -> None:
-        if self.gamma <= 0:
-            raise ValueError("gamma must be positive")
-        if not 0.0 <= self.bbar <= 1.0:
-            raise ValueError("0 <= B-bar <= 1 required")
         if self.gamma_sat is None:
             self.gamma_sat = self.gamma
+        if (
+            not np.isfinite([self.gamma, self.gamma_sat, self.hu, self.bbar]).all()
+            or self.gamma <= 0
+            or self.gamma_sat <= 0
+        ):
+            raise ValueError("gamma and gamma_sat must be finite and positive")
+        if self.hu < 0:
+            raise ValueError("hu >= 0 required")
+        if not 0.0 <= self.bbar <= 1.0:
+            raise ValueError("0 <= B-bar <= 1 required")
 
     # True if strength depends on sigma_n (solver must iterate on N')
     nonlinear: bool = field(default=False, init=False, repr=False)
@@ -52,7 +58,7 @@ class MohrCoulomb(Material):
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        if self.c < 0 or not (0 <= self.phi < 90):
+        if not np.isfinite([self.c, self.phi]).all() or self.c < 0 or not (0 <= self.phi < 90):
             raise ValueError("c >= 0 and 0 <= phi < 90 required")
 
     def strength(self, sigma_n):
@@ -79,6 +85,14 @@ class HoekBrown(Material):
 
     def __post_init__(self) -> None:
         super().__post_init__()
+        if (
+            not np.isfinite([self.sigma_ci, self.gsi, self.mi, self.d]).all()
+            or self.sigma_ci <= 0
+            or not (0 < self.gsi <= 100)
+            or self.mi <= 0
+            or not (0 <= self.d <= 1)
+        ):
+            raise ValueError("sigma_ci > 0, 0 < gsi <= 100, mi > 0, 0 <= d <= 1 required")
         self.nonlinear = True
         g, d = self.gsi, self.d
         self.mb = self.mi * np.exp((g - 100) / (28 - 14 * d))
@@ -211,7 +225,8 @@ class HoekBrownDirect(HoekBrown):
     def __post_init__(self) -> None:
         Material.__post_init__(self)
         if (
-            self.sigma_ci <= 0
+            not np.isfinite([self.sigma_ci, self.mb_in, self.s_in, self.a_in]).all()
+            or self.sigma_ci <= 0
             or self.mb_in <= 0
             or not 0 <= self.s_in <= 1
             or not 0.5 <= self.a_in < 1
@@ -308,7 +323,16 @@ class HardeningSoil(MohrCoulomb):
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        if not 0 <= self.psi <= self.phi:
+        vals = [
+            self.psi,
+            self.e50_ref,
+            self.eoed_ref,
+            self.eur_ref,
+            self.m_power,
+            self.p_ref,
+            self.rf,
+        ]
+        if not np.isfinite(vals).all() or not 0 <= self.psi <= self.phi:
             raise ValueError("0 <= psi <= phi required")
         if (
             min(self.e50_ref, self.eoed_ref, self.eur_ref, self.p_ref) <= 0
@@ -341,8 +365,10 @@ class Sanisand(Material):
 
     def __post_init__(self):
         super().__post_init__()
+        vals = [self.m_c, self.void_ratio, self.e_c0, self.lambda_c, self.xi, self.n_b, self.p_at]
         if (
-            not 0 < self.m_c < 3
+            not np.isfinite(vals).all()
+            or not 0 < self.m_c < 3
             or self.void_ratio <= 0
             or self.e_c0 <= 0
             or self.lambda_c < 0
@@ -391,7 +417,13 @@ class PowerCurve(Material):
 
     def __post_init__(self):
         super().__post_init__()
-        if self.pc_a < 0 or not 0 < self.pc_b <= 1 or self.pc_c < 0 or self.pc_d < 0:
+        if (
+            not np.isfinite([self.pc_a, self.pc_b, self.pc_c, self.pc_d]).all()
+            or self.pc_a < 0
+            or not 0 < self.pc_b <= 1
+            or self.pc_c < 0
+            or self.pc_d < 0
+        ):
             raise ValueError("a >= 0, 0 < b <= 1, c >= 0 and d >= 0 required")
         self.nonlinear = True
 
@@ -424,7 +456,8 @@ class BartonBandis(Material):
     def __post_init__(self):
         super().__post_init__()
         if (
-            not 0 <= self.phi_r < 90
+            not np.isfinite([self.phi_r, self.jrc, self.jcs, self.l0, self.ln]).all()
+            or not 0 <= self.phi_r < 90
             or not 0 <= self.jrc <= 20
             or self.jcs <= 0
             or self.l0 <= 0
@@ -468,7 +501,13 @@ class CNIRockMass(Material):
 
     def __post_init__(self):
         super().__post_init__()
-        if self.sigma_cm <= 0 or self.cni_a <= 0 or not 0 < self.cni_n <= 1 or self.tensile < 0:
+        if (
+            not np.isfinite([self.sigma_cm, self.cni_a, self.cni_n, self.tensile]).all()
+            or self.sigma_cm <= 0
+            or self.cni_a <= 0
+            or not 0 < self.cni_n <= 1
+            or self.tensile < 0
+        ):
             raise ValueError("sigma_c > 0, a > 0, 0 < n <= 1 and T0 >= 0 required")
         self.nonlinear = True
 

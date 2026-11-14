@@ -33,12 +33,26 @@ class SlopeGeometry:
 
     def __post_init__(self) -> None:
         self.surface = np.asarray(self.surface, dtype=float)
-        if self.surface.ndim != 2 or self.surface.shape[1] != 2 or len(self.surface) < 2:
-            raise ValueError("surface must be an (n>=2, 2) array")
+        if (
+            self.surface.ndim != 2
+            or self.surface.shape[1] != 2
+            or len(self.surface) < 2
+            or not np.all(np.isfinite(self.surface))
+        ):
+            raise ValueError("surface must be a finite (n>=2, 2) array")
         if np.any(np.diff(self.surface[:, 0]) <= 0):
             raise ValueError("surface x-coordinates must be strictly increasing")
         if self.water_table is not None:
             self.water_table = np.asarray(self.water_table, dtype=float)
+            if (
+                self.water_table.ndim != 2
+                or self.water_table.shape[1] != 2
+                or len(self.water_table) < 2
+                or not np.all(np.isfinite(self.water_table))
+            ):
+                raise ValueError("water_table must be a finite (m>=2, 2) array")
+            if np.any(np.diff(self.water_table[:, 0]) <= 0):
+                raise ValueError("water_table x-coordinates must be strictly increasing")
         for r in self.regions:
             if not r.polygon.is_valid:
                 raise ValueError(f"invalid polygon for region '{r.material}'")

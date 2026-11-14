@@ -43,6 +43,13 @@ class LEMResult:
     lam: float = np.nan  # interslice force scaling (Spencer / GLE)
     admissible: bool = True  # physical checks passed (see check_admissibility)
     issue: str = ""  # why not admissible
+    force_residual: float = np.nan
+    moment_residual: float = np.nan
+    janbu_f0: float = np.nan
+    base_normal_eff: np.ndarray | None = None
+    base_shear_mob: np.ndarray | None = None
+    interslice_E: np.ndarray | None = None
+    interslice_X: np.ndarray | None = None
 
     @property
     def ok(self) -> bool:
@@ -253,7 +260,20 @@ def ordinary(s: SliceSet, tol: float = 1e-9, max_iter: int = 50) -> LEMResult:
     pore_force = s.u * s.l * (cos_a**2 if s.is_circular else 1.0)
     n_eff = np.maximum(V * cos_a + Hx * sin_a - pore_force, 0.0)
     c, tp = _strength(s, n_eff / s.l)
-    res = LEMResult(F, "Ordinary", True, it, float(np.min(cos_a)))
+    s_mob = (c * s.l + n_eff * tp) / float(F)
+    drive_f, resist_f = state(F)
+    resid = float(abs(float(F) * drive_f - resist_f) / max(1.0, float(np.sum(s.W))))
+    res = LEMResult(
+        float(F),
+        "Ordinary",
+        True,
+        it,
+        float(np.min(cos_a)),
+        force_residual=np.nan if s.is_circular else resid,
+        moment_residual=resid if s.is_circular else np.nan,
+        base_normal_eff=n_eff.copy(),
+        base_shear_mob=s_mob.copy(),
+    )
     # Ordinary has no mα; pass ones so only negative base shear is flagged.
     return check_admissibility(res, np.ones_like(cos_a), c * s.l + n_eff * tp, s.W)
 
@@ -318,14 +338,39 @@ def bishop_simplified(
             _, n_eff = bishop_base_normal_forces(s, f_new, c, tp)
             sigma_n = np.maximum(n_eff / s.l, 0.0)
             c, tp = _strength(s, sigma_n)
-        done = abs(f_new - f) < tol * max(1.0, abs(f))
+        done = (not nonlinear or it > 1) and abs(f_new - f) < tol * max(1.0, abs(f))
         if s.has_passive:
             done = not nonlinear or (it > 1 and abs(f_new - previous) < tol * max(1.0, f))
             done = done and abs(passive_balance(f_new)) <= max(tol, 1e-10) * max(1.0, f_new)
+        elif nonlinear and done:
+            ma_chk = cos_a + sin_a * tp / f_new
+            if np.any(ma_chk <= 1e-9):
+                done = False
+            else:
+                f_chk = float(np.sum((c * s.b + eff_w * tp) / ma_chk) / driving)
+                done = abs(f_chk - f_new) < tol * max(1.0, abs(f_new))
+                if done:
+                    f_new = f_chk
         if done:
             m_a = cos_a + sin_a * tp / f_new
             _, n_eff = bishop_base_normal_forces(s, f_new, c, tp)
-            res = LEMResult(float(f_new), "Bishop", True, it, float(m_a.min()))
+            s_mob = (c * s.l + n_eff * tp) / float(f_new)
+            _, qy_f, _ = frame_ext(s, float(f_new))
+            resist_f = float(np.sum((c * s.b + (s.Wv - qy_f - s.u * s.b) * tp) / m_a))
+            mom_res = float(
+                abs(float(f_new) * _driving_moment_over_R(s, float(f_new)) - resist_f)
+                / max(1.0, float(np.sum(s.W)))
+            )
+            res = LEMResult(
+                float(f_new),
+                "Bishop",
+                True,
+                it,
+                float(m_a.min()),
+                moment_residual=mom_res,
+                base_normal_eff=n_eff.copy(),
+                base_shear_mob=s_mob.copy(),
+            )
             return check_admissibility(
                 res,
                 m_a,
@@ -337,4 +382,4 @@ def bishop_simplified(
             )
         f = f_new
 
-    return LEMResult(float(f), "Bishop", False, max_iter, message="did not converge")
+    return LEMResult(np.nan, "Bishop", False, max_iter, message="did not converge")
